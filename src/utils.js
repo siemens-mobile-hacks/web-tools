@@ -11,9 +11,9 @@ export function transferBufferToCanvas(mode, buffer, canvas) {
 				let g = (color >> 2) & 7;
 				let b = color & 3;
 
-				imageData.data[pixelIndex++] = Math.round(r * 7 / 255);
-				imageData.data[pixelIndex++] = Math.round(r * 7 / 255);
-				imageData.data[pixelIndex++] = Math.round(r * 3 / 255);
+				imageData.data[pixelIndex++] = Math.round(r * 0xFF / 7);
+				imageData.data[pixelIndex++] = Math.round(r * 0xFF / 7);
+				imageData.data[pixelIndex++] = Math.round(r * 0xFF / 3);
 				imageData.data[pixelIndex++] = 0xFF;
 			}
 		break;
