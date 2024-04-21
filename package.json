@@ -7,7 +7,7 @@
 		"start": "vite",
 		"dev": "vite",
 		"build": "vite build",
-		"gh-pages-build": "vite build --base=/web-tools/",
+		"gh-pages-build": "vite build --base=/web-tools",
 		"serve": "vite preview",
 		"link": "npm link -S ../node-sie-serial/ && npm link -S ../node-serialport-bindings-webserial/",
 		"unlink": "npm uninstall @sie-js/serial serialport-bindings-webserial && npm install @sie-js/serial serialport-bindings-webserial"
