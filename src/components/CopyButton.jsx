@@ -1,5 +1,7 @@
 import { createSignal } from 'solid-js';
 import Button from '@suid/material/Button';
+import ContentCopyIcon from '@suid/icons-material/ContentCopy';
+import DoneIcon from '@suid/icons-material/Done';
 
 function CopyButton(props) {
 	let timeout;
@@ -17,12 +19,18 @@ function CopyButton(props) {
 
 	return (
 		<Button
-			variant="contained"
 			color={isCopied() ? 'success' : 'primary'}
 			disabled={props.disabled}
 			onClick={onClick}
+			{...props}
 		>
-			{isCopied() ? 'Copied' : 'Copy'}
+			<Show when={isCopied()}>
+				<DoneIcon />
+			</Show>
+
+			<Show when={!isCopied()}>
+				<ContentCopyIcon />
+			</Show>
 		</Button>
 	);
 }

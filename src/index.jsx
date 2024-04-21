@@ -6,8 +6,6 @@ import App from './pages/App';
 
 let ScreenShooter = lazy(() => import("./pages/ScreenShooter"));
 
-console.log(import.meta.env);
-
 let dispose = render(() => (
 	<Router root={App} base={import.meta.env.BASE_URL}>
 		<Route path="/" component={() => <Navigate href={() => "/screenshot"} />} />

@@ -10,6 +10,7 @@ import Select from '@suid/material/Select';
 import Stack from '@suid/material/Stack';
 import Grid from '@suid/material/Grid';
 import Button from '@suid/material/Button';
+import IconButton from '@suid/material/IconButton';
 import Alert from '@suid/material/Alert';
 import Radio from '@suid/material/Radio';
 import RadioGroup from '@suid/material/RadioGroup';
@@ -22,6 +23,7 @@ import LinearProgress from '@suid/material/LinearProgress';
 import UsbIcon from '@suid/icons-material/Usb';
 import UsbOffIcon from '@suid/icons-material/UsbOff';
 import TvIcon from '@suid/icons-material/Tv';
+import DownloadIcon from '@suid/icons-material/Download';
 
 import CopyButton from '../components/CopyButton';
 import BfcConnect from '../components/BfcConnect';
@@ -40,9 +42,11 @@ function ScreenShooter() {
 	let canvasRef;
 
 	onMount(() => {
+		document.title = 'Screenshot';
+
 		let ctx = canvasRef.getContext('2d');
 		ctx.rect(0, 0, canvasRef.width, canvasRef.height);
-		ctx.fillStyle = "#DDD";
+		ctx.fillStyle = "rgba(0,0,0,0.1)";
 		ctx.fill();
 	});
 
@@ -121,20 +125,10 @@ function ScreenShooter() {
 				</Grid>
 			</Show>
 
-			<Grid item sx={{ textAlign: { xs: 'left', sm: 'left' }, width: phoneDisplays()[displayNumber()].width + 15 + 'px' }} order={{ xs: 2, sm: 1 }}>
+			<Grid item sx={{ textAlign: 'center', minWidth: '255px', width: phoneDisplays()[displayNumber()].width + 15 + 'px' }} order={{ xs: 2, sm: 1 }}>
 				<Paper sx={{ display: 'inline-flex' }}>
 					<canvas width={phoneDisplays()[displayNumber()].width} height={phoneDisplays()[displayNumber()].height} ref={canvasRef} />
 				</Paper>
-
-				<Stack alignItems="center" direction="row" gap={1}>
-					<FormControl variant="standard">
-						<Button variant="contained" disabled={!hasScreenshot()} onClick={saveScreenshot}>Save</Button>
-					</FormControl>
-
-					<FormControl variant="standard">
-						<CopyButton onCopy={copyScreenshot} disabled={!hasScreenshot()} />
-					</FormControl>
-				</Stack>
 			</Grid>
 
 			<Grid item xs={12} sm order={{ xs: 1, sm: 2 }}>
@@ -155,19 +149,30 @@ function ScreenShooter() {
 					</Stack>
 				</Show>
 
-				<Stack alignItems="center" direction="row" gap={2}>
+				<Stack alignItems="center" direction="row" gap={2} mt={1}>
 					<FormControl variant="standard">
-						<Button variant="contained" disabled={bfc.readyState() != BfcState.CONNECTED || progressValue()} onClick={makeScreenshot}>
+						<Button variant="outlined" disabled={bfc.readyState() != BfcState.CONNECTED || progressValue()} onClick={makeScreenshot}>
 							Make screenshot
 						</Button>
 					</FormControl>
+
+					<FormControl variant="standard">
+						<Button variant="outlined" title="Download screenshot" sx={{ minWidth: 0 }} disabled={!hasScreenshot()} onClick={saveScreenshot}>
+							<DownloadIcon />
+						</Button>
+					</FormControl>
+
+					<FormControl variant="standard">
+						<CopyButton variant="outlined" title="Copy screenshot" sx={{ minWidth: 0 }} onCopy={copyScreenshot} disabled={!hasScreenshot()} />
+					</FormControl>
 				</Stack>
 
-				<Box sx={{ width: '100%', mt: 1, display: progressValue() ? '' : 'none' }}>
+				<Show when={!progressValue()}>
+				</Show>
+
+				<Box sx={{ width: '100%', mt: 2, display: progressValue() ? '' : 'none' }}>
 					<LinearProgress variant="determinate" value={progressValue()?.pct || 0} />
-					<Show when={progressValue().total}>
-						{progressValue().value} / {progressValue().total}, {progressValue().speed}
-					</Show>
+					{progressValue().value} / {progressValue().total}, {progressValue().speed}
 				</Box>
 
 				<Show when={errorMessage()}>
