@@ -63,7 +63,7 @@ function ScreenShooter() {
 		try {
 			let ctx = canvasRef.getContext('2d', { willReadFrequently: true, desynchronized: true });
 
-			let buffer = await bfc.api.getDisplayBuffer(displayNumber() + 1, {
+			let buffer = await bfc.api.getDisplayBuffer(+displayNumber() + 1, {
 				onProgress(value, total, elapsed) {
 					let speed = elapsed > 0 ? value / (elapsed / 1000) : 0;
 					setProgressValue({
