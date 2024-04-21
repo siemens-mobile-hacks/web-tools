@@ -9,7 +9,7 @@
 		"build": "vite build",
 		"serve": "vite preview",
 		"link": "npm link -S ../node-sie-serial/ && npm link -S ../node-serialport-bindings-webserial/",
-		"unlink": "npm install @sie-js/serial serialport-bindings-webserial"
+		"unlink": "npm uninstall @sie-js/serial serialport-bindings-webserial && npm install @sie-js/serial serialport-bindings-webserial"
 	},
 	"license": "MIT",
 	"devDependencies": {
@@ -20,7 +20,7 @@
 	},
 	"dependencies": {
 		"@serialport/stream": "^12.0.0",
-		"@sie-js/serial": "file:../node-sie-serial",
+		"@sie-js/serial": "^0.0.7",
 		"@solidjs/router": "^0.13.2",
 		"@suid/icons-material": "^0.7.0",
 		"@suid/material": "^0.16.0",
@@ -28,7 +28,7 @@
 		"date-fns": "^3.6.0",
 		"readable-stream": "^4.5.2",
 		"sass": "^1.74.1",
-		"serialport-bindings-webserial": "file:../node-serialport-bindings-webserial",
+		"serialport-bindings-webserial": "^0.0.7",
 		"solid-js": "^1.8.11"
 	}
 }
