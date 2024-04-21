@@ -50,6 +50,9 @@ function BfcProvider(props) {
 			await bfc.connect();
 			await bfc.setBestBaudrate();
 
+			// For debug
+			window.BFC = bfc;
+
 			setReadyState(BfcState.CONNECTED);
 			setConnectError(null);
 		} catch (e) {
