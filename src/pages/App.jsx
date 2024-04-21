@@ -21,10 +21,10 @@ function App(props) {
 			palette: {
 				mode: prefersDarkMode() ? 'dark' : 'light',
 				primary: {
-					main: prefersDarkMode() ? '#b39ddb' : '#673ab7',
+					main: prefersDarkMode() ? '#bb86fc' : '#673ab7',
 				},
 				secondary: {
-					main: prefersDarkMode() ? '#673ab7' : '#651fff',
+					main: prefersDarkMode() ? '#03dac6' : '#651fff',
 				},
 			},
 			typography: {
