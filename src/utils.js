@@ -4,6 +4,19 @@ export function transferBufferToCanvas(mode, buffer, canvas) {
 	let pixelIndex = 0;
 	let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 	switch (mode) {
+		case "rgb332":
+			for (let i = 0; i < buffer.length; i++) {
+				let color = buffer[i];
+				let r = (color >> 5) & 7;
+				let g = (color >> 2) & 7;
+				let b = color & 3;
+
+				imageData.data[pixelIndex++] = Math.round(r * 7 / 255);
+				imageData.data[pixelIndex++] = Math.round(r * 7 / 255);
+				imageData.data[pixelIndex++] = Math.round(r * 3 / 255);
+				imageData.data[pixelIndex++] = 0xFF;
+			}
+		break;
 		case "rgb565":
 			for (let i = 0; i < buffer.length; i += 2) {
 				let color = (buffer[i + 1] << 8) | buffer[i];

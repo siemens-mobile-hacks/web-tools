@@ -52,6 +52,7 @@ function BfcProvider(props) {
 
 			// For debug
 			window.BFC = bfc;
+			window.Buffer = Buffer;
 
 			setReadyState(BfcState.CONNECTED);
 			setConnectError(null);
