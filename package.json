@@ -8,7 +8,8 @@
 		"dev": "vite",
 		"build": "vite build",
 		"serve": "vite preview",
-		"link": "npm link -S ../node-sie-serial/ && npm link -S ../node-serialport-bindings-webserial/"
+		"link": "npm link -S ../node-sie-serial/ && npm link -S ../node-serialport-bindings-webserial/",
+		"unlink": "npm install @sie-js/serial serialport-bindings-webserial"
 	},
 	"license": "MIT",
 	"devDependencies": {
