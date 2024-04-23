@@ -12,9 +12,23 @@ export function transferBufferToCanvas(mode, buffer, canvas) {
 				let b = color & 3;
 
 				imageData.data[pixelIndex++] = Math.round(r * 0xFF / 7);
-				imageData.data[pixelIndex++] = Math.round(r * 0xFF / 7);
-				imageData.data[pixelIndex++] = Math.round(r * 0xFF / 3);
+				imageData.data[pixelIndex++] = Math.round(g * 0xFF / 7);
+				imageData.data[pixelIndex++] = Math.round(b * 0xFF / 3);
 				imageData.data[pixelIndex++] = 0xFF;
+			}
+		break;
+		case "rgba4444":
+			for (let i = 0; i < buffer.length; i += 2) {
+				let color = (buffer[i + 1] << 8) | buffer[i];
+				let a = (color >> 12) & 0xF;
+				let r = (color >> 8) & 0xF;
+				let g = (color >> 4) & 0xF;
+				let b = color & 0xF;
+
+				imageData.data[pixelIndex++] = Math.round(r * 0xFF / 0xF);
+				imageData.data[pixelIndex++] = Math.round(g * 0xFF / 0xF);
+				imageData.data[pixelIndex++] = Math.round(b * 0xFF / 0xF);
+				imageData.data[pixelIndex++] = Math.round(a * 0xFF / 0xF);
 			}
 		break;
 		case "rgb565be":
