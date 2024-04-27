@@ -10,7 +10,8 @@
 		"gh-pages-build": "vite build --base=/web-tools",
 		"serve": "vite preview",
 		"link-local-deps": "npm link -S ../node-sie-serial/ && npm link -S ../node-serialport-bindings-webserial/",
-		"unlink-local-deps": "npm uninstall @sie-js/serial serialport-bindings-webserial && npm install @sie-js/serial serialport-bindings-webserial"
+		"unlink-local-deps": "npm uninstall @sie-js/serial serialport-bindings-webserial && npm install @sie-js/serial serialport-bindings-webserial",
+		"prepare": "patch-package"
 	},
 	"license": "MIT",
 	"devDependencies": {
@@ -32,7 +33,7 @@
 		"date-fns": "^3.6.0",
 		"readable-stream": "^4.5.2",
 		"sass": "^1.74.1",
-		"serialport-bindings-webserial": "^0.2.2",
+		"serialport-bindings-webserial": "^0.2.3",
 		"solid-js": "^1.8.11",
 		"sprintf-js": "^1.1.3"
 	}
