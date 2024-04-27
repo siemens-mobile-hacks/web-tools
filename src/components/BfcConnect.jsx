@@ -40,7 +40,7 @@ function BfcConnect(props) {
 	};
 
 	createEffect(() => {
-		if (bfc.lastUsedPort())
+		if (bfc.readyState() == BfcState.CONNECTED)
 			setSelectedSerialPort(bfc.lastUsedPort());
 	});
 
@@ -64,10 +64,9 @@ function BfcConnect(props) {
 			</Show>
 
 			<Show when={bfc.ports()}>
-				<FormControl sx={{ m: 1, minWidth: 120 }} size="small">
+				<FormControl sx={{ m: 1, minWidth: 120 }} size="small" disabled={bfc.readyState() != BfcState.DISCONNECTED}>
 					<InputLabel htmlFor="serial-port-selector">Port</InputLabel>
 					<Select size="small" value={currentSerialPort()} id="serial-port-selector" label="Port"
-						disabled={bfc.readyState() != BfcState.DISCONNECTED}
 						onChange={(e) => setSelectedSerialPort(e.target.value)}
 					>
 						<MenuItem value="webserial://any">
