@@ -1,3 +1,4 @@
+/* @refresh reload */
 import { createSignal, createEffect, createMemo, onMount } from "solid-js";
 
 import Box from '@suid/material/Box';

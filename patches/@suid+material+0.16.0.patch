@@ -1,0 +1,37 @@
+diff --git a/node_modules/@suid/material/MenuItem/MenuItem.jsx b/node_modules/@suid/material/MenuItem/MenuItem.jsx
+index fb73559..275a5d3 100644
+--- a/node_modules/@suid/material/MenuItem/MenuItem.jsx
++++ b/node_modules/@suid/material/MenuItem/MenuItem.jsx
+@@ -9,6 +9,7 @@ import menuItemClasses from "./menuItemClasses";
+ import createComponentFactory from "@suid/base/createComponentFactory";
+ import { alpha } from "@suid/system";
+ import createRef from "@suid/system/createRef";
++import { createInspector } from "@suid/system/inspect";
+ import clsx from "clsx";
+ import { useContext, splitProps, mergeProps, createEffect, untrack, } from "solid-js";
+ const $ = createComponentFactory()({
+@@ -137,7 +138,7 @@ const MenuItemRoot = styled(ButtonBase, {
+  * - [MenuItem API](https://mui.com/api/menu-item/)
+  * - inherits [ButtonBase API](https://mui.com/api/button-base/)
+  */
+-const MenuItem = $.defineComponent(function MenuItem(inProps) {
++const MenuItemComponent = $.defineComponent(function MenuItem(inProps) {
+     const menuItemRef = createRef(inProps);
+     const props = $.useThemeProps({ props: inProps });
+     const [, other] = splitProps(props, [
+@@ -194,8 +195,13 @@ const MenuItem = $.defineComponent(function MenuItem(inProps) {
+             return props.tabIndex !== undefined ? props.tabIndex : -1;
+         }
+     };
++    const inspector = createInspector(MenuItemComponent, inProps);
++    const handleRef = (el) => {
++        menuItemRef(el);
++        inspector(el);
++    };
+     return (<ListContext.Provider value={childContext}>
+-      <MenuItemRoot ref={menuItemRef} role={baseProps.role} tabIndex={tabIndex()} component={baseProps.component} focusVisibleClassName={clsx(ownerState.classes?.focusVisible, props.focusVisibleClassName)} {...other} ownerState={ownerState} classes={classes}/>
++      <MenuItemRoot ref={handleRef} role={baseProps.role} tabIndex={tabIndex()} component={baseProps.component} focusVisibleClassName={clsx(ownerState.classes?.focusVisible, props.focusVisibleClassName)} {...other} ownerState={ownerState} classes={classes}/>
+     </ListContext.Provider>);
+ });
+-export default MenuItem;
++export default MenuItemComponent;

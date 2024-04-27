@@ -1,7 +1,8 @@
 /* @refresh reload */
-import { createContext, useContext, createSignal, onMount, onCleanup } from 'solid-js';
+import { createContext, useContext, createSignal, createEffect, onMount, onCleanup } from 'solid-js';
 import { SerialPortStream } from '@serialport/stream';
-import WebSerialBinding from 'serialport-bindings-webserial';
+import { WebSerialPort, WebSerialBinding } from 'serialport-bindings-webserial';
+import { createStoredSignal } from '../storage';
 
 import { BFC } from '@sie-js/serial';
 
@@ -24,26 +25,44 @@ function useBFC() {
 	return value;
 }
 
+async function findPortInfo(nativePort) {
+	let allPortsList = await WebSerialBinding.list();
+	for (let port of allPortsList) {
+		if (port.nativePort == nativePort)
+			return port;
+	}
+	return null;
+}
+
 function BfcProvider(props) {
 	let [readyState, setReadyState] = createSignal(false);
 	let [connectError, setConnectError] = createSignal(null);
+	let [ports, setPorts] = createSignal([]);
+	let [lastUsedPort, setLastUsedPort] = createStoredSignal("lastUsedPort", null);
 
 	let port;
 	let bfc;
+	let recheckTimer;
 
-	let connect = async () => {
+	let monitorNewPorts = async () => {
+		setPorts(await WebSerialBinding.list());
+	};
+
+	let connect = async (serialPortURI) => {
 		if (readyState() == BfcState.CONNECTED)
 			return;
-
-		if (!navigator.serial) {
-			setConnectError(new Error(`Your browser is not supporting WebSerial API.`));
-			return;
-		}
 
 		setReadyState(BfcState.CONNECTING);
 		try {
 			// Open serial port
-			port = await openSerialPort();
+			port = await openSerialPort(serialPortURI);
+
+			monitorNewPorts();
+
+			if (port.port && 'getNativePort' in port.port) {
+				let portPath = await WebSerialBinding.getPortPath(await port.port.getNativePort());
+				setLastUsedPort(portPath);
+			}
 
 			// Connect to BFC
 			bfc = new BFC(port);
@@ -60,6 +79,7 @@ function BfcProvider(props) {
 			console.error(e);
 			await disconnect();
 			setConnectError(e);
+			monitorNewPorts();
 		}
 	};
 
@@ -87,7 +107,31 @@ function BfcProvider(props) {
 		}
 	};
 
-	onCleanup(() => disconnect());
+	let portIsExists = (path) => {
+		if (path == 'webserial://any')
+			return true;
+		for (let port of ports()) {
+			if (port.path == path)
+				return true;
+		}
+		return false;
+	};
+
+	onMount(() => {
+		if (navigator.serial) {
+			navigator.serial.addEventListener("connect", monitorNewPorts);
+			navigator.serial.addEventListener("disconnect", monitorNewPorts);
+			monitorNewPorts();
+		}
+	});
+
+	onCleanup(() => {
+		if (navigator.serial) {
+			navigator.serial.removeEventListener("connect", monitorNewPorts);
+			navigator.serial.removeEventListener("disconnect", monitorNewPorts);
+		}
+		disconnect()
+	});
 
 	let state = {
 		get api() {
@@ -95,6 +139,9 @@ function BfcProvider(props) {
 				throw new Error(`BFC is closed!`);
 			return bfc;
 		},
+		ports,
+		lastUsedPort,
+		portIsExists,
 		readyState,
 		connectError,
 		connect,
@@ -108,11 +155,11 @@ function BfcProvider(props) {
 	);
 }
 
-function openSerialPort() {
+function openSerialPort(serialPortURI) {
 	return new Promise((resolve, reject) => {
 		let port = new SerialPortStream({
 			binding: WebSerialBinding,
-			path: 'webserial://any',
+			path: serialPortURI || 'webserial://any',
 			baudRate: 115200,
 			highWaterMark: 512 * 1024,
 			webSerialOpenOptions: {
