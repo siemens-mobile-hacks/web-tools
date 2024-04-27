@@ -66,7 +66,10 @@ function BfcConnect(props) {
 			<Show when={bfc.ports()}>
 				<FormControl sx={{ m: 1, minWidth: 120 }} size="small">
 					<InputLabel htmlFor="serial-port-selector">Port</InputLabel>
-					<Select size="small" value={currentSerialPort()} id="serial-port-selector" label="Port" onChange={(e) => setSelectedSerialPort(e.target.value)}>
+					<Select size="small" value={currentSerialPort()} id="serial-port-selector" label="Port"
+						disabled={bfc.readyState() != BfcState.DISCONNECTED}
+						onChange={(e) => setSelectedSerialPort(e.target.value)}
+					>
 						<MenuItem value="webserial://any">
 							Auto
 						</MenuItem>

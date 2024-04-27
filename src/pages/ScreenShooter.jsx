@@ -120,7 +120,7 @@ function ScreenShooter() {
 	return (
 		<Grid container spacing={2}>
 			<Show when={bfc.connectError()}>
-				<Grid item xs={12} mt={1} mb={2} order={0}>
+				<Grid item xs={12} mt={1} order={0}>
 					<Alert severity="error">{bfc.connectError().message}</Alert>
 				</Grid>
 			</Show>
