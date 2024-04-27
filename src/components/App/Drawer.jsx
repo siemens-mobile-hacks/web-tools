@@ -20,12 +20,14 @@ import MenuIcon from '@suid/icons-material/Menu';
 import { useTheme } from '@suid/material/styles';
 import useMediaQuery from '@suid/material/useMediaQuery';
 
+import { resolveURL } from '~/utils';
+
 const DRAWER_WIDTH = 240;
 
 function AppDrawerLink(props) {
-	let match = useMatch(() => props.href);
+	let match = useMatch(() => resolveURL(props.href));
 	return (
-		<ListItemButton component={A} {...props} selected={!!match()}>
+		<ListItemButton component={A} {...props} selected={Boolean(match())}>
 			{props.children}
 		</ListItemButton>
 	);

@@ -2,7 +2,7 @@
 import { createContext, useContext, createSignal, createEffect, onMount, onCleanup } from 'solid-js';
 import { SerialPortStream } from '@serialport/stream';
 import { WebSerialPort, WebSerialBinding } from 'serialport-bindings-webserial';
-import { createStoredSignal } from '../storage';
+import { createStoredSignal } from '~/storage';
 
 import { BFC } from '@sie-js/serial';
 

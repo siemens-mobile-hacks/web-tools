@@ -1,3 +1,7 @@
+export function resolveURL(url) {
+	return `${import.meta.env.BASE_URL}${url}`.replace(/[\/]+/g, '/');
+}
+
 export function transferBufferToCanvas(mode, buffer, canvas) {
 	let ctx = canvas.getContext('2d', { willReadFrequently: true, desynchronized: true });
 

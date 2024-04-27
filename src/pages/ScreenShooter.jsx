@@ -25,11 +25,11 @@ import UsbOffIcon from '@suid/icons-material/UsbOff';
 import TvIcon from '@suid/icons-material/Tv';
 import DownloadIcon from '@suid/icons-material/Download';
 
-import CopyButton from '../components/CopyButton';
-import BfcConnect from '../components/BfcConnect';
+import CopyButton from '~/components/CopyButton';
+import BfcConnect from '~/components/BfcConnect';
 
-import { useBFC, BfcState } from '../contexts/BfcProvider'
-import { transferBufferToCanvas, downloadCanvasImage } from '../utils';
+import { useBFC, BfcState } from '~/contexts/BfcProvider'
+import { transferBufferToCanvas, downloadCanvasImage } from '~/utils';
 
 function ScreenShooter() {
 	let [displayNumber, setDisplayNumber] = createSignal(0);
@@ -167,12 +167,11 @@ function ScreenShooter() {
 					</FormControl>
 				</Stack>
 
-				<Show when={!progressValue()}>
-				</Show>
-
 				<Box sx={{ width: '100%', mt: 2, display: progressValue() ? '' : 'none' }}>
 					<LinearProgress variant="determinate" value={progressValue()?.pct || 0} />
-					{progressValue().value} / {progressValue().total}, {progressValue().speed}
+					<Show when={progressValue() && progressValue().total}>
+						{progressValue().value} / {progressValue().total}, {progressValue().speed}
+					</Show>
 				</Box>
 
 				<Show when={errorMessage()}>

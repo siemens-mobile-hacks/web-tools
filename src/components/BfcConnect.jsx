@@ -15,7 +15,7 @@ import UsbIcon from '@suid/icons-material/Usb';
 import UsbOffIcon from '@suid/icons-material/UsbOff';
 import TvIcon from '@suid/icons-material/Tv';
 
-import { useBFC, BfcState } from '../contexts/BfcProvider';
+import { useBFC, BfcState } from '~/contexts/BfcProvider';
 
 const USB_DEVICES = {
 	"067B:2303":	"PL2303",

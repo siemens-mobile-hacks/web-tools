@@ -8,10 +8,10 @@ import { createTheme, ThemeProvider } from '@suid/material/styles';
 import CssBaseline from '@suid/material/CssBaseline';
 import useMediaQuery from '@suid/material/useMediaQuery';
 
-import AppHeader from '../components/App/Header';
-import AppDrawer from '../components/App/Drawer';
+import AppHeader from '~/components/App/Header';
+import AppDrawer from '~/components/App/Drawer';
 
-import BfcProvider from '../contexts/BfcProvider';
+import BfcProvider from '~/contexts/BfcProvider';
 
 function App(props) {
 	let [drawerIsOpen, setDrawerIsOpen] = createSignal(false);
