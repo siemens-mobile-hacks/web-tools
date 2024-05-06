@@ -32,7 +32,7 @@
 		"@suid/system": "^0.11.0",
 		"date-fns": "^3.6.0",
 		"readable-stream": "^4.5.2",
-		"sass": "^1.74.1",
+		"sass": "^1.76.0",
 		"serialport-bindings-webserial": "^0.2.3",
 		"solid-js": "^1.8.17",
 		"sprintf-js": "^1.1.3"
