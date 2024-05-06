@@ -34,7 +34,7 @@
 		"readable-stream": "^4.5.2",
 		"sass": "^1.74.1",
 		"serialport-bindings-webserial": "^0.2.3",
-		"solid-js": "^1.8.11",
+		"solid-js": "^1.8.17",
 		"sprintf-js": "^1.1.3"
 	}
 }
