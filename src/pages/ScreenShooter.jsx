@@ -83,7 +83,9 @@ function ScreenShooter() {
 			if (bufferCanvasRef.width != canvasRef.width || bufferCanvasRef.height != canvasRef.height) {
 				transferBufferToCanvas(buffer.mode, buffer.data, bufferCanvasRef);
 				let ctx = canvasRef.getContext('2d');
-				ctx.drawImage(bufferCanvasRef, 0, 0);
+				let x = Math.round((bufferCanvasRef.width - canvasRef.width) / 2);
+				let y = Math.round((bufferCanvasRef.height - canvasRef.height) / 2);
+				ctx.drawImage(bufferCanvasRef, x, y);
 			} else {
 				transferBufferToCanvas(buffer.mode, buffer.data, canvasRef);
 			}
