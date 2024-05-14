@@ -101,8 +101,11 @@ function ScreenShooter() {
 	let getAllDisplaysInfo = async () => {
 		let displaysCount = await bfc.api.getDisplayCount();
 		let displays = [];
-		for (let i = 1; i <= displaysCount; i++)
-			displays.push(await bfc.api.getDisplayInfo(i));
+		for (let i = 1; i <= displaysCount; i++) {
+			let displayInfo = await bfc.api.getDisplayInfo(i);
+			let bufferInfo = await bfc.api.getDisplayBufferInfo(displayInfo.clientId);
+			displays.push({ width: bufferInfo.width, height: bufferInfo.height });
+		}
 		return displays;
 	};
 

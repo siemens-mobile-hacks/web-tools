@@ -15,6 +15,7 @@ import ListItemIcon from '@suid/material/ListItemIcon';
 
 import ScreenshotIcon from '@suid/icons-material/Screenshot';
 import CameraAltIcon from '@suid/icons-material/CameraAlt';
+import DataObjectIcon from '@suid/icons-material/DataObject';
 import MenuIcon from '@suid/icons-material/Menu';
 
 import { useTheme } from '@suid/material/styles';
