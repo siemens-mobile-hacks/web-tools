@@ -20,7 +20,7 @@ import { useBFC, BfcState } from '~/contexts/BfcProvider';
 const USB_DEVICES = {
 	"067B:2303":	"PL2303",
 	"1A86:7523":	"CH340",
-	"6001:0403":	"FT232",
+	"0403:6001"		"FT232",
 	"10C4:EA60":	"СР2102",
 	"11F5:0004":	"DCA-540",
 	"11F5:1004":	"DCA-540",
