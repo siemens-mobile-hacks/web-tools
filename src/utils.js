@@ -3,7 +3,7 @@ export function resolveURL(url) {
 }
 
 export function transferBufferToCanvas(mode, buffer, canvas) {
-	let ctx = canvas.getContext('2d', { willReadFrequently: true, desynchronized: true });
+	let ctx = canvas.getContext('2d', { willReadFrequently: true });
 
 	let pixelIndex = 0;
 	let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -75,7 +75,11 @@ export function transferBufferToCanvas(mode, buffer, canvas) {
 				imageData.data[pixelIndex++] = Math.round(buffer[i + 3] * 0xFF / 100);
 			}
 		break;
+		default:
+			console.error(`Unknown mode: ${mode}`);
+		break;
 	}
+
 	ctx.putImageData(imageData, 0, 0);
 }
 

@@ -33,13 +33,16 @@ import { transferBufferToCanvas, downloadCanvasImage } from '~/utils';
 
 function ScreenShooter() {
 	let [displayNumber, setDisplayNumber] = createSignal(0);
-	let [phoneDisplays, setPhoneDisplays] = createSignal([{width: 240, height: 320}]);
+	let [phoneDisplays, setPhoneDisplays] = createSignal([
+		{width: 240, height: 320, bufferWidth: 240, bufferHeight: 320}
+	]);
 	let [progressValue, setProgressValue] = createSignal(false);
 	let [hasScreenshot, setHasScreenshot] = createSignal(false);
 	let [errorMessage, setErrorMessage] = createSignal(false);
 
 	let bfc = useBFC();
 	let canvasRef;
+	let bufferCanvasRef;
 
 	onMount(() => {
 		document.title = 'Screenshot';
@@ -65,8 +68,6 @@ function ScreenShooter() {
 		setProgressValue({ pct: 0 });
 
 		try {
-			let ctx = canvasRef.getContext('2d', { willReadFrequently: true, desynchronized: true });
-
 			let buffer = await bfc.api.getDisplayBuffer(+displayNumber() + 1, {
 				onProgress(value, total, elapsed) {
 					let speed = elapsed > 0 ? value / (elapsed / 1000) : 0;
@@ -79,7 +80,13 @@ function ScreenShooter() {
 				}
 			});
 
-			transferBufferToCanvas(buffer.mode, buffer.data, canvasRef);
+			if (bufferCanvasRef.width != canvasRef.width || bufferCanvasRef.height != canvasRef.height) {
+				transferBufferToCanvas(buffer.mode, buffer.data, bufferCanvasRef);
+				let ctx = canvasRef.getContext('2d');
+				ctx.drawImage(bufferCanvasRef, 0, 0);
+			} else {
+				transferBufferToCanvas(buffer.mode, buffer.data, canvasRef);
+			}
 
 			setHasScreenshot(true);
 		} finally {
@@ -104,7 +111,12 @@ function ScreenShooter() {
 		for (let i = 1; i <= displaysCount; i++) {
 			let displayInfo = await bfc.api.getDisplayInfo(i);
 			let bufferInfo = await bfc.api.getDisplayBufferInfo(displayInfo.clientId);
-			displays.push({ width: bufferInfo.width, height: bufferInfo.height });
+			displays.push({
+				width: displayInfo.width,
+				height: displayInfo.height,
+				bufferWidth: bufferInfo.width,
+				bufferHeight: bufferInfo.height
+			});
 		}
 		return displays;
 	};
@@ -131,6 +143,12 @@ function ScreenShooter() {
 			<Grid item sx={{ textAlign: 'center', minWidth: '255px', width: phoneDisplays()[displayNumber()].width + 15 + 'px' }} order={{ xs: 2, sm: 1 }}>
 				<Paper sx={{ display: 'inline-flex' }}>
 					<canvas width={phoneDisplays()[displayNumber()].width} height={phoneDisplays()[displayNumber()].height} ref={canvasRef} />
+					<canvas
+						width={phoneDisplays()[displayNumber()].bufferWidth}
+						height={phoneDisplays()[displayNumber()].bufferHeight}
+						ref={bufferCanvasRef}
+						style={{ display: 'none' }}
+					/>
 				</Paper>
 			</Grid>
 
