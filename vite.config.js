@@ -7,7 +7,6 @@ import fs from 'fs';
 
 const ROUTES = [
 	`/screenshot`,
-	`/swilib`,
 ];
 
 function postBuildPlugin() {

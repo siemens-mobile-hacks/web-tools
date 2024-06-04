@@ -10,13 +10,11 @@ import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 
 const ScreenShooter = lazy(() => import("./pages/ScreenShooter"));
-const Swilib = lazy(() => import("./pages/Swilib"));
 
 let dispose = render(() => (
 	<Router root={App} base={import.meta.env.BASE_URL}>
 		<Route path="/" component={() => <Navigate href={() => "/screenshot"} />} />
 		<Route path="/screenshot" component={ScreenShooter} />
-		<Route path="/swilib" component={Swilib} />
 	</Router>
 ), document.getElementById('root'));
 
