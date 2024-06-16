@@ -7,6 +7,7 @@ import fs from 'fs';
 
 const ROUTES = [
 	`/screenshot`,
+	`/dumper`,
 ];
 
 function postBuildPlugin() {

@@ -25,7 +25,7 @@
 	"dependencies": {
 		"@fontsource/roboto": "^5.0.13",
 		"@serialport/stream": "^12.0.0",
-		"@sie-js/serial": "^0.0.12",
+		"@sie-js/serial": "file:../node-sie-serial",
 		"@solidjs/router": "^0.13.3",
 		"@suid/icons-material": "^0.7.0",
 		"@suid/material": "^0.16.0",
@@ -33,7 +33,7 @@
 		"date-fns": "^3.6.0",
 		"readable-stream": "^4.5.2",
 		"sass": "^1.76.0",
-		"serialport-bindings-webserial": "^0.2.3",
+		"serialport-bindings-webserial": "file:../node-serialport-bindings-webserial",
 		"solid-js": "^1.8.17",
 		"sprintf-js": "^1.1.3"
 	}

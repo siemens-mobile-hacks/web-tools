@@ -1,40 +1,29 @@
 /* @refresh reload */
 import { createContext, useContext, createSignal, createEffect, onMount, onCleanup } from 'solid-js';
 import { SerialPortStream } from '@serialport/stream';
-import { WebSerialPort, WebSerialBinding } from 'serialport-bindings-webserial';
+import { WebSerialBinding } from 'serialport-bindings-webserial';
 import { createStoredSignal } from '~/storage';
 
-import { BFC } from '@sie-js/serial';
+import { BFC, CGSN } from '@sie-js/serial';
 
-const BfcState = {
+const SerialState = {
 	DISCONNECTED:	0,
 	CONNECTED:		1,
 	CONNECTING:		2,
 	DISCONNECTING:	3
 };
 
-let BfcContext = createContext();
-let port;
-let bfcBus;
-let bfcChannel;
+let SerialContext = createContext();
 
-function useBFC() {
-	let value = useContext(BfcContext);
+function useSerial() {
+	let value = useContext(SerialContext);
 	if (value === undefined)
-		throw new Error("useBFC must be used within a <BfcProvider>!");
+		throw new Error("useSerial must be used within a <SerialProvider>!");
 	return value;
 }
 
-async function findPortInfo(nativePort) {
-	let allPortsList = await WebSerialBinding.list();
-	for (let port of allPortsList) {
-		if (port.nativePort == nativePort)
-			return port;
-	}
-	return null;
-}
-
-function BfcProvider(props) {
+function SerialProvider(props) {
+	let [currentProtocol, setCurrentProtocol] = createSignal('none');
 	let [readyState, setReadyState] = createSignal(false);
 	let [connectError, setConnectError] = createSignal(null);
 	let [ports, setPorts] = createSignal([]);
@@ -42,17 +31,18 @@ function BfcProvider(props) {
 
 	let port;
 	let bfc;
-	let recheckTimer;
+	let cgsn;
 
 	let monitorNewPorts = async () => {
 		setPorts(await WebSerialBinding.list());
 	};
 
-	let connect = async (serialPortURI) => {
-		if (readyState() == BfcState.CONNECTED)
+	let connect = async (protocol, serialPortURI, maximumSpeed) => {
+		if (readyState() == SerialState.CONNECTED)
 			return;
 
-		setReadyState(BfcState.CONNECTING);
+		setCurrentProtocol(protocol);
+		setReadyState(SerialState.CONNECTING);
 		try {
 			// Open serial port
 			port = await openSerialPort(serialPortURI);
@@ -64,19 +54,35 @@ function BfcProvider(props) {
 				setLastUsedPort(portPath);
 			}
 
-			// Connect to BFC
-			bfc = new BFC(port);
-			await bfc.connect();
-			await bfc.setBestBaudrate();
+			switch (currentProtocol()) {
+				case "BFC":
+					// Connect to BFC
+					bfc = new BFC(port);
+					await bfc.connect();
+					await bfc.setBestBaudrate(maximumSpeed);
 
-			// For debug
-			window.BFC = bfc;
-			window.Buffer = Buffer;
+					// For debug
+					window.BFC = bfc;
+					window.Buffer = Buffer;
+				break;
 
-			setReadyState(BfcState.CONNECTED);
+				case "CGSN":
+					// Connect to CGSN
+					cgsn = new CGSN(port);
+					if (!await cgsn.connect())
+						throw new Error(`CGSN connection error.`);
+					await cgsn.setBestBaudrate(maximumSpeed);
+
+					// For debug
+					window.CGSN = cgsn;
+					window.Buffer = Buffer;
+				break;
+			}
+
+			setReadyState(SerialState.CONNECTED);
 			setConnectError(null);
 		} catch (e) {
-			console.error(e);
+			console.error(`BFC connection error`, e);
 			await disconnect();
 			setConnectError(e);
 			monitorNewPorts();
@@ -84,27 +90,42 @@ function BfcProvider(props) {
 	};
 
 	let disconnect = async () => {
-		if (readyState() == BfcState.DISCONNECTED)
+		if (readyState() == SerialState.DISCONNECTED)
 			return;
 
-		setReadyState(BfcState.DISCONNECTING);
-		try {
-			if (bfc) {
-				await bfc.disconnect();
-				bfc.destroy();
-				bfc = null;
-			}
+		setReadyState(SerialState.DISCONNECTING);
 
-			if (port) {
+		switch (currentProtocol()) {
+			case "BFC":
+				if (bfc) {
+					await bfc.disconnect();
+					bfc.destroy();
+					bfc = null;
+				}
+			break;
+
+			case "CGSN":
+				if (cgsn) {
+					await cgsn.disconnect();
+					cgsn.destroy();
+					cgsn = null;
+				}
+			break;
+		}
+
+		try {
+			if (port?.isOpen) {
 				await port.close();
-				port = null;
 			}
 		} catch (e) {
-			console.error(e);
+			console.error(`Port close error`, e);
 		} finally {
-			setConnectError(null);
-			setReadyState(BfcState.DISCONNECTED);
+			port = null;
 		}
+
+		setConnectError(null);
+		setReadyState(SerialState.DISCONNECTED);
+		setCurrentProtocol('none');
 	};
 
 	let portIsExists = (path) => {
@@ -134,10 +155,15 @@ function BfcProvider(props) {
 	});
 
 	let state = {
-		get api() {
+		get bfc() {
 			if (!bfc)
 				throw new Error(`BFC is closed!`);
 			return bfc;
+		},
+		get cgsn() {
+			if (!cgsn)
+				throw new Error(`CGSN is closed!`);
+			return cgsn;
 		},
 		ports,
 		lastUsedPort,
@@ -145,13 +171,14 @@ function BfcProvider(props) {
 		readyState,
 		connectError,
 		connect,
-		disconnect
+		disconnect,
+		protocol: currentProtocol,
 	};
 
 	return (
-		<BfcContext.Provider value={state}>
+		<SerialContext.Provider value={state}>
 			{props.children}
-		</BfcContext.Provider>
+		</SerialContext.Provider>
 	);
 }
 
@@ -184,5 +211,5 @@ function openSerialPort(serialPortURI) {
 	});
 }
 
-export { useBFC, BfcState };
-export default BfcProvider;
+export { useSerial, SerialState };
+export default SerialProvider;

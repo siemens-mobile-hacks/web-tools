@@ -89,3 +89,12 @@ export function downloadCanvasImage(canvas, filename) {
 	a.download = filename;
 	a.click();
 }
+
+export function downloadBlob(blob, filename) {
+	let url = URL.createObjectURL(blob);
+	let a = document.createElement('a');
+	a.href = url;
+	a.download = filename;
+	a.click();
+	URL.revokeObjectURL(url);
+}

@@ -1,34 +1,25 @@
-import { createSignal, onMount, onCleanup, createEffect } from 'solid-js';
+import { createSignal, onMount, onCleanup, createEffect, createMemo } from 'solid-js';
 import { format as dateFormat } from 'date-fns';
 
 import Box from '@suid/material/Box';
-import InputLabel from '@suid/material/InputLabel';
-import MenuItem from '@suid/material/MenuItem';
 import FormControl from '@suid/material/FormControl';
 import FormControlLabel from '@suid/material/FormControlLabel';
-import Select from '@suid/material/Select';
 import Stack from '@suid/material/Stack';
 import Grid from '@suid/material/Grid';
 import Button from '@suid/material/Button';
-import IconButton from '@suid/material/IconButton';
 import Alert from '@suid/material/Alert';
 import Radio from '@suid/material/Radio';
 import RadioGroup from '@suid/material/RadioGroup';
-import FormLabel from '@suid/material/FormLabel';
-import Divider from '@suid/material/Divider';
 import Paper from '@suid/material/Paper';
-import CircularProgress from '@suid/material/CircularProgress';
 import LinearProgress from '@suid/material/LinearProgress';
 
-import UsbIcon from '@suid/icons-material/Usb';
-import UsbOffIcon from '@suid/icons-material/UsbOff';
 import TvIcon from '@suid/icons-material/Tv';
 import DownloadIcon from '@suid/icons-material/Download';
 
 import CopyButton from '~/components/CopyButton';
-import BfcConnect from '~/components/BfcConnect';
+import SerialConnect from '~/components/SerialConnect';
 
-import { useBFC, BfcState } from '~/contexts/BfcProvider'
+import { useSerial, SerialState } from '~/contexts/SerialProvider'
 import { transferBufferToCanvas, downloadCanvasImage } from '~/utils';
 
 function ScreenShooter() {
@@ -36,13 +27,17 @@ function ScreenShooter() {
 	let [phoneDisplays, setPhoneDisplays] = createSignal([
 		{width: 240, height: 320, bufferWidth: 240, bufferHeight: 320}
 	]);
-	let [progressValue, setProgressValue] = createSignal(false);
+	let [progressValue, setProgressValue] = createSignal(null);
 	let [hasScreenshot, setHasScreenshot] = createSignal(false);
 	let [errorMessage, setErrorMessage] = createSignal(false);
 
-	let bfc = useBFC();
+	let serial = useSerial();
 	let canvasRef;
 	let bufferCanvasRef;
+
+	let bfcReady = createMemo(() => {
+		return serial.readyState() == SerialState.CONNECTED && serial.protocol() == "BFC";
+	});
 
 	onMount(() => {
 		document.title = 'Screenshot';
@@ -68,7 +63,7 @@ function ScreenShooter() {
 		setProgressValue({ pct: 0 });
 
 		try {
-			let buffer = await bfc.api.getDisplayBuffer(+displayNumber() + 1, {
+			let buffer = await serial.bfc.getDisplayBuffer(+displayNumber() + 1, {
 				onProgress(value, total, elapsed) {
 					let speed = elapsed > 0 ? value / (elapsed / 1000) : 0;
 					setProgressValue({
@@ -108,11 +103,11 @@ function ScreenShooter() {
 	};
 
 	let getAllDisplaysInfo = async () => {
-		let displaysCount = await bfc.api.getDisplayCount();
+		let displaysCount = await serial.bfc.getDisplayCount();
 		let displays = [];
 		for (let i = 1; i <= displaysCount; i++) {
-			let displayInfo = await bfc.api.getDisplayInfo(i);
-			let bufferInfo = await bfc.api.getDisplayBufferInfo(displayInfo.clientId);
+			let displayInfo = await serial.bfc.getDisplayInfo(i);
+			let bufferInfo = await serial.bfc.getDisplayBufferInfo(displayInfo.clientId);
 			displays.push({
 				width: displayInfo.width,
 				height: displayInfo.height,
@@ -124,7 +119,7 @@ function ScreenShooter() {
 	};
 
 	createEffect(() => {
-		if (bfc.readyState() == BfcState.CONNECTED) {
+		if (bfcReady()) {
 			getAllDisplaysInfo().then((displays) => {
 				if (displayNumber() >= displays.length)
 					setDisplayNumber(0);
@@ -136,9 +131,12 @@ function ScreenShooter() {
 
 	return (
 		<Grid container spacing={2}>
-			<Show when={bfc.connectError()}>
+			<Show when={serial.connectError()}>
 				<Grid item xs={12} mt={1} order={0}>
-					<Alert severity="error">{bfc.connectError().message}</Alert>
+					<Alert severity="error">
+						ERROR: {serial.connectError().message}<br />
+						Try reconnecting the data cable if you are sure that your phone is connected and online.
+					</Alert>
 				</Grid>
 			</Show>
 
@@ -154,10 +152,8 @@ function ScreenShooter() {
 				</Paper>
 			</Grid>
 
-			<Grid item xs={12} sm order={{ xs: 1, sm: 2 }}>
-				<Stack alignItems="center" direction="row" gap={1}>
-					<BfcConnect />
-				</Stack>
+			<Grid item xs={12} mt={1} sm order={{ xs: 1, sm: 2 }}>
+				<SerialConnect protocol="BFC" />
 
 				<Show when={phoneDisplays().length > 0}>
 					<Stack alignItems="center" direction="row" gap={2}>
@@ -174,7 +170,7 @@ function ScreenShooter() {
 
 				<Stack alignItems="center" direction="row" gap={2} mt={1}>
 					<FormControl variant="standard">
-						<Button variant="outlined" disabled={bfc.readyState() != BfcState.CONNECTED || progressValue()} onClick={makeScreenshot}>
+						<Button variant="outlined" disabled={!bfcReady() || progressValue()} onClick={makeScreenshot}>
 							Make screenshot
 						</Button>
 					</FormControl>

@@ -4,8 +4,6 @@ import { A, useMatch } from "@solidjs/router";
 import Box from '@suid/material/Box';
 import Drawer from '@suid/material/Drawer';
 import Toolbar from '@suid/material/Toolbar';
-import IconButton from '@suid/material/IconButton';
-import Typography from '@suid/material/Typography';
 
 import List from '@suid/material/List';
 import ListItem from '@suid/material/ListItem';
@@ -14,9 +12,7 @@ import ListItemText from '@suid/material/ListItemText';
 import ListItemIcon from '@suid/material/ListItemIcon';
 
 import ScreenshotIcon from '@suid/icons-material/Screenshot';
-import CameraAltIcon from '@suid/icons-material/CameraAlt';
-import DataObjectIcon from '@suid/icons-material/DataObject';
-import MenuIcon from '@suid/icons-material/Menu';
+import SdCardIcon from '@suid/icons-material/SdCard';
 
 import { useTheme } from '@suid/material/styles';
 import useMediaQuery from '@suid/material/useMediaQuery';
@@ -55,6 +51,14 @@ function AppDrawer(props) {
 								<ScreenshotIcon />
 							</ListItemIcon>
 							<ListItemText primary="Screenshot" />
+						</AppDrawerLink>
+					</ListItem>
+					<ListItem disablePadding>
+						<AppDrawerLink href="/dumper">
+							<ListItemIcon>
+								<SdCardIcon />
+							</ListItemIcon>
+							<ListItemText primary="RAM dumper" />
 						</AppDrawerLink>
 					</ListItem>
 				</List>
