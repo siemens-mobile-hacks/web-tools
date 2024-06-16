@@ -42,8 +42,7 @@ function SerialConnect(props) {
 	};
 
 	createEffect(() => {
-		if (serial.readyState() == SerialState.CONNECTED)
-			setSelectedSerialPort(serial.lastUsedPort());
+		setSelectedSerialPort(serial.lastUsedPort());
 	});
 
 	let currentSerialPort = createMemo(on(
