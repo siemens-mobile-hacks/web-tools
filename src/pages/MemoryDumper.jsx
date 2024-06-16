@@ -1,9 +1,10 @@
-import { createSignal, onMount, onCleanup, createEffect, Show, For, createMemo } from 'solid-js';
-import { format as dateFormat, intervalToDuration } from 'date-fns';
+import { createSignal, createEffect, Show, For, createMemo } from 'solid-js';
+import { intervalToDuration } from 'date-fns';
 import {
+    Alert,
 	Box, Button, Dialog, DialogActions,
 	DialogContent, DialogContentText, DialogTitle,
-	InputLabel, LinearProgress, MenuItem, Select, Stack, TextField
+	LinearProgress, Link, List, ListItem, Stack, TextField
 } from '@suid/material';
 
 import Radio from '@suid/material/Radio';
@@ -267,6 +268,28 @@ function MemoryDumper() {
 				onCancel={onCancel}
 				onFileSave={onFileSave}
 			/>
+
+			<Alert severity="info" sx={{ mt: 2 }}>
+				<b>TIPS & TRICKS:</b>
+
+				<List sx={{ listStyleType: 'disc' }}>
+					<ListItem sx={{ display: 'list-item' }}>
+						You can achieve maximum speed using a DCA-540 or DCA-510 data cables.
+					</ListItem>
+					<ListItem sx={{ display: 'list-item' }}>
+						Bluetooth is also possible, but has the worst speed.
+					</ListItem>
+					<ListItem sx={{ display: 'list-item' }}>
+						It is better to read memory before ArmDebugger is used.
+					</ListItem>
+					<ListItem sx={{ display: 'list-item' }}>
+						<Link href="https://siemens-mobile-hacks.github.io/reverse-engineering/memory-dump" target="_blank" rel="noopener">
+							Read more about memory dumping.
+						</Link>
+					</ListItem>
+				</List>
+			</Alert>
+
 		</Box>
 	);
 }
