@@ -62,19 +62,19 @@ function ScreenShooter() {
 	let makeScreenshot = errorWrap(async () => {
 		setProgressValue({ pct: 0 });
 
-		try {
-			let buffer = await serial.bfc.getDisplayBuffer(+displayNumber() + 1, {
-				onProgress(value, total, elapsed) {
-					let speed = elapsed > 0 ? value / (elapsed / 1000) : 0;
-					setProgressValue({
-						pct:	value / total * 100,
-						value:	`${+(value / 1024).toFixed(0)} Kb`,
-						total:	`${+(total / 1024).toFixed(0)} Kb`,
-						speed:	`${+(speed / 1024).toFixed(1)} Kb/s`
-					});
-				}
+		let onProgress = ({ value, total, elapsed }) => {
+			let speed = elapsed > 0 ? value / (elapsed / 1000) : 0;
+			setProgressValue({
+				pct:	value / total * 100,
+				value:	`${+(value / 1024).toFixed(0)} kB`,
+				total:	`${+(total / 1024).toFixed(0)} kB`,
+				speed:	`${+(speed / 1024).toFixed(1)} kB/s`
 			});
+		};
+		serial.bfc.on('screenshotProgress', onProgress);
 
+		try {
+			let buffer = await serial.bfc.makeScreenshot(+displayNumber() + 1);
 			if (bufferCanvasRef.width != canvasRef.width || bufferCanvasRef.height != canvasRef.height) {
 				transferBufferToCanvas(buffer.mode, buffer.data, bufferCanvasRef);
 				let ctx = canvasRef.getContext('2d');
@@ -87,6 +87,7 @@ function ScreenShooter() {
 
 			setHasScreenshot(true);
 		} finally {
+			serial.bfc.off('screenshotProgress', onProgress);
 			setProgressValue(false)
 		}
 	});
@@ -102,27 +103,12 @@ function ScreenShooter() {
 		});
 	};
 
-	let getAllDisplaysInfo = async () => {
-		let displaysCount = await serial.bfc.getDisplayCount();
-		let displays = [];
-		for (let i = 1; i <= displaysCount; i++) {
-			let displayInfo = await serial.bfc.getDisplayInfo(i);
-			let bufferInfo = await serial.bfc.getDisplayBufferInfo(displayInfo.clientId);
-			displays.push({
-				width: displayInfo.width,
-				height: displayInfo.height,
-				bufferWidth: bufferInfo.width,
-				bufferHeight: bufferInfo.height
-			});
-		}
-		return displays;
-	};
-
 	createEffect(() => {
 		if (bfcReady()) {
-			getAllDisplaysInfo().then((displays) => {
+			serial.bfc.getAllDisplays().then((displays) => {
 				if (displayNumber() >= displays.length)
 					setDisplayNumber(0);
+				console.log(displays);
 				setPhoneDisplays(displays);
 			});
 		}

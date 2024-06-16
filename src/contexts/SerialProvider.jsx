@@ -1,17 +1,9 @@
 /* @refresh reload */
 import { createContext, useContext, createSignal, createEffect, onMount, onCleanup } from 'solid-js';
-import { SerialPortStream } from '@serialport/stream';
 import { WebSerialBinding } from 'serialport-bindings-webserial';
 import { createStoredSignal } from '~/storage';
-
-import { BFC, CGSN } from '@sie-js/serial';
-
-const SerialState = {
-	DISCONNECTED:	0,
-	CONNECTED:		1,
-	CONNECTING:		2,
-	DISCONNECTING:	3
-};
+import { SerialState } from '~/workers/SerialWorker';
+import worker from '~/workers/SerialWorkerClient';
 
 let SerialContext = createContext();
 
@@ -29,7 +21,6 @@ function SerialProvider(props) {
 	let [ports, setPorts] = createSignal([]);
 	let [lastUsedPort, setLastUsedPort] = createStoredSignal("lastUsedPort", null);
 
-	let port;
 	let bfc;
 	let cgsn;
 
@@ -37,95 +28,24 @@ function SerialProvider(props) {
 		setPorts(await WebSerialBinding.list());
 	};
 
-	let connect = async (protocol, serialPortURI, maximumSpeed) => {
-		if (readyState() == SerialState.CONNECTED)
-			return;
-
-		setCurrentProtocol(protocol);
-		setReadyState(SerialState.CONNECTING);
+	let connect = async (protocol, prevPortPath, limitBaudrate) => {
 		try {
-			// Open serial port
-			port = await openSerialPort(serialPortURI);
+			let [, portPath, portIndex] = await getSerialPort(prevPortPath);
 
 			monitorNewPorts();
+			setLastUsedPort(portPath);
 
-			if (port.port && 'getNativePort' in port.port) {
-				let portPath = await WebSerialBinding.getPortPath(await port.port.getNativePort());
-				setLastUsedPort(portPath);
-			}
-
-			switch (currentProtocol()) {
-				case "BFC":
-					// Connect to BFC
-					bfc = new BFC(port);
-					await bfc.connect();
-					await bfc.setBestBaudrate(maximumSpeed);
-
-					// For debug
-					window.BFC = bfc;
-					window.Buffer = Buffer;
-				break;
-
-				case "CGSN":
-					// Connect to CGSN
-					cgsn = new CGSN(port);
-					if (!await cgsn.connect())
-						throw new Error(`CGSN connection error.`);
-					await cgsn.setBestBaudrate(maximumSpeed);
-
-					// For debug
-					window.CGSN = cgsn;
-					window.Buffer = Buffer;
-				break;
-			}
-
-			setReadyState(SerialState.CONNECTED);
+			await worker.sendRequest("connect", { protocol, portIndex, limitBaudrate });
 			setConnectError(null);
 		} catch (e) {
-			console.error(`BFC connection error`, e);
-			await disconnect();
 			setConnectError(e);
 			monitorNewPorts();
 		}
 	};
 
 	let disconnect = async () => {
-		if (readyState() == SerialState.DISCONNECTED)
-			return;
-
-		setReadyState(SerialState.DISCONNECTING);
-
-		switch (currentProtocol()) {
-			case "BFC":
-				if (bfc) {
-					await bfc.disconnect();
-					bfc.destroy();
-					bfc = null;
-				}
-			break;
-
-			case "CGSN":
-				if (cgsn) {
-					await cgsn.disconnect();
-					cgsn.destroy();
-					cgsn = null;
-				}
-			break;
-		}
-
-		try {
-			if (port?.isOpen) {
-				await port.close();
-			}
-		} catch (e) {
-			console.error(`Port close error`, e);
-		} finally {
-			port = null;
-		}
-
+		await worker.sendRequest("disconnect", {});
 		setConnectError(null);
-		setReadyState(SerialState.DISCONNECTED);
-		setCurrentProtocol('none');
 	};
 
 	let portIsExists = (path) => {
@@ -138,7 +58,13 @@ function SerialProvider(props) {
 		return false;
 	};
 
+	let onReadyStateChanged = (e) => setReadyState(e.readyState);
+	let onCurrentProtocolChanged = (e) => setCurrentProtocol(e.currentProtocol);
+
 	onMount(() => {
+		worker.on('readyState', onReadyStateChanged);
+		worker.on('currentProtocol', onCurrentProtocolChanged);
+
 		if (navigator.serial) {
 			navigator.serial.addEventListener("connect", monitorNewPorts);
 			navigator.serial.addEventListener("disconnect", monitorNewPorts);
@@ -147,6 +73,9 @@ function SerialProvider(props) {
 	});
 
 	onCleanup(() => {
+		worker.off('readyState', onReadyStateChanged);
+		worker.off('currentProtocol', onCurrentProtocolChanged);
+
 		if (navigator.serial) {
 			navigator.serial.removeEventListener("connect", monitorNewPorts);
 			navigator.serial.removeEventListener("disconnect", monitorNewPorts);
@@ -155,16 +84,8 @@ function SerialProvider(props) {
 	});
 
 	let state = {
-		get bfc() {
-			if (!bfc)
-				throw new Error(`BFC is closed!`);
-			return bfc;
-		},
-		get cgsn() {
-			if (!cgsn)
-				throw new Error(`CGSN is closed!`);
-			return cgsn;
-		},
+		bfc: worker.getApiProxy("BFC"),
+		cgsn: worker.getApiProxy("CGSN"),
 		ports,
 		lastUsedPort,
 		portIsExists,
@@ -182,33 +103,25 @@ function SerialProvider(props) {
 	);
 }
 
-function openSerialPort(serialPortURI) {
-	return new Promise((resolve, reject) => {
-		let port = new SerialPortStream({
-			binding: WebSerialBinding,
-			path: serialPortURI || 'webserial://any',
-			baudRate: 115200,
-			highWaterMark: 512 * 1024,
-			webSerialOpenOptions: {
-				bufferSize: 4 * 1024
-			}
-		});
+async function getSerialPort(portPath) {
+	// Try to get previously used port
+	let portIndex = 0;
+	for (let p of await WebSerialBinding.list()) {
+		if (p.path === portPath)
+			return [ p.nativePort, p.path, portIndex ];
+		portIndex++;
+	}
 
-		let onOpen = () => {
-			port.off('open', onOpen);
-			port.off('error', onError);
-			resolve(port);
-		};
+	// Request new port if not found
+	let webSerialPort = await navigator.serial.requestPort({ });
+	portIndex = 0;
+	for (let p of await WebSerialBinding.list()) {
+		if (p.nativePort === webSerialPort)
+			return [ p.nativePort, p.path, portIndex ];
+		portIndex++;
+	}
 
-		let onError = (err) => {
-			port.off('open', onOpen);
-			port.off('error', onError);
-			reject(err);
-		};
-
-		port.once('open', onOpen);
-		port.once('error', onError);
-	});
+	throw new Error(`Can't get SerialPort, internal error.`);
 }
 
 export { useSerial, SerialState };

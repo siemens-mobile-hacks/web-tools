@@ -18,43 +18,12 @@ import { useSerial, SerialState } from '~/contexts/SerialProvider'
 import { sprintf } from 'sprintf-js';
 import { downloadBlob } from '~/utils';
 
-const MEMORY_PRESETS = [
+const DEFAULT_MEMORY_PRESETS = [
 	{
 		name:	'Custom',
 		addr:	0xA0000000,
 		size:	128 * 1024,
-		sizes:	[],
 		descr:	'Any custom memory region.',
-	}, {
-		name:	'RAM',
-		addr:	0xA8000000,
-		sizes:	[16 * 1024 * 1024, 8 * 1024 * 1024],
-		descr:	'External RAM. See "Total Size" in Developer > MOPI > System Memory. Select the closest value.',
-	}, {
-		name:	'SRAM',
-		addr:	0x00080000,
-		sizes:	[96 * 1024],
-		descr:	'Built-in memory in the CPU, used by low-level firmware components.',
-	}, {
-		name:	'TCM',
-		addr:	0x00000000,
-		sizes:	[16 * 1024],
-		descr:	'Built-in memory in the CPU, used for IRQ handlers.',
-	}, {
-		name:	'VMALLOC #1',
-		addr:	0xAC000000,
-		sizes:	[16 * 1024 * 1024],
-		descr:	'Virtual memory for malloc(). Only ELKA or NSG.',
-	}, {
-		name:	'VMALLOC #2',
-		addr:	0xAD000000,
-		sizes:	[16 * 1024 * 1024],
-		descr:	'Virtual memory for malloc(). Only ELKA or NSG.',
-	}, {
-		name:	'BROM',
-		addr:	0x00400000,
-		sizes:	[32 * 1024],
-		descr:	'Built-in 1st stage bootloader firmware in the CPU (ROM).',
 	}
 ];
 
@@ -134,19 +103,18 @@ function MemoryDumperPopup(props) {
 
 function MemoryDumper() {
 	let serial = useSerial();
+	let [memoryPresets, setMemoryPresets] = createSignal(DEFAULT_MEMORY_PRESETS);
 	let [customMemoryAddr, setCustomMemoryAddr] = createSignal('A0000000');
 	let [customMemorySize, setCustomMemorySize] = createSignal('00020000');
 	let [customMemoryAddrError, setCustomMemoryAddrError] = createSignal(false);
 	let [customMemorySizeError, setCustomMemorySizeError] = createSignal(false);
-	let [presetMemorySize, setPresetMemorySize] = createSignal(0);
 	let [memoryPresetId, setMemoryPresetId] = createSignal(0);
 	let [progressValue, setProgressValue] = createSignal(null);
 	let [state, setState] = createSignal('idle');
 	let [readResult, setReadResult] = createSignal(null);
 	let [phone, setPhone] = createSignal(null);
-	let abortController;
 
-	let memoryPreset = createMemo(() => MEMORY_PRESETS[memoryPresetId()]);
+	let memoryPreset = createMemo(() => memoryPresets()[memoryPresetId()]);
 	let memoryAddr = createMemo(() => {
 		if (memoryPresetId() != 0) {
 			return memoryPreset().addr;
@@ -156,7 +124,7 @@ function MemoryDumper() {
 	});
 	let memorySize = createMemo(() => {
 		if (memoryPresetId() != 0) {
-			return presetMemorySize();
+			return memoryPreset().size;
 		} else {
 			return parseInt(customMemorySize(), 16);
 		}
@@ -166,27 +134,13 @@ function MemoryDumper() {
 	});
 
 	createEffect(async () => {
-		let response;
 		if (cgsnReady()) {
-			let phoneModel, phoneSwVer;
-
-			response = await serial.cgsn.atc.sendCommand("AT+CGMM");
-			if (response.success)
-				phoneModel = response.lines[0];
-
-			response = await serial.cgsn.atc.sendCommand("AT+CGMR");
-			if (response.success)
-				phoneSwVer = response.lines[0];
-
-			if (phoneModel && phoneSwVer) {
-				setPhone(`${phoneModel}v${phoneSwVer}`);
-			}
-		}
-	});
-
-	createEffect(() => {
-		if (memoryPreset().sizes.length > 0) {
-			setPresetMemorySize(memoryPreset().sizes[0]);
+			let response = await serial.cgsn.getPhoneInfo();
+			setMemoryPresets([
+				...DEFAULT_MEMORY_PRESETS,
+				...response.memoryRegions,
+			]);
+			setPhone(`${response.phoneModel}v${response.phoneSwVersion}`);
 		}
 	});
 
@@ -196,7 +150,7 @@ function MemoryDumper() {
 	};
 
 	let onCancel = () => {
-		abortController.abort();
+		serial.cgsn.abort();
 	};
 
 	let onFileSave = () => {
@@ -219,33 +173,37 @@ function MemoryDumper() {
 	};
 
 	let startReadMemory = async () => {
-		let onProgress = (value, total, elapsed) => {
+		if (memoryPresetId() == 0) {
+			if (customMemorySizeError() || customMemoryAddrError())
+				return;
+		}
+
+		let onProgress = ({ value, total, elapsed }) => {
 			let speed = elapsed > 0 ? value / (elapsed / 1000) : 0;
 			setProgressValue({
 				pct:		value / total * 100,
 				valueHex:	sprintf("%08X", memoryAddr() + value),
 				totalHex:	sprintf("%08X", memoryAddr() + total),
-				value:		`${+(value / 1024).toFixed(0)} Kb`,
-				total:		`${+(total / 1024).toFixed(0)} Kb`,
-				speed:		`${+(speed / 1024).toFixed(1)} Kb/s`,
+				value:		`${+(value / 1024).toFixed(0)} kB`,
+				total:		`${+(total / 1024).toFixed(0)} kB`,
+				speed:		`${+(speed / 1024).toFixed(1)} kB/s`,
 				estimated:	Math.round((total - value) / speed),
 				elapsed:	Math.round(elapsed / 1000),
 			});
 		};
 
-		onProgress(0, memorySize(), 0);
+		onProgress({ value: 0, total: memorySize(), elapsed: 0 });
 		setState('download');
 
+		serial.cgsn.on('memoryReadProgress', onProgress);
+
 		try {
-			abortController = new AbortController();
-			let buffer = await serial.cgsn.readMemory(memoryAddr(), memorySize(), {
-				signal: abortController.signal,
-				onProgress,
-			});
+			let buffer = await serial.cgsn.readMemory(memoryAddr(), memorySize());
 			setReadResult(buffer);
 		} catch (e) {
 			console.error(e);
 		} finally {
+			serial.cgsn.off('memoryReadProgress', onProgress);
 			setState('save');
 		}
 	};
@@ -256,7 +214,7 @@ function MemoryDumper() {
 
 			<FormControl>
 				<RadioGroup row value={memoryPresetId()} onChange={(e) => setMemoryPresetId(e.target.value)}>
-					<For each={MEMORY_PRESETS}>{(mem, index) =>
+					<For each={memoryPresets()}>{(mem, index) =>
 						<FormControlLabel value={index()} control={<Radio />} label={mem.name} />
 					}</For>
 				</RadioGroup>
@@ -285,17 +243,11 @@ function MemoryDumper() {
 						size="small" label="Address (HEX)" variant="outlined"
 						value={sprintf("%08X", memoryAddr())} disabled={true}
 					/>
-				</Show>
-
-				<Show when={memoryPresetId() != 0}>
-					<FormControl sx={{ minWidth: 230 }} size="small" disabled={memoryPreset().sizes.length == 1}>
-						<InputLabel htmlFor="size-selector">Size</InputLabel>
-						<Select value={memorySize()} onChange={(e) => setPresetMemorySize(e.target.value)} size="small" id="size-selector" label="Size">
-							<For each={memoryPreset().sizes}>{(size) =>
-								<MenuItem value={size}>{formatSize(size)}</MenuItem>
-							}</For>
-						</Select>
-					</FormControl>
+					<TextField
+						error={customMemorySizeError()}
+						size="small" label="Size (HEX)" variant="outlined"
+						value={sprintf("%08X (%s)", memorySize(), formatSize(memorySize()))} disabled={true}
+					/>
 				</Show>
 			</Stack>
 

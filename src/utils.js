@@ -2,6 +2,24 @@ export function resolveURL(url) {
 	return `${import.meta.env.BASE_URL}${url}`.replace(/[\/]+/g, '/');
 }
 
+export function recursiveMap(value, callback) {
+	value = callback(value);
+
+	if (Array.isArray(value)) {
+		for (let i = 0; i < value.length; i++) {
+			value[i] = recursiveMap(value[i], callback)
+		}
+		return value;
+	} else if (typeof value == 'object') {
+		for (let k of Object.keys(value)) {
+			value[k] = recursiveMap(value[k], callback);
+		}
+		return value;
+	} else {
+		return callback(value);
+	}
+}
+
 export function transferBufferToCanvas(mode, buffer, canvas) {
 	let ctx = canvas.getContext('2d', { willReadFrequently: true });
 
