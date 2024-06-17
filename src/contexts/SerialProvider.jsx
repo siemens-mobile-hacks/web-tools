@@ -21,9 +21,6 @@ function SerialProvider(props) {
 	let [ports, setPorts] = createSignal([]);
 	let [lastUsedPort, setLastUsedPort] = createStoredSignal("lastUsedPort", null);
 
-	let bfc;
-	let cgsn;
-
 	let monitorNewPorts = async () => {
 		setPorts(await WebSerialBinding.list());
 	};

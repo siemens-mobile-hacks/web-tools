@@ -4,6 +4,7 @@ import {
     Alert,
 	Box, Button, Dialog, DialogActions,
 	DialogContent, DialogContentText, DialogTitle,
+	Grid,
 	LinearProgress, Link, List, ListItem, Stack, TextField
 } from '@suid/material';
 
@@ -211,6 +212,15 @@ function MemoryDumper() {
 
 	return (
 		<Box>
+			<Show when={serial.connectError()}>
+				<Grid item xs={12} mt={1} mb={2} order={0}>
+					<Alert severity="error">
+						ERROR: {serial.connectError().message}<br />
+						Try reconnecting the data cable if you are sure that your phone is connected and online.
+					</Alert>
+				</Grid>
+			</Show>
+
 			<SerialConnect protocol="CGSN" />
 
 			<FormControl>
@@ -273,6 +283,11 @@ function MemoryDumper() {
 				<b>TIPS & TRICKS:</b>
 
 				<List sx={{ listStyleType: 'disc' }}>
+					<ListItem sx={{ display: 'list-item' }}>
+						<Link href="https://siemens-mobile-hacks.github.io/reverse-engineering/arm-debugger.html" target="_blank" rel="noopener">
+							CGSN patch is required.
+						</Link>
+					</ListItem>
 					<ListItem sx={{ display: 'list-item' }}>
 						You can achieve maximum speed using a DCA-540 or DCA-510 data cables.
 					</ListItem>
