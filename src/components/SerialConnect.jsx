@@ -1,5 +1,6 @@
 import { on, createSignal, createMemo, createEffect } from 'solid-js';
 import { sprintf } from 'sprintf-js';
+import debug from "debug";
 
 import FormControl from '@suid/material/FormControl';
 import Button from '@suid/material/Button';
@@ -15,7 +16,7 @@ import SettingsIcon from '@suid/icons-material/Settings';
 
 import { useSerial, SerialState } from '~/contexts/SerialProvider';
 import { createStoredSignal } from '~/storage';
-import { Box, Popover, Stack, Typography } from '@suid/material';
+import { Box, Checkbox, FormControlLabel, FormGroup, Popover, Stack, Typography } from '@suid/material';
 
 const USB_DEVICES = {
 	"067B:2303":	"PL2303",
@@ -28,6 +29,7 @@ const USB_DEVICES = {
 
 function SerialConnect(props) {
 	let [currentBaudrate, setCurrentBaudrate] = createStoredSignal('limitMaxBaudrate', 0);
+	let [serialDebug, setSerialDebug] = createStoredSignal('serialDebug', false);
 	let [selectedSerialPort, setSelectedSerialPort] = createSignal('webserial://any');
 	let [showSettings, setShowSettings] = createSignal(false);
 	let showSettingsAnchor;
@@ -43,6 +45,13 @@ function SerialConnect(props) {
 
 	createEffect(() => {
 		setSelectedSerialPort(serial.lastUsedPort());
+	});
+
+	createEffect(() => {
+		let debugFilter = serialDebug() ? 'cgsn,bfc' : '';
+		console.log(debugFilter);
+		debug.enable(debugFilter);
+		serial.enableDebug(debugFilter);
 	});
 
 	let currentSerialPort = createMemo(on(
@@ -136,6 +145,12 @@ function SerialConnect(props) {
 										</MenuItem>
 									</Select>
 								</FormControl>
+								<FormGroup>
+									<FormControlLabel
+										control={<Checkbox onChange={(e) => setSerialDebug(!serialDebug())} />} checked={serialDebug()}
+										label="Serial debug"
+									/>
+								</FormGroup>
 							</Box>
 						</Box>
 					</Popover>

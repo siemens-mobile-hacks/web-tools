@@ -55,6 +55,10 @@ function SerialProvider(props) {
 		return false;
 	};
 
+	let enableDebug = (filter) => {
+		worker.enableDebug(filter);
+	};
+
 	let onReadyStateChanged = (e) => setReadyState(e.readyState);
 	let onCurrentProtocolChanged = (e) => setCurrentProtocol(e.currentProtocol);
 
@@ -90,6 +94,7 @@ function SerialProvider(props) {
 		connectError,
 		connect,
 		disconnect,
+		enableDebug,
 		protocol: currentProtocol,
 	};
 

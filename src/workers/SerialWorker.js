@@ -1,5 +1,5 @@
+import debug from "debug";
 import { SerialPortStream } from "@serialport/stream";
-import { BFC, CGSN } from "@sie-js/serial";
 import WebSerialBinding from "serialport-bindings-webserial";
 import { recursiveMap } from "~/utils";
 import { BfcService } from "./BfcService";
@@ -20,6 +20,11 @@ onmessage = async (e) => {
 	let { requestId, method, data } = e.data;
 	try {
 		switch (method) {
+			case "debug":
+				debug.enable(data.filter);
+				sendResponse(requestId, true);
+			break;
+
 			case "connect":
 				sendResponse(requestId, await handleConnect(data.protocol, data.portIndex, data.limitBaudrate));
 			break;

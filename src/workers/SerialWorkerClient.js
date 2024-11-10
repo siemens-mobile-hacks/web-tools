@@ -22,6 +22,10 @@ async function sendRequest(method, data) {
 	return await receivers[requestId].promise;
 }
 
+async function enableDebug(filter) {
+	return await sendRequest("debug", { filter });
+}
+
 function on(event, handler) {
 	eventHandlers[event] = eventHandlers[event] || [];
 	eventHandlers[event].push(handler);
@@ -79,4 +83,4 @@ function handleMessage(e) {
 	}
 }
 
-export default { on, off, sendRequest, getApiProxy };
+export default { on, off, sendRequest, getApiProxy, enableDebug };
