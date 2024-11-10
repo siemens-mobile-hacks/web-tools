@@ -29,7 +29,7 @@ const USB_DEVICES = {
 
 function SerialConnect(props) {
 	let [currentBaudrate, setCurrentBaudrate] = createStoredSignal('limitMaxBaudrate', 0);
-	let [serialDebug, setSerialDebug] = createStoredSignal('serialDebug', false);
+	let [serialDebug, setSerialDebug] = createStoredSignal('serialDebugFilter', []);
 	let [selectedSerialPort, setSelectedSerialPort] = createSignal('webserial://any');
 	let [showSettings, setShowSettings] = createSignal(false);
 	let showSettingsAnchor;
@@ -48,11 +48,22 @@ function SerialConnect(props) {
 	});
 
 	createEffect(() => {
-		let debugFilter = serialDebug() ? 'cgsn,bfc' : '';
+		let debugFilter = serialDebug().join(',');
 		console.log(debugFilter);
 		debug.enable(debugFilter);
 		serial.enableDebug(debugFilter);
 	});
+
+	let toggleDebug = (type) => {
+		let debugFilter = [...serialDebug()];
+		let value = debugFilter.includes(type);
+		if (value) {
+			debugFilter = debugFilter.filter((v) => v != type);
+		} else {
+			debugFilter.push(type);
+		}
+		setSerialDebug(debugFilter);
+	};
 
 	let currentSerialPort = createMemo(on(
 		[serial.ports, selectedSerialPort],
@@ -145,12 +156,31 @@ function SerialConnect(props) {
 										</MenuItem>
 									</Select>
 								</FormControl>
+
 								<FormGroup>
 									<FormControlLabel
-										control={<Checkbox onChange={(e) => setSerialDebug(!serialDebug())} />} checked={serialDebug()}
-										label="Serial debug"
+										control={<Checkbox onChange={(e) => toggleDebug('atc')} />} checked={serialDebug().includes('atc')}
+										label="AT debug"
 									/>
 								</FormGroup>
+
+								<Show when={props.protocol == 'BFC'}>
+									<FormGroup>
+										<FormControlLabel
+											control={<Checkbox onChange={(e) => toggleDebug('bfc')} />} checked={serialDebug().includes('bfc')}
+											label="BFC debug"
+										/>
+									</FormGroup>
+								</Show>
+
+								<Show when={props.protocol == 'CGSN'}>
+									<FormGroup>
+										<FormControlLabel
+											control={<Checkbox onChange={(e) => toggleDebug('cgsn')} />} checked={serialDebug().includes('cgsn')}
+											label="CGSN debug"
+										/>
+									</FormGroup>
+								</Show>
 							</Box>
 						</Box>
 					</Popover>
