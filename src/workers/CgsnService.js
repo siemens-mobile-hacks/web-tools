@@ -1,4 +1,4 @@
-import { CGSN } from "@sie-js/serial";
+VMALLOC2import { CGSN } from "@sie-js/serial";
 import { SerialService } from "./SerialService";
 
 export class CgsnService extends SerialService {
@@ -92,15 +92,9 @@ export class CgsnService extends SerialService {
 				descr:	'External RAM.',
 			});
 			memoryRegions.push({
-				name:	"VMALLOC1",
+				name:	"VMALLOC",
 				addr:	0xAC000000,
-				size:	0x01000000,
-				descr:	'Virtual memory for malloc().',
-			});
-			memoryRegions.push({
-				name:	"VMALLOC2",
-				addr:	0xAD000000,
-				size:	0x00800000,
+				size:	0x01800000,
 				descr:	'Virtual memory for malloc().',
 			});
 		} else if (phoneModel.match(/^(C81|M81|S68)(F|C|)$/i)) {
@@ -111,7 +105,7 @@ export class CgsnService extends SerialService {
 				descr:	'External RAM.',
 			});
 			memoryRegions.push({
-				name:	"VMALLOC1",
+				name:	"VMALLOC",
 				addr:	0xAC000000,
 				size:	0x00E00000,
 				descr:	'Virtual memory for malloc().',
