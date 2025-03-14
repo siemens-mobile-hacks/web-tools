@@ -28,18 +28,18 @@ const USB_DEVICES = {
 };
 
 function SerialConnect(props) {
-	let [currentBaudrate, setCurrentBaudrate] = createStoredSignal('limitMaxBaudrate', 0);
-	let [serialDebug, setSerialDebug] = createStoredSignal('serialDebugFilter', []);
-	let [selectedSerialPort, setSelectedSerialPort] = createSignal('webserial://any');
-	let [showSettings, setShowSettings] = createSignal(false);
-	let showSettingsAnchor;
-	let serial = useSerial();
+	const [currentBaudrate, setCurrentBaudrate] = createStoredSignal('limitMaxBaudrate', 0);
+	const [serialDebug, setSerialDebug] = createStoredSignal('serialDebugFilter', []);
+	const [selectedSerialPort, setSelectedSerialPort] = createSignal('webserial://any');
+	const [showSettings, setShowSettings] = createSignal(false);
+	const showSettingsAnchor = undefined;
+	const serial = useSerial();
 
-	let handleConnect = () => {
+	const handleConnect = () => {
 		serial.connect(props.protocol, currentSerialPort(), currentBaudrate());
 	};
 
-	let handleDisconnect = () => {
+	const handleDisconnect = () => {
 		serial.disconnect();
 	};
 
@@ -48,15 +48,15 @@ function SerialConnect(props) {
 	});
 
 	createEffect(() => {
-		let debugFilter = serialDebug().join(',');
+		const debugFilter = serialDebug().join(',');
 		console.log(debugFilter);
 		debug.enable(debugFilter);
 		serial.enableDebug(debugFilter);
 	});
 
-	let toggleDebug = (type) => {
+	const toggleDebug = (type) => {
 		let debugFilter = [...serialDebug()];
-		let value = debugFilter.includes(type);
+		const value = debugFilter.includes(type);
 		if (value) {
 			debugFilter = debugFilter.filter((v) => v != type);
 		} else {
@@ -65,12 +65,12 @@ function SerialConnect(props) {
 		setSerialDebug(debugFilter);
 	};
 
-	let currentSerialPort = createMemo(on(
+	const currentSerialPort = createMemo(on(
 		[serial.ports, selectedSerialPort],
 		() => serial.portIsExists(selectedSerialPort()) ? selectedSerialPort() : 'webserial://any'
 	));
 
-	let invalidProtocol = createMemo(() => serial.protocol() != props.protocol && (serial.readyState() == SerialState.CONNECTED || serial.readyState() == SerialState.CONNECTING));
+	const invalidProtocol = createMemo(() => serial.protocol() != props.protocol && (serial.readyState() == SerialState.CONNECTED || serial.readyState() == SerialState.CONNECTING));
 
 	return (
 		<Stack alignItems="center" gap={1} direction="row">
@@ -207,9 +207,9 @@ function SerialConnect(props) {
 }
 
 function serialPortName(port) {
-	let url = new URL(port.path);
+	const url = new URL(port.path);
 	if (url.pathname == "//usb") {
-		let key = sprintf("%04X:%04X", port.vendorId, port.productId);
+		const key = sprintf("%04X:%04X", port.vendorId, port.productId);
 		if ((key in USB_DEVICES))
 			return `${USB_DEVICES[key]} #${url.searchParams.get("n")}`;
 		return `USB ${key} #${url.searchParams.get("n")}`;

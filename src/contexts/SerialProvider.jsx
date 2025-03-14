@@ -5,29 +5,29 @@ import { createStoredSignal } from '~/storage';
 import { SerialState } from '~/workers/SerialWorker';
 import worker from '~/workers/SerialWorkerClient';
 
-let SerialContext = createContext();
+const SerialContext = createContext();
 
 function useSerial() {
-	let value = useContext(SerialContext);
+	const value = useContext(SerialContext);
 	if (value === undefined)
 		throw new Error("useSerial must be used within a <SerialProvider>!");
 	return value;
 }
 
 function SerialProvider(props) {
-	let [currentProtocol, setCurrentProtocol] = createSignal('none');
-	let [readyState, setReadyState] = createSignal(false);
-	let [connectError, setConnectError] = createSignal(null);
-	let [ports, setPorts] = createSignal([]);
-	let [lastUsedPort, setLastUsedPort] = createStoredSignal("lastUsedPort", null);
+	const [currentProtocol, setCurrentProtocol] = createSignal('none');
+	const [readyState, setReadyState] = createSignal(false);
+	const [connectError, setConnectError] = createSignal(null);
+	const [ports, setPorts] = createSignal([]);
+	const [lastUsedPort, setLastUsedPort] = createStoredSignal("lastUsedPort", null);
 
-	let monitorNewPorts = async () => {
+	const monitorNewPorts = async () => {
 		setPorts(await WebSerialBinding.list());
 	};
 
-	let connect = async (protocol, prevPortPath, limitBaudrate) => {
+	const connect = async (protocol, prevPortPath, limitBaudrate) => {
 		try {
-			let [, portPath, portIndex] = await getSerialPort(prevPortPath);
+			const [, portPath, portIndex] = await getSerialPort(prevPortPath);
 
 			monitorNewPorts();
 			setLastUsedPort(portPath);
@@ -40,27 +40,27 @@ function SerialProvider(props) {
 		}
 	};
 
-	let disconnect = async () => {
+	const disconnect = async () => {
 		await worker.sendRequest("disconnect", {});
 		setConnectError(null);
 	};
 
-	let portIsExists = (path) => {
+	const portIsExists = (path) => {
 		if (path == 'webserial://any')
 			return true;
-		for (let port of ports()) {
+		for (const port of ports()) {
 			if (port.path == path)
 				return true;
 		}
 		return false;
 	};
 
-	let enableDebug = (filter) => {
+	const enableDebug = (filter) => {
 		worker.enableDebug(filter);
 	};
 
-	let onReadyStateChanged = (e) => setReadyState(e.readyState);
-	let onCurrentProtocolChanged = (e) => setCurrentProtocol(e.currentProtocol);
+	const onReadyStateChanged = (e) => setReadyState(e.readyState);
+	const onCurrentProtocolChanged = (e) => setCurrentProtocol(e.currentProtocol);
 
 	onMount(() => {
 		worker.on('readyState', onReadyStateChanged);
@@ -84,7 +84,7 @@ function SerialProvider(props) {
 		disconnect()
 	});
 
-	let state = {
+	const state = {
 		bfc: worker.getApiProxy("BFC"),
 		cgsn: worker.getApiProxy("CGSN"),
 		ports,
@@ -108,16 +108,16 @@ function SerialProvider(props) {
 async function getSerialPort(portPath) {
 	// Try to get previously used port
 	let portIndex = 0;
-	for (let p of await WebSerialBinding.list()) {
+	for (const p of await WebSerialBinding.list()) {
 		if (p.path === portPath)
 			return [ p.nativePort, p.path, portIndex ];
 		portIndex++;
 	}
 
 	// Request new port if not found
-	let webSerialPort = await navigator.serial.requestPort({ });
+	const webSerialPort = await navigator.serial.requestPort({ });
 	portIndex = 0;
-	for (let p of await WebSerialBinding.list()) {
+	for (const p of await WebSerialBinding.list()) {
 		if (p.nativePort === webSerialPort)
 			return [ p.nativePort, p.path, portIndex ];
 		portIndex++;

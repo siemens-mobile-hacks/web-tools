@@ -14,11 +14,11 @@ import { useTheme } from '@suid/material/styles';
 import useMediaQuery from '@suid/material/useMediaQuery';
 
 function AppHeader(props) {
-	let theme = useTheme();
-	let isWideScreen = useMediaQuery(theme.breakpoints.up('md'));
-	let [clicks, setClicks] = createSignal(0);
+	const theme = useTheme();
+	const isWideScreen = useMediaQuery(theme.breakpoints.up('md'));
+	const [clicks, setClicks] = createSignal(0);
 
-	let changeTheme = (e) => {
+	const changeTheme = (e) => {
 		if (clicks() < 2) {
 			if (props.effectiveTheme == 'dark') {
 				props.onThemeChanged('light');

@@ -22,7 +22,7 @@ import { resolveURL } from '~/utils';
 const DRAWER_WIDTH = 240;
 
 function AppDrawerLink(props) {
-	let match = useMatch(() => resolveURL(props.href));
+	const match = useMatch(() => resolveURL(props.href));
 	return (
 		<ListItemButton component={A} {...props} selected={Boolean(match())}>
 			{props.children}
@@ -31,9 +31,9 @@ function AppDrawerLink(props) {
 }
 
 function AppDrawer(props) {
-	let theme = useTheme();
-	let isWideScreen = useMediaQuery(theme.breakpoints.up('md'));
-	let drawerVariant = createMemo(() => isWideScreen() ? 'permanent' : 'temporary');
+	const theme = useTheme();
+	const isWideScreen = useMediaQuery(theme.breakpoints.up('md'));
+	const drawerVariant = createMemo(() => isWideScreen() ? 'permanent' : 'temporary');
 
 	return (
 		<Drawer

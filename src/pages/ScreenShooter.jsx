@@ -23,32 +23,32 @@ import { useSerial, SerialState } from '~/contexts/SerialProvider'
 import { transferBufferToCanvas, downloadCanvasImage } from '~/utils';
 
 function ScreenShooter() {
-	let [displayNumber, setDisplayNumber] = createSignal(0);
-	let [phoneDisplays, setPhoneDisplays] = createSignal([
+	const [displayNumber, setDisplayNumber] = createSignal(0);
+	const [phoneDisplays, setPhoneDisplays] = createSignal([
 		{width: 240, height: 320, bufferWidth: 240, bufferHeight: 320}
 	]);
-	let [progressValue, setProgressValue] = createSignal(null);
-	let [hasScreenshot, setHasScreenshot] = createSignal(false);
-	let [errorMessage, setErrorMessage] = createSignal(false);
+	const [progressValue, setProgressValue] = createSignal(null);
+	const [hasScreenshot, setHasScreenshot] = createSignal(false);
+	const [errorMessage, setErrorMessage] = createSignal(false);
 
-	let serial = useSerial();
+	const serial = useSerial();
 	let canvasRef;
 	let bufferCanvasRef;
 
-	let bfcReady = createMemo(() => {
+	const bfcReady = createMemo(() => {
 		return serial.readyState() == SerialState.CONNECTED && serial.protocol() == "BFC";
 	});
 
 	onMount(() => {
 		document.title = 'Screenshot';
 
-		let ctx = canvasRef.getContext('2d');
+		const ctx = canvasRef.getContext('2d');
 		ctx.rect(0, 0, canvasRef.width, canvasRef.height);
 		ctx.fillStyle = "rgba(0,0,0,0.1)";
 		ctx.fill();
 	});
 
-	let errorWrap = (callback) => {
+	const errorWrap = (callback) => {
 		return async () => {
 			try {
 				setErrorMessage(null);
@@ -59,11 +59,11 @@ function ScreenShooter() {
 		}
 	};
 
-	let makeScreenshot = errorWrap(async () => {
+	const makeScreenshot = errorWrap(async () => {
 		setProgressValue({ pct: 0 });
 
-		let onProgress = ({ value, total, elapsed }) => {
-			let speed = elapsed > 0 ? value / (elapsed / 1000) : 0;
+		const onProgress = ({ value, total, elapsed }) => {
+			const speed = elapsed > 0 ? value / (elapsed / 1000) : 0;
 			setProgressValue({
 				pct:	value / total * 100,
 				value:	`${+(value / 1024).toFixed(0)} kB`,
@@ -74,12 +74,12 @@ function ScreenShooter() {
 		serial.bfc.on('screenshotProgress', onProgress);
 
 		try {
-			let buffer = await serial.bfc.makeScreenshot(+displayNumber() + 1);
+			const buffer = await serial.bfc.makeScreenshot(+displayNumber() + 1);
 			if (bufferCanvasRef.width != canvasRef.width || bufferCanvasRef.height != canvasRef.height) {
 				transferBufferToCanvas(buffer.mode, buffer.data, bufferCanvasRef);
-				let ctx = canvasRef.getContext('2d');
-				let x = Math.round((bufferCanvasRef.width - canvasRef.width) / 2);
-				let y = Math.round((bufferCanvasRef.height - canvasRef.height) / 2);
+				const ctx = canvasRef.getContext('2d');
+				const x = Math.round((bufferCanvasRef.width - canvasRef.width) / 2);
+				const y = Math.round((bufferCanvasRef.height - canvasRef.height) / 2);
 				ctx.drawImage(bufferCanvasRef, -x, -y);
 			} else {
 				transferBufferToCanvas(buffer.mode, buffer.data, canvasRef);
@@ -92,12 +92,12 @@ function ScreenShooter() {
 		}
 	});
 
-	let saveScreenshot = async () => {
-		let fileName = `Screenshot_${dateFormat(new Date(), 'yyyyMMdd_HHmmss')}.png`;
+	const saveScreenshot = async () => {
+		const fileName = `Screenshot_${dateFormat(new Date(), 'yyyyMMdd_HHmmss')}.png`;
 		downloadCanvasImage(canvasRef, fileName);
 	};
 
-	let copyScreenshot = async () => {
+	const copyScreenshot = async () => {
 		canvasRef.toBlob((blob) => {
 			navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
 		});

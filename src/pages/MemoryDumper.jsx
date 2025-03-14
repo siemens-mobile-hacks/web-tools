@@ -104,40 +104,40 @@ function MemoryDumperPopup(props) {
 }
 
 function MemoryDumper() {
-	let serial = useSerial();
-	let [memoryPresets, setMemoryPresets] = createSignal(DEFAULT_MEMORY_PRESETS);
-	let [customMemoryAddr, setCustomMemoryAddr] = createSignal('A0000000');
-	let [customMemorySize, setCustomMemorySize] = createSignal('00020000');
-	let [customMemoryAddrError, setCustomMemoryAddrError] = createSignal(false);
-	let [customMemorySizeError, setCustomMemorySizeError] = createSignal(false);
-	let [memoryPresetId, setMemoryPresetId] = createSignal(0);
-	let [progressValue, setProgressValue] = createSignal(null);
-	let [state, setState] = createSignal('idle');
-	let [readResult, setReadResult] = createSignal(null);
-	let [phone, setPhone] = createSignal(null);
+	const serial = useSerial();
+	const [memoryPresets, setMemoryPresets] = createSignal(DEFAULT_MEMORY_PRESETS);
+	const [customMemoryAddr, setCustomMemoryAddr] = createSignal('A0000000');
+	const [customMemorySize, setCustomMemorySize] = createSignal('00020000');
+	const [customMemoryAddrError, setCustomMemoryAddrError] = createSignal(false);
+	const [customMemorySizeError, setCustomMemorySizeError] = createSignal(false);
+	const [memoryPresetId, setMemoryPresetId] = createSignal(0);
+	const [progressValue, setProgressValue] = createSignal(null);
+	const [state, setState] = createSignal('idle');
+	const [readResult, setReadResult] = createSignal(null);
+	const [phone, setPhone] = createSignal(null);
 
-	let memoryPreset = createMemo(() => memoryPresets()[memoryPresetId()]);
-	let memoryAddr = createMemo(() => {
+	const memoryPreset = createMemo(() => memoryPresets()[memoryPresetId()]);
+	const memoryAddr = createMemo(() => {
 		if (memoryPresetId() != 0) {
 			return memoryPreset().addr;
 		} else {
 			return parseInt(customMemoryAddr(), 16);
 		}
 	});
-	let memorySize = createMemo(() => {
+	const memorySize = createMemo(() => {
 		if (memoryPresetId() != 0) {
 			return memoryPreset().size;
 		} else {
 			return parseInt(customMemorySize(), 16);
 		}
 	});
-	let cgsnReady = createMemo(() => {
+	const cgsnReady = createMemo(() => {
 		return serial.readyState() == SerialState.CONNECTED && serial.protocol() == "CGSN";
 	});
 
 	createEffect(async () => {
 		if (cgsnReady()) {
-			let response = await serial.cgsn.getPhoneInfo();
+			const response = await serial.cgsn.getPhoneInfo();
 			setMemoryPresets([
 				...DEFAULT_MEMORY_PRESETS,
 				...response.memoryRegions,
@@ -146,42 +146,42 @@ function MemoryDumper() {
 		}
 	});
 
-	let onClose = () => {
+	const onClose = () => {
 		setState('idle');
 		setReadResult(null);
 	};
 
-	let onCancel = () => {
+	const onCancel = () => {
 		serial.cgsn.abort();
 	};
 
-	let onFileSave = () => {
-		let buffer = readResult().buffer.slice(0, readResult().readed);
-		let fileName = (phone() ? `${phone()}_` : "") +
+	const onFileSave = () => {
+		const buffer = readResult().buffer.slice(0, readResult().readed);
+		const fileName = (phone() ? `${phone()}_` : "") +
 			(memoryPresetId() != 0 ? memoryPreset().name + "_" : '') +
 			sprintf("%08X_%08X.bin", memoryAddr(), buffer.length);
-		let blob = new Blob([buffer.buffer], { type: 'application/octet-stream' });
+		const blob = new Blob([buffer.buffer], { type: 'application/octet-stream' });
 		downloadBlob(blob, fileName);
 	};
 
-	let onCustomMemoryAddrChanged = (e) => {
+	const onCustomMemoryAddrChanged = (e) => {
 		setCustomMemoryAddrError(!validateHex(e.target.value));
 		setCustomMemoryAddr(e.target.value);
 	};
 
-	let onCustomMemorySizeChanged = (e) => {
+	const onCustomMemorySizeChanged = (e) => {
 		setCustomMemorySizeError(!validateHex(e.target.value));
 		setCustomMemorySize(e.target.value);
 	};
 
-	let startReadMemory = async () => {
+	const startReadMemory = async () => {
 		if (memoryPresetId() == 0) {
 			if (customMemorySizeError() || customMemoryAddrError())
 				return;
 		}
 
-		let onProgress = ({ value, total, elapsed }) => {
-			let speed = elapsed > 0 ? value / (elapsed / 1000) : 0;
+		const onProgress = ({ value, total, elapsed }) => {
+			const speed = elapsed > 0 ? value / (elapsed / 1000) : 0;
 			setProgressValue({
 				pct:		value / total * 100,
 				valueHex:	sprintf("%08X", memoryAddr() + value),
@@ -200,7 +200,7 @@ function MemoryDumper() {
 		serial.cgsn.on('memoryReadProgress', onProgress);
 
 		try {
-			let buffer = await serial.cgsn.readMemory(memoryAddr(), memorySize());
+			const buffer = await serial.cgsn.readMemory(memoryAddr(), memorySize());
 			setReadResult(buffer);
 		} catch (e) {
 			console.error(e);
@@ -310,7 +310,7 @@ function MemoryDumper() {
 }
 
 function formatDuration(seconds) {
-	let duration = intervalToDuration({ start: 0, end: seconds * 1000 })
+	const duration = intervalToDuration({ start: 0, end: seconds * 1000 })
 	return [ duration.hours, duration.minutes || 0, duration.seconds || 0 ]
 		.filter((v) => v != null)
 		.map((num) => String(num).padStart(2, '0'))
@@ -320,7 +320,7 @@ function formatDuration(seconds) {
 function validateHex(value) {
 	if (!value.match(/^([A-F0-9]+)$/i))
 		return false;
-	let num = parseInt(value, 16);
+	const num = parseInt(value, 16);
 	return num <= 0xFFFFFFFF;
 }
 

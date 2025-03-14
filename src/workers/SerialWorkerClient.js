@@ -2,18 +2,18 @@ import { onCleanup } from 'solid-js';
 import { recursiveMap } from '~/utils';
 import SerialWorker from '~/workers/SerialWorker?worker';
 
-let worker = new SerialWorker();
-let receivers = {};
-let eventHandlers = {};
+const worker = new SerialWorker();
+const receivers = {};
+const eventHandlers = {};
 let globalRequestId = 0;
 let globalFunctionId = 0;
 
 worker.onmessage = handleMessage;
 
 async function sendRequest(method, data) {
-	let requestId = globalRequestId++;
+	const requestId = globalRequestId++;
 
-	let promise = new Promise((resolve, reject) => {
+	const promise = new Promise((resolve, reject) => {
 		receivers[requestId] = { resolve, reject, promise: null };
 	});
 	receivers[requestId].promise = promise;
@@ -46,8 +46,8 @@ function createProxyMethod(protocol, method) {
 }
 
 function getApiProxy(protocol) {
-	let methodsCache = {};
-	let api = {
+	const methodsCache = {};
+	const api = {
 		on: (event, handler) => on(`${protocol}:${event}`, handler),
 		off: (event, handler) => off(`${protocol}:${event}`, handler),
 	};
@@ -65,7 +65,7 @@ function getApiProxy(protocol) {
 
 function handleMessage(e) {
 	if (e.data.response) {
-		let receiver = receivers[e.data.requestId];
+		const receiver = receivers[e.data.requestId];
 		if (receiver) {
 			delete receivers[e.data.requestId];
 
@@ -77,7 +77,7 @@ function handleMessage(e) {
 		}
 	} else if (e.data.event) {
 		if (eventHandlers[e.data.event]) {
-			for (let handler of eventHandlers[e.data.event])
+			for (const handler of eventHandlers[e.data.event])
 				handler(e.data);
 		}
 	}

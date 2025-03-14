@@ -18,11 +18,11 @@ export class BfcService extends SerialService {
 	}
 
 	async getAllDisplays() {
-		let displays = [];
-		let displaysCount = await this.handle.getDisplayCount();
+		const displays = [];
+		const displaysCount = await this.handle.getDisplayCount();
 		for (let i = 1; i <= displaysCount; i++) {
-			let displayInfo = await this.handle.getDisplayInfo(i);
-			let bufferInfo = await this.handle.getDisplayBufferInfo(displayInfo.clientId);
+			const displayInfo = await this.handle.getDisplayInfo(i);
+			const bufferInfo = await this.handle.getDisplayBufferInfo(displayInfo.clientId);
 			displays.push({
 				width: displayInfo.width,
 				height: displayInfo.height,

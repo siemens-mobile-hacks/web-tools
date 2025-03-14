@@ -14,27 +14,27 @@ function loadStorage() {
 }
 
 function has(key) {
-	let storage = loadStorage();
+	const storage = loadStorage();
 	return key in storage;
 }
 
 function get(key) {
-	let storage = loadStorage();
+	const storage = loadStorage();
 	return storage[key];
 }
 
 function set(key, value) {
-	let storage = loadStorage();
+	const storage = loadStorage();
 	storage[key] = value;
 	localStorage.setItem(STORAGE_KEY, JSON.stringify(storage));
 }
 
 function createStoredSignal(key, defaultValue) {
-	let initialValue = has(key) ? get(key) : defaultValue;
-	let [value, setValue] = createSignal(initialValue);
+	const initialValue = has(key) ? get(key) : defaultValue;
+	const [value, setValue] = createSignal(initialValue);
 
-	let setValueAndStore = (newValue) => {
-		let ret = setValue(newValue);
+	const setValueAndStore = (newValue) => {
+		const ret = setValue(newValue);
 		set(key, newValue);
 		return ret;
 	};

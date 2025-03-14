@@ -15,17 +15,17 @@ import SerialProvider from '~/contexts/SerialProvider';
 import { createStoredSignal } from "~/storage";
 
 function App(props) {
-	let [drawerIsOpen, setDrawerIsOpen] = createSignal(false);
-	let [preferredTheme, setPreferredTheme] = createStoredSignal("theme", "system");
-	let prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
+	const [drawerIsOpen, setDrawerIsOpen] = createSignal(false);
+	const [preferredTheme, setPreferredTheme] = createStoredSignal("theme", "system");
+	const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
 
-	let effectiveTheme = createMemo(() => {
+	const effectiveTheme = createMemo(() => {
 		if (preferredTheme() == 'system')
 			return prefersDarkMode() ? 'dark' : 'light';
 		return preferredTheme();
 	});
 
-	let palette = createMemo(() => {
+	const palette = createMemo(() => {
 		return createPalette({
 			mode: effectiveTheme() == 'dark' ? 'dark' : 'light',
 			primary: {
@@ -36,7 +36,7 @@ function App(props) {
 			},
 		});
 	});
-	let theme = createTheme({
+	const theme = createTheme({
 		palette,
 		typography: {
 			fontFamily: [
@@ -55,7 +55,7 @@ function App(props) {
 		},
 	});
 
-	let toggleDrawer = (drawerState) => {
+	const toggleDrawer = (drawerState) => {
 		setDrawerIsOpen(drawerState);
 	};
 

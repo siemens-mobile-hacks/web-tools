@@ -35,7 +35,7 @@ export class CgsnService extends SerialService {
 	}
 
 	async getPhoneInfo() {
-		let atc = this.handle.getAtChannel();
+		const atc = this.handle.getAtChannel();
 
 		let phoneModel;
 		let phoneVendor;
@@ -65,7 +65,7 @@ export class CgsnService extends SerialService {
 
 		console.info(`Detected phone ${phoneVendor} ${phoneModel}v${phoneSwVersion}`);
 
-		let memoryRegions = [
+		const memoryRegions = [
 			{
 				name:	"BROM",
 				addr:	0x00400000,

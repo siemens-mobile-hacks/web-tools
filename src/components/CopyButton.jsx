@@ -5,9 +5,9 @@ import DoneIcon from '@suid/icons-material/Done';
 
 function CopyButton(props) {
 	let timeout;
-	let [isCopied, setIsCopied] = createSignal(false);
+	const [isCopied, setIsCopied] = createSignal(false);
 
-	let onClick = () => {
+	const onClick = () => {
 		setIsCopied(true);
 		timeout && clearTimeout(timeout);
 		timeout = setTimeout(() => {

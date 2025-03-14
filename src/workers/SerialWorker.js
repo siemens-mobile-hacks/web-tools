@@ -17,7 +17,7 @@ let readyState = SerialState.DISCONNECTED;
 let service;
 
 onmessage = async (e) => {
-	let { requestId, method, data } = e.data;
+	const { requestId, method, data } = e.data;
 	try {
 		switch (method) {
 			case "debug":
@@ -55,11 +55,11 @@ async function handleConnect(protocol, portIndex, limitBaudrate) {
 	setReadyState(SerialState.CONNECTING);
 
 	try {
-		let availablePorts = await navigator.serial.getPorts();
+		const availablePorts = await navigator.serial.getPorts();
 		if (!availablePorts[portIndex])
 			throw new Error(`Invalid port index ${portIndex}`);
 
-		let port = await openSerialPort(availablePorts[portIndex]);
+		const port = await openSerialPort(availablePorts[portIndex]);
 		switch (currentProtocol) {
 			case "BFC":
 				service = new BfcService(port);
@@ -101,8 +101,8 @@ async function handleDisconnect() {
 async function handleProxy(api, method, methodArguments) {
 	recursiveMap(methodArguments, (value) => {
 		if (typeof value == 'object' && '__type__' in value && value.__type__ == 'function-proxy') {
-			let event = `function-proxy-${value.id}`;
-			let callback = (...args) => {
+			const event = `function-proxy-${value.id}`;
+			const callback = (...args) => {
 				postMessage({ event, args: args });
 			};
 			return callback;
@@ -132,7 +132,7 @@ function sendResponse(requestId, response) {
 
 function openSerialPort(webSerialPort) {
 	return new Promise((resolve, reject) => {
-		let port = new SerialPortStream({
+		const port = new SerialPortStream({
 			binding: WebSerialBinding,
 			path: 'webserial://any',
 			webSerialPort,
@@ -143,13 +143,13 @@ function openSerialPort(webSerialPort) {
 			}
 		});
 
-		let onOpen = () => {
+		const onOpen = () => {
 			port.off('open', onOpen);
 			port.off('error', onError);
 			resolve(port);
 		};
 
-		let onError = (err) => {
+		const onError = (err) => {
 			port.off('open', onOpen);
 			port.off('error', onError);
 			reject(err);

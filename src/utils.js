@@ -11,7 +11,7 @@ export function recursiveMap(value, callback) {
 		}
 		return value;
 	} else if (typeof value == 'object') {
-		for (let k of Object.keys(value)) {
+		for (const k of Object.keys(value)) {
 			value[k] = recursiveMap(value[k], callback);
 		}
 		return value;
@@ -21,17 +21,17 @@ export function recursiveMap(value, callback) {
 }
 
 export function transferBufferToCanvas(mode, buffer, canvas) {
-	let ctx = canvas.getContext('2d', { willReadFrequently: true });
+	const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
 	let pixelIndex = 0;
-	let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+	const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 	switch (mode) {
 		case "rgb332":
 			for (let i = 0; i < buffer.length; i++) {
-				let color = buffer[i];
-				let r = (color >> 5) & 7;
-				let g = (color >> 2) & 7;
-				let b = color & 3;
+				const color = buffer[i];
+				const r = (color >> 5) & 7;
+				const g = (color >> 2) & 7;
+				const b = color & 3;
 
 				imageData.data[pixelIndex++] = Math.round(r * 0xFF / 7);
 				imageData.data[pixelIndex++] = Math.round(g * 0xFF / 7);
@@ -41,11 +41,11 @@ export function transferBufferToCanvas(mode, buffer, canvas) {
 		break;
 		case "rgba4444":
 			for (let i = 0; i < buffer.length; i += 2) {
-				let color = (buffer[i + 1] << 8) | buffer[i];
-				let a = (color >> 12) & 0xF;
-				let r = (color >> 8) & 0xF;
-				let g = (color >> 4) & 0xF;
-				let b = color & 0xF;
+				const color = (buffer[i + 1] << 8) | buffer[i];
+				const a = (color >> 12) & 0xF;
+				const r = (color >> 8) & 0xF;
+				const g = (color >> 4) & 0xF;
+				const b = color & 0xF;
 
 				imageData.data[pixelIndex++] = Math.round(r * 0xFF / 0xF);
 				imageData.data[pixelIndex++] = Math.round(g * 0xFF / 0xF);
@@ -55,10 +55,10 @@ export function transferBufferToCanvas(mode, buffer, canvas) {
 		break;
 		case "rgb565be":
 			for (let i = 0; i < buffer.length; i += 2) {
-				let color = (buffer[i] << 8) | buffer[i + 1];
-				let r = ((((color >> 11) & 0x1F) * 527) + 23) >> 6;
-				let g = ((((color >> 5) & 0x3F) * 259) + 33) >> 6;
-				let b = (((color & 0x1F) * 527) + 23) >> 6;
+				const color = (buffer[i] << 8) | buffer[i + 1];
+				const r = ((((color >> 11) & 0x1F) * 527) + 23) >> 6;
+				const g = ((((color >> 5) & 0x3F) * 259) + 33) >> 6;
+				const b = (((color & 0x1F) * 527) + 23) >> 6;
 				imageData.data[pixelIndex++] = r;
 				imageData.data[pixelIndex++] = g;
 				imageData.data[pixelIndex++] = b;
@@ -67,10 +67,10 @@ export function transferBufferToCanvas(mode, buffer, canvas) {
 		break;
 		case "rgb565":
 			for (let i = 0; i < buffer.length; i += 2) {
-				let color = (buffer[i + 1] << 8) | buffer[i];
-				let r = ((((color >> 11) & 0x1F) * 527) + 23) >> 6;
-				let g = ((((color >> 5) & 0x3F) * 259) + 33) >> 6;
-				let b = (((color & 0x1F) * 527) + 23) >> 6;
+				const color = (buffer[i + 1] << 8) | buffer[i];
+				const r = ((((color >> 11) & 0x1F) * 527) + 23) >> 6;
+				const g = ((((color >> 5) & 0x3F) * 259) + 33) >> 6;
+				const b = (((color & 0x1F) * 527) + 23) >> 6;
 				imageData.data[pixelIndex++] = r;
 				imageData.data[pixelIndex++] = g;
 				imageData.data[pixelIndex++] = b;
@@ -102,15 +102,15 @@ export function transferBufferToCanvas(mode, buffer, canvas) {
 }
 
 export function downloadCanvasImage(canvas, filename) {
-	let a = document.createElement('a');
+	const a = document.createElement('a');
 	a.href = canvas.toDataURL('image/png');
 	a.download = filename;
 	a.click();
 }
 
 export function downloadBlob(blob, filename) {
-	let url = URL.createObjectURL(blob);
-	let a = document.createElement('a');
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
 	a.href = url;
 	a.download = filename;
 	a.click();
