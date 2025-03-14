@@ -43,6 +43,7 @@ function App(props) {
 				'-apple-system',
 				'BlinkMacSystemFont',
 				'"Segoe UI"',
+				'Roboto Variable',
 				'Roboto',
 				'"Helvetica Neue"',
 				'Arial',

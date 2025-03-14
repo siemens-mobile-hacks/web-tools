@@ -10,31 +10,30 @@
 		"gh-pages-build": "vite build --base=/web-tools",
 		"serve": "vite preview",
 		"link-local-deps": "npm link -S ../node-sie-serial/ && npm link -S ../node-serialport-bindings-webserial/",
-		"unlink-local-deps": "npm uninstall @sie-js/serial serialport-bindings-webserial && npm install @sie-js/serial serialport-bindings-webserial",
-		"prepare": "patch-package"
+		"unlink-local-deps": "npm uninstall @sie-js/serial serialport-bindings-webserial && npm install @sie-js/serial serialport-bindings-webserial"
 	},
 	"license": "MIT",
 	"devDependencies": {
-		"@suid/vite-plugin": "^0.2.0",
-		"patch-package": "^8.0.0",
-		"solid-devtools": "^0.29.2",
-		"vite": "^5.2.10",
-		"vite-plugin-node-polyfills": "^0.21.0",
-		"vite-plugin-solid": "^2.10.2"
+		"@suid/vite-plugin": "^0.3.1",
+		"vite": "^5.4.14",
+		"vite-plugin-node-polyfills": "^0.23.0",
+		"vite-plugin-solid": "^2.11.6"
 	},
 	"dependencies": {
-		"@fontsource/roboto": "^5.0.13",
-		"@serialport/stream": "^12.0.0",
+		"@fontsource-variable/roboto": "^5.2.5",
+		"@serialport/stream": "^13.0.0",
 		"@sie-js/serial": "^0.0.15",
-		"@solidjs/router": "^0.13.3",
-		"@suid/icons-material": "^0.7.0",
-		"@suid/material": "^0.16.0",
-		"@suid/system": "^0.11.0",
+		"@solidjs/router": "^0.15.3",
+		"@suid/icons-material": "^0.8.1",
+		"@suid/material": "^0.18.0",
+		"@suid/system": "^0.13.0",
 		"date-fns": "^3.6.0",
-		"readable-stream": "^4.5.2",
-		"sass": "^1.76.0",
+		"debug": "^4.4.0",
+		"readable-stream": "^4.7.0",
+		"sass": "^1.85.1",
 		"serialport-bindings-webserial": "^0.2.3",
-		"solid-js": "^1.8.17",
+		"solid-js": "^1.9.5",
 		"sprintf-js": "^1.1.3"
-	}
+	},
+	"packageManager": "pnpm@10.6.3+sha512.bb45e34d50a9a76e858a95837301bfb6bd6d35aea2c5d52094fa497a467c43f5c440103ce2511e9e0a2f89c3d6071baac3358fc68ac6fb75e2ceb3d2736065e6"
 }

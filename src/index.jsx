@@ -4,10 +4,7 @@ import { render } from 'solid-js/web';
 import { Router, Route, Navigate } from "@solidjs/router";
 import App from './pages/App';
 
-import '@fontsource/roboto/300.css';
-import '@fontsource/roboto/400.css';
-import '@fontsource/roboto/500.css';
-import '@fontsource/roboto/700.css';
+import '@fontsource-variable/roboto';
 
 const ScreenShooter = lazy(() => import("./pages/ScreenShooter"));
 const MemoryDumper = lazy(() => import("./pages/MemoryDumper"));

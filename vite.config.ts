@@ -1,19 +1,28 @@
-import { defineConfig } from 'vite';
+import { defineConfig, Plugin } from 'vite';
 import solidPlugin from 'vite-plugin-solid';
 import suidPlugin from "@suid/vite-plugin";
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
-import path from 'path';
-import fs from 'fs';
+import path from 'node:path';
+import fs from 'node:fs';
 
 const ROUTES = [
 	`/screenshot`,
 	`/dumper`,
 ];
 
-function postBuildPlugin() {
+function postBuildPlugin(): Plugin {
 	return {
 		name:	'postbuild-plugin',
 		async closeBundle() {
+			const isSymlinkExists = (file: string) => {
+				try {
+					fs.lstatSync(file);
+					return true;
+				} catch (e) {
+					return false;
+				}
+			};
+
 			let outDir = `${import.meta.dirname}/dist`;
 			for (let routeDir of ROUTES) {
 				let symlinkSrc = path.relative(`${outDir}/${routeDir}`, `${outDir}/index.html`);
@@ -21,8 +30,10 @@ function postBuildPlugin() {
 
 				fs.mkdirSync(`${outDir}/${routeDir}`, { recursive: true });
 
-				if (!fs.existsSync(symlinkDst))
-					fs.symlinkSync(symlinkSrc, `${outDir}/${routeDir}/index.html`);
+				if (isSymlinkExists(symlinkDst))
+					fs.unlinkSync(symlinkDst);
+
+				fs.symlinkSync(symlinkSrc, `${outDir}/${routeDir}/index.html`);
 			}
 		}
 	};

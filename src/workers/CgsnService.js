@@ -1,4 +1,4 @@
-VMALLOC2import { CGSN } from "@sie-js/serial";
+import { CGSN } from "@sie-js/serial";
 import { SerialService } from "./SerialService";
 
 export class CgsnService extends SerialService {
