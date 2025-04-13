@@ -128,84 +128,101 @@ function ScreenShooterPage(): JSX.Element {
 	}));
 
 	return (
-		<Grid container spacing={2}>
+		<Box>
 			<Show when={serial.connectError()}>
-				<Grid item mt={1} order={0}>
-					<Alert severity="error">
-						ERROR: {serial.connectError()?.message}<br />
-						Try reconnecting the data cable if you are sure that your phone is connected and online.
-					</Alert>
-				</Grid>
+				<Alert severity="error" sx={{ mb: 1 }}>
+					ERROR: {serial.connectError()?.message}<br />
+					Try reconnecting the data cable if you are sure that your phone is connected and online.
+				</Alert>
 			</Show>
 
-			<Grid
-				item
-				sx={{
-					order: { xs: 2, sm: 1 },
-					textAlign: 'center',
-					minWidth: '255px',
-					width: phoneDisplays()[displayNumber()].width + 15 + 'px'
-				}}
-			>
-				<Paper sx={{ display: 'inline-flex' }}>
-					<canvas width={phoneDisplays()[displayNumber()].width} height={phoneDisplays()[displayNumber()].height} ref={canvasRef!} />
-					<canvas
-						width={phoneDisplays()[displayNumber()].bufferWidth}
-						height={phoneDisplays()[displayNumber()].bufferHeight}
-						ref={bufferCanvasRef!}
-						style={{ display: 'none' }}
-					/>
-				</Paper>
-			</Grid>
+			<Grid container spacing={2}>
+				<Grid
+					item
+					sx={{
+						order: { xs: 2, sm: 1 },
+						textAlign: 'center',
+						minWidth: '255px',
+						width: phoneDisplays()[displayNumber()].width + 15 + 'px'
+					}}
+				>
+					<Paper sx={{ display: 'inline-flex' }}>
+						<canvas
+							width={phoneDisplays()[displayNumber()].width}
+							height={phoneDisplays()[displayNumber()].height}
+							ref={canvasRef!}
+						/>
+						<canvas
+							width={phoneDisplays()[displayNumber()].bufferWidth}
+							height={phoneDisplays()[displayNumber()].bufferHeight}
+							ref={bufferCanvasRef!}
+							style={{ display: 'none' }}
+						/>
+					</Paper>
+				</Grid>
 
-			<Grid item mt={1} sx={{ order: { xs: 1, sm: 2 } }}>
-				<SerialConnect protocol="BFC" />
+				<Grid item mt={1} sx={{ order: { xs: 1, sm: 2 } }}>
+					<SerialConnect protocol="BFC" />
 
-				<Show when={phoneDisplays().length > 0}>
-					<Stack alignItems="center" direction="row" gap={2}>
-						<TvIcon />
-						<FormControl>
-							<RadioGroup row value={displayNumber()} onChange={(e) => setDisplayNumber(Number(e.target.value))}>
-								<Index each={phoneDisplays()}>{(display, index) =>
-									<FormControlLabel value={index} control={<Radio />} label={`Display #${index + 1} (${display().width}x${display().height})`} />
-								}</Index>
-							</RadioGroup>
+					<Show when={phoneDisplays().length > 0}>
+						<Stack alignItems="center" direction="row" gap={2}>
+							<TvIcon />
+							<FormControl>
+								<RadioGroup row value={displayNumber()} onChange={(e) => setDisplayNumber(Number(e.target.value))}>
+									<Index each={phoneDisplays()}>{(display, index) =>
+										<FormControlLabel
+											value={index}
+											control={<Radio />}
+											label={`Display #${index + 1} (${display().width}x${display().height})`}
+										/>
+									}</Index>
+								</RadioGroup>
+							</FormControl>
+						</Stack>
+					</Show>
+
+					<Stack alignItems="center" direction="row" gap={2} mt={1}>
+						<FormControl variant="standard">
+							<Button
+								variant="outlined"
+								disabled={!bfcReady() || !!progressValue()}
+								onClick={makeScreenshot}
+							>
+								Make screenshot
+							</Button>
+						</FormControl>
+
+						<FormControl variant="standard">
+							<Button
+								variant="outlined"
+								title="Download screenshot" sx={{ minWidth: 0 }}
+								disabled={!hasScreenshot()}
+								onClick={saveScreenshot}
+							>
+								<DownloadIcon />
+							</Button>
+						</FormControl>
+
+						<FormControl variant="standard">
+							<CopyButton onCopy={copyScreenshot} disabled={!hasScreenshot()} />
 						</FormControl>
 					</Stack>
-				</Show>
 
-				<Stack alignItems="center" direction="row" gap={2} mt={1}>
-					<FormControl variant="standard">
-						<Button variant="outlined" disabled={!bfcReady() || !!progressValue()} onClick={makeScreenshot}>
-							Make screenshot
-						</Button>
-					</FormControl>
-
-					<FormControl variant="standard">
-						<Button variant="outlined" title="Download screenshot" sx={{ minWidth: 0 }} disabled={!hasScreenshot()} onClick={saveScreenshot}>
-							<DownloadIcon />
-						</Button>
-					</FormControl>
-
-					<FormControl variant="standard">
-						<CopyButton onCopy={copyScreenshot} disabled={!hasScreenshot()} />
-					</FormControl>
-				</Stack>
-
-				<Box sx={{ width: '100%', mt: 2, display: progressValue() ? '' : 'none' }}>
-					<LinearProgress variant="determinate" value={progressValue()?.percent || 0} />
-					<Show when={progressValue()?.total}>
-						{progressValue()!.cursor} / {progressValue()!.total}, {progressValue()!.speed}
-					</Show>
-				</Box>
-
-				<Show when={errorMessage()}>
-					<Box mt={1}>
-						<Alert severity="error">{errorMessage()}</Alert>
+					<Box sx={{ width: '100%', mt: 2, display: progressValue() ? '' : 'none' }}>
+						<LinearProgress variant="determinate" value={progressValue()?.percent || 0} />
+						<Show when={progressValue()?.total}>
+							{progressValue()!.cursor} / {progressValue()!.total}, {progressValue()!.speed}
+						</Show>
 					</Box>
-				</Show>
+
+					<Show when={errorMessage()}>
+						<Box mt={1}>
+							<Alert severity="error">{errorMessage()}</Alert>
+						</Box>
+					</Show>
+				</Grid>
 			</Grid>
-		</Grid>
+		</Box>
 	);
 }
 

@@ -21,6 +21,9 @@ export async function openSerialPort(webSerialPort: SerialPort): Promise<AsyncSe
 }
 
 export async function getSerialPort(portPath?: string): Promise<{ port: SerialPort; path: string; index: number; }> {
+	if (!navigator.serial)
+		throw new Error(`WebSerial is not supported. Please use Chromium based desktop browsers (Google Chrome, Microsoft Edge, Opera).`);
+
 	// Try to get previously used port
 	let portIndex = 0;
 	for (const p of await WebSerialBinding.list()) {

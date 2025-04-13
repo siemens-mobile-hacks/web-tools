@@ -12,7 +12,6 @@ import {
 	DialogTitle,
 	FormControl,
 	FormControlLabel,
-	Grid,
 	LinearProgress,
 	Link,
 	List,
@@ -117,14 +116,18 @@ function MemoryDumperPopup(props: MemoryDumperPopupProps): JSX.Element {
 						<Switch>
 							<Match when={props.readResult?.error}>
 								<Box sx={{ color: 'error.main' }}>
-									Due to an error, only <b>{formatSize(props.readResult?.buffer?.length ?? 0)}</b> from <b>{formatSize(props.memorySize)}</b> {' '}
+									Due to an error, only {' '}
+									<b>{formatSize(props.readResult?.buffer?.length ?? 0)}</b> {' '}
+									from <b>{formatSize(props.memorySize)}</b> {' '}
 									was successfully read.<br />
 									You can save this partial read result as a file.
 								</Box>
 							</Match>
 							<Match when={props.readResult?.canceled}>
 								<Box sx={{ color: 'error.main' }}>
-									Due to an interruption, only <b>{formatSize(props.readResult?.buffer?.length ?? 0)}</b> from <b>{formatSize(props.memorySize)}</b> {' '}
+									Due to an interruption, only {' '}
+									<b>{formatSize(props.readResult?.buffer?.length ?? 0)}</b> {' '}
+									from <b>{formatSize(props.memorySize)}</b> {' '}
 									was successfully read.<br />
 									You can save this partial read result as a file.
 								</Box>
@@ -269,12 +272,10 @@ export default function MemoryDumperPage(): JSX.Element {
 	return (
 		<Box>
 			<Show when={serial.connectError()}>
-				<Grid item xs={12} mt={1} mb={2} order={0}>
-					<Alert severity="error">
-						ERROR: {serial.connectError()?.message}<br />
-						Try reconnecting the data cable if you are sure that your phone is connected and online.
-					</Alert>
-				</Grid>
+				<Alert severity="error" sx={{ mb: 1 }}>
+					ERROR: {serial.connectError()?.message}<br />
+					Try reconnecting the data cable if you are sure that your phone is connected and online.
+				</Alert>
 			</Show>
 
 			<SerialConnect protocol="CGSN" />
