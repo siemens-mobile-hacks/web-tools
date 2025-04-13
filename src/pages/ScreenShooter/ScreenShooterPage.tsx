@@ -9,6 +9,8 @@ import {
 	FormControlLabel,
 	Grid,
 	LinearProgress,
+	List,
+	ListItem,
 	Paper,
 	Radio,
 	RadioGroup,
@@ -87,7 +89,8 @@ function ScreenShooterPage(): JSX.Element {
 			if (bufferCanvasRef.width !== canvasRef.width || bufferCanvasRef.height !== canvasRef.height) {
 				transferBufferToCanvas(buffer.mode, buffer.buffer, bufferCanvasRef);
 				const ctx = canvasRef.getContext('2d');
-				if (!ctx) return;
+				if (!ctx)
+					return;
 
 				const x = Math.round((bufferCanvasRef.width - canvasRef.width) / 2);
 				const y = Math.round((bufferCanvasRef.height - canvasRef.height) / 2);
@@ -222,6 +225,22 @@ function ScreenShooterPage(): JSX.Element {
 					</Show>
 				</Grid>
 			</Grid>
+
+			<Alert severity="info" sx={{ mt: 1 }}>
+				<b>TIPS & TRICKS:</b>
+
+				<List sx={{ listStyleType: 'disc' }}>
+					<ListItem sx={{ display: 'list-item' }}>
+						DCA-540 is better choice for speed.
+					</ListItem>
+					<ListItem sx={{ display: 'list-item' }}>
+						Entered SKEY/BKEY is required for normal operation.
+					</ListItem>
+					<ListItem sx={{ display: 'list-item' }}>
+						Bluetooth is not supported.
+					</ListItem>
+				</List>
+			</Alert>
 		</Box>
 	);
 }
