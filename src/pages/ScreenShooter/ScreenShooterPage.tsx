@@ -9,8 +9,6 @@ import {
 	FormControlLabel,
 	Grid,
 	LinearProgress,
-	List,
-	ListItem,
 	Paper,
 	Radio,
 	RadioGroup,
@@ -135,7 +133,8 @@ function ScreenShooterPage(): JSX.Element {
 			<Show when={serial.connectError()}>
 				<Alert severity="error" sx={{ mb: 1 }}>
 					ERROR: {serial.connectError()?.message}<br />
-					Try reconnecting the data cable if you are sure that your phone is connected and online.
+					Try reconnecting the data cable if you are sure that your phone is connected and online. {' '}
+					Also make sure that you enter SKEY/BKEY to your phone.
 				</Alert>
 			</Show>
 
@@ -225,22 +224,6 @@ function ScreenShooterPage(): JSX.Element {
 					</Show>
 				</Grid>
 			</Grid>
-
-			<Alert severity="info" sx={{ mt: 1 }}>
-				<b>TIPS & TRICKS:</b>
-
-				<List sx={{ listStyleType: 'disc' }}>
-					<ListItem sx={{ display: 'list-item' }}>
-						DCA-540 is better choice for speed.
-					</ListItem>
-					<ListItem sx={{ display: 'list-item' }}>
-						Entered SKEY/BKEY is required for normal operation.
-					</ListItem>
-					<ListItem sx={{ display: 'list-item' }}>
-						Bluetooth is not supported.
-					</ListItem>
-				</List>
-			</Alert>
 		</Box>
 	);
 }
