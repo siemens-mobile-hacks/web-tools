@@ -1,36 +1,42 @@
-import { createMemo, createEffect } from "solid-js";
+import { Component, createMemo, ParentComponent } from "solid-js";
 import { A, useMatch } from "@solidjs/router";
-
-import Box from '@suid/material/Box';
-import Drawer from '@suid/material/Drawer';
-import Toolbar from '@suid/material/Toolbar';
-
-import List from '@suid/material/List';
-import ListItem from '@suid/material/ListItem';
-import ListItemButton from '@suid/material/ListItemButton';
-import ListItemText from '@suid/material/ListItemText';
-import ListItemIcon from '@suid/material/ListItemIcon';
-
+import {
+	Box,
+	Drawer,
+	List,
+	ListItem,
+	ListItemButton,
+	ListItemIcon,
+	ListItemText,
+	Toolbar,
+	useMediaQuery
+} from '@suid/material';
 import ScreenshotIcon from '@suid/icons-material/Screenshot';
 import SdCardIcon from '@suid/icons-material/SdCard';
-
 import { useTheme } from '@suid/material/styles';
-import useMediaQuery from '@suid/material/useMediaQuery';
-
-import { resolveURL } from '~/utils';
+import { resolveURL } from '@/utils.js';
 
 const DRAWER_WIDTH = 240;
 
-function AppDrawerLink(props) {
+export interface AppDrawerLinkProps {
+	href: string;
+}
+
+export const AppDrawerLink: ParentComponent<AppDrawerLinkProps> = (props) => {
 	const match = useMatch(() => resolveURL(props.href));
 	return (
-		<ListItemButton component={A} {...props} selected={Boolean(match())}>
+		<ListItemButton component={A} href={props.href} selected={Boolean(match())}>
 			{props.children}
 		</ListItemButton>
 	);
+};
+
+export interface AppDrawerProps {
+	open: boolean;
+	onClose: () => void;
 }
 
-function AppDrawer(props) {
+export const AppDrawer: Component<AppDrawerProps> = (props) => {
 	const theme = useTheme();
 	const isWideScreen = useMediaQuery(theme.breakpoints.up('md'));
 	const drawerVariant = createMemo(() => isWideScreen() ? 'permanent' : 'temporary');
@@ -65,6 +71,4 @@ function AppDrawer(props) {
 			</Box>
 		</Drawer>
 	);
-}
-
-export default AppDrawer;
+};

@@ -1,0 +1,41 @@
+{
+	"compilerOptions": {
+		"forceConsistentCasingInFileNames": true,
+		"allowSyntheticDefaultImports": true,
+		"esModuleInterop": true,
+		"isolatedModules": true,
+		"jsx": "preserve",
+		"jsxImportSource": "solid-js",
+		"lib": [
+			"ESNext",
+			"DOM",
+			"DOM.Iterable"
+		],
+		"module": "ESNext",
+		"moduleResolution": "node",
+		"noEmit": true,
+		"noFallthroughCasesInSwitch": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"paths": {
+			"@/*.js": [
+				"./src/*.js"
+			]
+		},
+		"resolveJsonModule": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"target": "ESNext",
+		"types": [
+			"vite-plugin-solid-svg/types-component-solid",
+			"vite/client",
+			"@types/w3c-web-serial"
+		]
+	},
+	"include": [
+		"src"
+	],
+	"references": [{
+		"path": "./tsconfig.node.json"
+	}]
+}

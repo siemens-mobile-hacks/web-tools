@@ -1,7 +1,8 @@
 import { defineConfig, Plugin } from 'vite';
 import solidPlugin from 'vite-plugin-solid';
 import suidPlugin from "@suid/vite-plugin";
-import { nodePolyfills } from 'vite-plugin-node-polyfills'
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
+import tsconfigPaths from 'vite-tsconfig-paths';
 import path from 'node:path';
 import fs from 'node:fs';
 
@@ -12,7 +13,7 @@ const ROUTES = [
 
 function postBuildPlugin(): Plugin {
 	return {
-		name:	'postbuild-plugin',
+		name: 'postbuild-plugin',
 		async closeBundle() {
 			const isSymlinkExists = (file: string) => {
 				try {
@@ -43,9 +44,14 @@ export default defineConfig({
 	resolve: {
 		alias: [{ find: '~', replacement: path.resolve(import.meta.dirname, '/src') }],
 	},
+	worker: {
+		format: 'es',
+		plugins: () => [ tsconfigPaths(), nodePolyfills() ]
+	},
 	plugins: [
 		suidPlugin(),
 		solidPlugin(),
+		tsconfigPaths(),
 		nodePolyfills(),
 		postBuildPlugin(),
 	],
@@ -53,6 +59,6 @@ export default defineConfig({
 		port: 3000,
 	},
 	build: {
-		target: 'esnext',
+		target: 'esnext'
 	},
 });

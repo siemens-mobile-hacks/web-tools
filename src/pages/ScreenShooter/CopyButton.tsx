@@ -1,17 +1,22 @@
-import { createSignal } from 'solid-js';
-import Button from '@suid/material/Button';
+import { Component, createSignal, Show } from 'solid-js';
+import { Button } from '@suid/material';
 import ContentCopyIcon from '@suid/icons-material/ContentCopy';
 import DoneIcon from '@suid/icons-material/Done';
 
-function CopyButton(props) {
-	let timeout;
-	const [isCopied, setIsCopied] = createSignal(false);
+export interface CopyButtonProps {
+	onCopy: () => void;
+	disabled?: boolean;
+}
 
-	const onClick = () => {
+export const CopyButton: Component<CopyButtonProps> = (props) => {
+	let timeout: NodeJS.Timeout | undefined;
+	const [isCopied, setIsCopied] = createSignal<boolean>(false);
+
+	const onClick = (): void => {
 		setIsCopied(true);
 		timeout && clearTimeout(timeout);
 		timeout = setTimeout(() => {
-			timeout = false;
+			timeout = undefined;
 			setIsCopied(false);
 		}, 1000);
 		props.onCopy();
@@ -20,9 +25,10 @@ function CopyButton(props) {
 	return (
 		<Button
 			color={isCopied() ? 'success' : 'primary'}
+			variant="outlined"
+			sx={{ minWidth: 0 }}
 			disabled={props.disabled}
 			onClick={onClick}
-			{...props}
 		>
 			<Show when={isCopied()}>
 				<DoneIcon />
@@ -34,5 +40,3 @@ function CopyButton(props) {
 		</Button>
 	);
 }
-
-export default CopyButton;

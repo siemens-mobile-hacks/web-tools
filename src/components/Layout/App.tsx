@@ -1,41 +1,37 @@
 /* @refresh reload */
-import { createSignal, createEffect, createMemo, onMount } from "solid-js";
+import { createMemo, createSignal, ParentComponent } from "solid-js";
+import { Box, CssBaseline, Toolbar, useMediaQuery } from '@suid/material';
+import { createPalette, createTheme, ThemeProvider } from '@suid/material/styles';
+import { AppHeader } from '@/components/App/Header.js';
+import { AppDrawer } from '@/components/App/Drawer.js';
+import { SerialProvider } from '@/contexts/SerialProvider.js';
+import { makePersisted } from "@solid-primitives/storage";
 
-import Box from '@suid/material/Box';
-import Toolbar from '@suid/material/Toolbar';
+type ThemeMode = 'light' | 'dark' | 'system';
 
-import { createTheme, ThemeProvider, createPalette } from '@suid/material/styles';
-import CssBaseline from '@suid/material/CssBaseline';
-import useMediaQuery from '@suid/material/useMediaQuery';
-
-import AppHeader from '~/components/App/Header';
-import AppDrawer from '~/components/App/Drawer';
-
-import SerialProvider from '~/contexts/SerialProvider';
-import { createStoredSignal } from "~/storage";
-
-function App(props) {
-	const [drawerIsOpen, setDrawerIsOpen] = createSignal(false);
-	const [preferredTheme, setPreferredTheme] = createStoredSignal("theme", "system");
+export const App: ParentComponent = (props) => {
+	const [drawerIsOpen, setDrawerIsOpen] = createSignal<boolean>(false);
+	const [preferredTheme, setPreferredTheme] = makePersisted(createSignal<ThemeMode>("system"), { name: "theme" });
 	const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
 
-	const effectiveTheme = createMemo(() => {
-		if (preferredTheme() == 'system')
+	const effectiveTheme = createMemo<ThemeMode>(() => {
+		if (preferredTheme() === 'system')
 			return prefersDarkMode() ? 'dark' : 'light';
 		return preferredTheme();
 	});
 
 	const palette = createMemo(() => {
 		return createPalette({
-			mode: effectiveTheme() == 'dark' ? 'dark' : 'light',
+			mode: effectiveTheme() === 'dark' ? 'dark' : 'light',
 			primary: {
-				main: effectiveTheme() == 'dark' ? '#bb86fc' : '#673ab7',
+				main: effectiveTheme() === 'dark' ? '#bb86fc' : '#673ab7',
 			},
 			secondary: {
-				main: effectiveTheme() == 'dark' ? '#03dac6' : '#651fff',
+				main: effectiveTheme() === 'dark' ? '#03dac6' : '#651fff',
 			},
 		});
 	});
+
 	const theme = createTheme({
 		palette,
 		typography: {
@@ -55,7 +51,7 @@ function App(props) {
 		},
 	});
 
-	const toggleDrawer = (drawerState) => {
+	const toggleDrawer = (drawerState: boolean): void => {
 		setDrawerIsOpen(drawerState);
 	};
 
@@ -71,7 +67,7 @@ function App(props) {
 						onDrawerOpen={() => toggleDrawer(!drawerIsOpen())}
 						onThemeChanged={(newTheme) => setPreferredTheme(newTheme)}
 					/>
-					<AppDrawer open={drawerIsOpen()} onClose={toggleDrawer(false)} />
+					<AppDrawer open={drawerIsOpen()} onClose={() => toggleDrawer(false)} />
 
 					<Box component="main" sx={{ flexGrow: 1, p: 1 }}>
 						<Toolbar />
@@ -81,6 +77,4 @@ function App(props) {
 			</SerialProvider>
 		</ThemeProvider>
 	);
-}
-
-export default App;
+};

@@ -1,28 +1,30 @@
-import { Match, Show, Switch, createSignal } from "solid-js";
-
-import AppBar from '@suid/material/AppBar';
-import Toolbar from '@suid/material/Toolbar';
-import IconButton from '@suid/material/IconButton';
-import Typography from '@suid/material/Typography';
-
+import { Component, createSignal, Match, Show, Switch } from "solid-js";
+import { AppBar, IconButton, Toolbar, Typography, useMediaQuery } from '@suid/material';
 import MenuIcon from '@suid/icons-material/Menu';
 import LightModeIcon from '@suid/icons-material/LightMode';
 import BedtimeIcon from '@suid/icons-material/Bedtime';
 import BrightnessMediumIcon from '@suid/icons-material/BrightnessMedium';
-
 import { useTheme } from '@suid/material/styles';
-import useMediaQuery from '@suid/material/useMediaQuery';
 
-function AppHeader(props) {
+type ThemeMode = 'light' | 'dark' | 'system';
+
+export interface AppHeaderProps {
+	effectiveTheme: ThemeMode;
+	preferredTheme: ThemeMode;
+	onThemeChanged: (theme: ThemeMode) => void;
+	onDrawerOpen: () => void;
+}
+
+export const AppHeader: Component<AppHeaderProps> = (props) => {
 	const theme = useTheme();
 	const isWideScreen = useMediaQuery(theme.breakpoints.up('md'));
-	const [clicks, setClicks] = createSignal(0);
+	const [clicks, setClicks] = createSignal<number>(0);
 
-	const changeTheme = (e) => {
+	const changeTheme = () => {
 		if (clicks() < 2) {
-			if (props.effectiveTheme == 'dark') {
+			if (props.effectiveTheme === 'dark') {
 				props.onThemeChanged('light');
-			} else if (props.effectiveTheme == 'light') {
+			} else if (props.effectiveTheme === 'light') {
 				props.onThemeChanged('dark');
 			}
 			setClicks(clicks() + 1);
@@ -52,13 +54,13 @@ function AppHeader(props) {
 
 				<IconButton size="large" edge="end" color="inherit" onClick={changeTheme}>
 					<Switch>
-						<Match when={props.preferredTheme == 'light'}>
+						<Match when={props.preferredTheme === 'light'}>
 							<LightModeIcon />
 						</Match>
-						<Match when={props.preferredTheme == 'dark'}>
+						<Match when={props.preferredTheme === 'dark'}>
 							<BedtimeIcon />
 						</Match>
-						<Match when={props.preferredTheme == 'system'}>
+						<Match when={props.preferredTheme === 'system'}>
 							<BrightnessMediumIcon />
 						</Match>
 					</Switch>
@@ -67,5 +69,3 @@ function AppHeader(props) {
 		</AppBar>
 	);
 }
-
-export default AppHeader;
