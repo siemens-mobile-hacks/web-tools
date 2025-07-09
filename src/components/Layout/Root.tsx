@@ -4,6 +4,7 @@ import { Navigate, Route, Router } from "@solidjs/router";
 
 const ScreenShooter = lazy(() => import("../../pages/ScreenShooter/ScreenShooterPage"));
 const MemoryDumper = lazy(() => import("../../pages/MemoryDumper/MemoryDumperPage"));
+const SMSReader = lazy(() => import("../../pages/SMSReader/SMSReaderPage"));
 
 export const Root: Component = () => {
 	const showAppError = (err: any) => {
@@ -17,6 +18,7 @@ export const Root: Component = () => {
 				<Route path="/" component={() => <Navigate href={() => "/screenshot"} />} />
 				<Route path="/screenshot" component={ScreenShooter} />
 				<Route path="/dumper" component={MemoryDumper} />
+				<Route path="/sms-reader" component={SMSReader} />
 				<Route path="*" component={() => <Navigate href="/" />} />
 			</Router>
 		</ErrorBoundary>
