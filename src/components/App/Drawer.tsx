@@ -15,6 +15,7 @@ import ScreenshotIcon from '@suid/icons-material/Screenshot';
 import SdCardIcon from '@suid/icons-material/SdCard';
 import { useTheme } from '@suid/material/styles';
 import { resolveURL } from '@/utils.js';
+import { Mail } from "@suid/icons-material";
 
 const DRAWER_WIDTH = 240;
 
@@ -65,6 +66,14 @@ export const AppDrawer: Component<AppDrawerProps> = (props) => {
 								<SdCardIcon />
 							</ListItemIcon>
 							<ListItemText primary="RAM dumper" />
+						</AppDrawerLink>
+					</ListItem>
+					<ListItem disablePadding>
+						<AppDrawerLink href="/sms-reader">
+							<ListItemIcon>
+								<Mail />
+							</ListItemIcon>
+							<ListItemText primary="SMS Reader" />
 						</AppDrawerLink>
 					</ListItem>
 				</List>
