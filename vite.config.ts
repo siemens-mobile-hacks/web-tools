@@ -9,6 +9,7 @@ import fs from 'node:fs';
 const ROUTES = [
 	`/screenshot`,
 	`/dumper`,
+	`/sms-reader`
 ];
 
 function postBuildPlugin(): Plugin {
