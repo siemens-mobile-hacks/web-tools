@@ -1,25 +1,26 @@
-import { Component, For, Show, createSignal } from 'solid-js';
+import { Component, createEffect, createSignal, For, Show } from 'solid-js';
 import {
+	Alert,
 	Box,
 	Button,
-	Paper,
-	Stack,
 	CircularProgress,
-	Typography,
 	Divider,
 	Fade,
-	useTheme, Alert,
+	Paper,
+	Stack,
+	Typography,
+	useTheme,
 } from '@suid/material';
 import FolderOpenIcon from '@suid/icons-material/FolderOpen';
 import FileUploadIcon from '@suid/icons-material/FileUpload';
-import { SMSDecoder, SMSDatParser, formatTimestampToIsoWithOffset } from 'siemens-sms-parser';
+import { formatTimestampToIsoWithOffset, HTMLRenderer, SMSDatParser, SMSDecoder } from 'siemens-sms-parser';
 
 interface ParsedMessage {
 	phoneKey: string;
 	type: 'Incoming' | 'Outgoing';
 	encoding?: string;
 	smsCenterNumber?: string;
-	text: string;
+	html: string;
 	file: File;
 	dateAndTimeZoneOffset?: { date: number; timeZoneOffsetMinutes: number };
 	messageIndex?: string;
@@ -27,7 +28,7 @@ interface ParsedMessage {
 	segmentsTotal: number;
 	format: string;
 }
-
+const htmlRenderer = new HTMLRenderer();
 const SMSReaderPage: Component = () => {
 	const [parsedMessages, setParsedMessages] = createSignal<ParsedMessage[]>([]);
 	const [isLoading, setIsLoading] = createSignal(false);
@@ -40,6 +41,10 @@ const SMSReaderPage: Component = () => {
 
 	let singleFileInput!: HTMLInputElement;
 	let directoryInput!: HTMLInputElement;
+	createEffect(() => {
+		parsedMessages();                                 // establish the dependency
+		queueMicrotask(() => htmlRenderer.initHandlers()); // run after DOM is flushed
+	});
 
 	const getMessageStyles = (direction: 'Incoming' | 'Outgoing') => {
 		const backgroundShade =
@@ -255,12 +260,13 @@ const SMSReaderPage: Component = () => {
 
 										<Typography
 											sx={{
-												whiteSpace: 'pre-wrap',
 												wordBreak: 'break-word',
 												lineHeight: 1.6,
 												mt: 1,
 											}}
-										>{message.text}</Typography>
+											component="div"
+											innerHTML={message.html}
+										/>
 									</Paper>
 								</Stack>
 							</Fade>
