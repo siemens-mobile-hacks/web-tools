@@ -51,8 +51,8 @@ importers:
         specifier: ^0.5.1
         version: 0.5.1
       siemens-sms-parser:
-        specifier: ^0.2.2
-        version: 0.2.2
+        specifier: ^0.3.0
+        version: 0.3.0
       solid-js:
         specifier: ^1.9.5
         version: 1.9.5
@@ -1371,8 +1371,8 @@ packages:
     resolution: {integrity: sha512-ZX99e6tRweoUXqR+VBrslhda51Nh5MTQwou5tnUDgbtyM0dBgmhEDtWGP/xbKn6hqfPRHujUNwz5fy/wbbhnpw==}
     engines: {node: '>= 0.4'}
 
-  siemens-sms-parser@0.2.2:
-    resolution: {integrity: sha512-IjQWIi2nu7mRUPV1IcQaWiUmjML6ygbnFvhtpQlEui5uPaoFcdlVaJrJ87L6cxkvSuSE8TIoKWxGcuhuBpR4ww==}
+  siemens-sms-parser@0.3.0:
+    resolution: {integrity: sha512-urYMPQfaGvTOW5jnEGpCax8liwm3nkg5eMrhw1mtxbGSR7kxoAZx3GoPACHoG+aKNN9+o1csQKLnhLDmm9NLhg==}
     hasBin: true
 
   solid-js@1.9.5:
@@ -2926,7 +2926,7 @@ snapshots:
       side-channel-map: 1.0.1
       side-channel-weakmap: 1.0.2
 
-  siemens-sms-parser@0.2.2: {}
+  siemens-sms-parser@0.3.0: {}
 
   solid-js@1.9.5:
     dependencies:
