@@ -13,21 +13,20 @@ import {
 } from '@suid/material';
 import FolderOpenIcon from '@suid/icons-material/FolderOpen';
 import FileUploadIcon from '@suid/icons-material/FileUpload';
-import { formatTimestampToIsoWithOffset, HTMLRenderer, SMSDatParser, SMSDecoder } from 'siemens-sms-parser';
+import {
+	DecodedPDU,
+	DecodedSMS,
+	formatTimestampToIsoWithOffset,
+	HTMLRenderer,
+	SMSDatParser,
+	SMSDecoder
+} from 'siemens-sms-parser';
 
-interface ParsedMessage {
+type ParsedMessage = Partial<DecodedSMS> & DecodedPDU & {
 	phoneKey: string;
-	type: 'Incoming' | 'Outgoing';
-	encoding?: string;
-	smsCenterNumber?: string;
-	html: string;
 	file: File;
-	dateAndTimeZoneOffset?: { date: number; timeZoneOffsetMinutes: number };
-	messageIndex?: string;
-	segmentsStored: number;
-	segmentsTotal: number;
-	format: string;
-}
+};
+
 const htmlRenderer = new HTMLRenderer();
 const SMSReaderPage: Component = () => {
 	const [parsedMessages, setParsedMessages] = createSignal<ParsedMessage[]>([]);
@@ -41,12 +40,13 @@ const SMSReaderPage: Component = () => {
 
 	let singleFileInput!: HTMLInputElement;
 	let directoryInput!: HTMLInputElement;
+
 	createEffect(() => {
 		parsedMessages();                                 // establish the dependency
 		queueMicrotask(() => htmlRenderer.initHandlers()); // run after DOM is flushed
 	});
 
-	const getMessageStyles = (direction: 'Incoming' | 'Outgoing') => {
+	const getMessageStyles = (direction: 'Incoming' | 'Outgoing' | 'STATUS_REPORT') => {
 		const backgroundShade =
 			direction === 'Incoming'
 				? theme.palette.primary.light
@@ -91,13 +91,13 @@ const SMSReaderPage: Component = () => {
 						? new SMSDatParser().decode(buffer)
 						: [new SMSDecoder().decode(buffer)];
 
-				decoded.forEach((raw: any) => {
+				decoded.forEach((raw) => {
 					const phoneKey =
-						raw.type === 'Incoming' ? raw.sender : raw.recipient || 'Unknown';
+						(raw.type === 'Incoming' ? raw.sender : raw.recipient) ?? 'Unknown';
 
 					const parsed: ParsedMessage = {
 						...raw,
-						phoneKey,
+						phoneKey: phoneKey,
 						file,
 					};
 
@@ -132,10 +132,10 @@ const SMSReaderPage: Component = () => {
 							return msg1.messageIndex > msg2.messageIndex ? 1: -1;
 						}
 						if (msg1.dateAndTimeZoneOffset !== undefined && msg2.file.lastModified !== undefined) {
-							return msg1.dateAndTimeZoneOffset.date > msg2.file.lastModified ? 1 : -1;
+							return msg1.dateAndTimeZoneOffset.date.getTime() > msg2.file.lastModified ? 1 : -1;
 						}
 						if (msg1.file.lastModified !== undefined && msg2.dateAndTimeZoneOffset !== undefined) {
-							return msg1.file.lastModified > msg2.dateAndTimeZoneOffset.date ? 1 : -1;
+							return msg1.file.lastModified > msg2.dateAndTimeZoneOffset.date.getTime() ? 1 : -1;
 						}
 						if (msg1.file.lastModified !== undefined && msg2.file.lastModified !== undefined) {
 							return msg1.file.lastModified > msg2.file.lastModified ? 1 : -1;
