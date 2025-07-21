@@ -97,7 +97,7 @@ const SMSReaderPage: Component = () => {
 
 					const parsed: ParsedMessage = {
 						...raw,
-						phoneKey: phoneKey,
+						phoneKey,
 						file,
 					};
 
