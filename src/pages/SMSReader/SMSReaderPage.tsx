@@ -1,3 +1,4 @@
+import './SMSReaderPage.css';
 import { Component, createEffect, createSignal, For, Show } from 'solid-js';
 import {
 	Alert,
@@ -93,7 +94,7 @@ const SMSReaderPage: Component = () => {
 
 				decoded.forEach((raw) => {
 					const phoneKey =
-						(raw.type === 'Incoming' ? raw.sender : raw.recipient) ?? 'Unknown';
+						(raw.type === 'Incoming' ? raw.sender : raw.recipient) || 'Unknown';
 
 					const parsed: ParsedMessage = {
 						...raw,

@@ -1,0 +1,14 @@
+.i-melody,
+.predefined-sound,
+.predefined-animation,
+.picture,
+.animation {
+	display: inline-block;
+	/* This doesn't look good when there is nothing preceding the element,
+	 but fixing it requires wrapping all the text in <span> elements, which should be done on the library side */
+	margin-left: 5px;
+	margin-right: 5px;
+}
+.predefined-animation {
+	width: 48px;
+}
