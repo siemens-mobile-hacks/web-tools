@@ -56,6 +56,9 @@ export default defineConfig({
 		nodePolyfills(),
 		postBuildPlugin(),
 	],
+	optimizeDeps: {
+		exclude: ['siemens-sms-parser'],
+	},
 	server: {
 		port: 3000,
 	},
