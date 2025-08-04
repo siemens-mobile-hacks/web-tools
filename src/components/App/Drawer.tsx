@@ -46,6 +46,7 @@ export const DrawerLink: Component<DrawerLinkProps> = (props) => {
 	const isNestedSelected = () => {
 		if (props.sublinks) {
 			for (const sublink of props.sublinks) {
+				console.log(sublink.url && resolveURL(sublink.url), location.pathname);
 				if (sublink.url && resolveURL(sublink.url) === location.pathname)
 					return true;
 			}
