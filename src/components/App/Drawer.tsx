@@ -57,14 +57,14 @@ export const DrawerLink: Component<DrawerLinkProps> = (props) => {
 	return (
 		<Show when={props.sublinks && props.sublinks.length > 0} fallback={
 			<ListItemButton component={A} href={props.url ?? ""} selected={isSelected()} sx={{ pl: depth() * 2 }}>
-				<ListItemIcon>
+				<ListItemIcon sx={{ minWidth: "2.5em" }}>
 					{props.icon}
 				</ListItemIcon>
 				<ListItemText primary={props.title} />
 			</ListItemButton>
 		}>
 			<ListItemButton onClick={() => setIsOpen((prev) => !prev)} sx={{ pl: depth() * 2 }}>
-				<ListItemIcon>
+				<ListItemIcon sx={{ minWidth: "2.5em" }}>
 					{props.icon}
 				</ListItemIcon>
 				<ListItemText primary={props.title} />
@@ -90,19 +90,20 @@ export const AppDrawer: Component<AppDrawerProps> = (props) => {
 
 	const links: DrawerLinkProps[] = [
 		{
-			icon: <ScreenshotIcon />,
-			title: "Screenshotter",
-			url: "/screenshot",
-		},
-		{
-			icon: <SdCardIcon />,
-			title: "RAM dumper",
-			url: "/dumper",
-		},
-		{
-			icon: <MailIcon />,
-			title: "SMS Reader",
-			url: "/sms-reader",
+			icon: <PhonelinkSetupIcon />,
+			title: "SGOLD Tools",
+			sublinks: [
+				{
+					icon: <ScreenshotIcon />,
+					title: "Screenshotter",
+					url: "/screenshot",
+				},
+				{
+					icon: <SdCardIcon />,
+					title: "RAM dumper",
+					url: "/dumper",
+				},
+			]
 		},
 		{
 			icon: <PhonelinkSetupIcon />,
@@ -121,7 +122,12 @@ export const AppDrawer: Component<AppDrawerProps> = (props) => {
 					url: "/dumper/dwd",
 				}
 			]
-		}
+		},
+		{
+			icon: <MailIcon />,
+			title: "SMS Reader",
+			url: "/sms-reader",
+		},
 	];
 
 	return (
