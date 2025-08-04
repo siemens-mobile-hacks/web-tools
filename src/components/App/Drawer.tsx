@@ -19,7 +19,7 @@ export interface AppDrawerLinkProps {
 }
 
 export const AppDrawerLink: ParentComponent<AppDrawerLinkProps> = (props) => {
-	const match = useMatch(() => resolveURL(props.href));
+	const match = useMatch(() => props.href);
 	return (
 		<ListItemButton component={A} href={props.href} selected={Boolean(match())}>
 			{props.children}
