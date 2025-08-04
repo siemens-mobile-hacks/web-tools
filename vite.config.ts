@@ -9,6 +9,7 @@ import fs from 'node:fs';
 const ROUTES = [
 	`/screenshot`,
 	`/dumper`,
+	`/dumper/dwd`,
 	`/sms-reader`
 ];
 
