@@ -35,4 +35,5 @@ export abstract class SerialService<T = any> {
 	abstract connect(portIndex: number, limitBaudrate?: number): Promise<void>;
 	abstract disconnect(): Promise<void>;
 	abstract protocol(): string;
+	abstract getDeviceName(): Promise<string | undefined>;
 }

@@ -7,6 +7,7 @@ import { makePersisted } from "@solid-primitives/storage";
 import { BfcService } from "@/workers/services/BfcService.js";
 import { CgsnService } from "@/workers/services/CgsnService.js";
 import { DwdService } from "@/workers/services/DwdService.js";
+import { useApp } from "@/providers/AppProvider";
 
 interface SerialContext {
 	bfc: Comlink.Remote<BfcService>;
@@ -34,6 +35,7 @@ export function useSerial(): SerialContext {
 }
 
 export const SerialProvider: ParentComponent = (props) => {
+	const app = useApp();
 	const [currentProtocol, setCurrentProtocol] = createSignal('none');
 	const [readyState, setReadyState] = createSignal<SerialReadyState>(SerialReadyState.DISCONNECTED);
 	const [connectError, setConnectError] = createSignal<Error | undefined>();
@@ -57,6 +59,7 @@ export const SerialProvider: ParentComponent = (props) => {
 	const disconnect = async (): Promise<void> => {
 		await serialWorker.disconnect();
 		setConnectError(undefined);
+		app.setStatus(undefined);
 	};
 
 	const isPortExists = (path: string): boolean => {
@@ -79,8 +82,12 @@ export const SerialProvider: ParentComponent = (props) => {
 		setLastUsedPort(portPath);
 		monitorNewPorts();
 	};
+	const onDeviceChange = (deviceName?: string) => {
+		app.setStatus(deviceName);
+	};
 
 	onMount(() => {
+		serialWorker.on('deviceChange', onDeviceChange);
 		serialWorker.on('readyStateChange', onReadyStateChange);
 		serialWorker.on('protocolChange', onProtocolChange);
 		serialWorker.on('serialPortChange', onSerialPortChange);
@@ -92,6 +99,7 @@ export const SerialProvider: ParentComponent = (props) => {
 	});
 
 	onCleanup(() => {
+		serialWorker.off('deviceChange', onDeviceChange);
 		serialWorker.off('readyStateChange', onReadyStateChange);
 		serialWorker.off('protocolChange', onProtocolChange);
 		serialWorker.off('serialPortChange', onSerialPortChange);

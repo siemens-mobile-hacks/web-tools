@@ -24,6 +24,7 @@ type SerialWorkerEvents = {
 	protocolChange: [SerialProtocol];
 	readyStateChange: [SerialReadyState];
 	serialPortChange: [string];
+	deviceChange: [string | undefined];
 };
 
 type SerialWorkerServices = {
@@ -42,6 +43,7 @@ const SERVICES: SerialWorkerServices = {
 export class SerialWorker extends EventEmitter<SerialWorkerEvents> {
 	private readyState: SerialReadyState = SerialReadyState.DISCONNECTED;
 	private protocol: SerialProtocol = 'none';
+	private device: string | undefined;
 	private lastPortPath?: string;
 
 	protected get service(): Comlink.Remote<SerialService> {
@@ -62,6 +64,7 @@ export class SerialWorker extends EventEmitter<SerialWorkerEvents> {
 			if (debug)
 				await this.service.setDebug(debug);
 			await this.service.connect(portIndex, limitBaudrate);
+			this.setDevice(await this.service.getDeviceName() ?? "Unknown device");
 			this.setReadyState(SerialReadyState.CONNECTED);
 		} catch (e) {
 			try {
@@ -78,9 +81,15 @@ export class SerialWorker extends EventEmitter<SerialWorkerEvents> {
 			return;
 		if (this.readyState == SerialReadyState.CONNECTED)
 			this.setReadyState(SerialReadyState.DISCONNECTING);
+		this.setDevice(undefined);
 		await this.service.disconnect();
 		this.setProtocol('none');
 		this.setReadyState(SerialReadyState.DISCONNECTED);
+	}
+
+	async getPhoneName() {
+		console.log(await this.service.getDeviceName());
+		return this.service.getDeviceName();
 	}
 
 	getLastPortPath() {
@@ -95,6 +104,13 @@ export class SerialWorker extends EventEmitter<SerialWorkerEvents> {
 		if (this.lastPortPath != path) {
 			this.lastPortPath = path;
 			this.emit('serialPortChange', path);
+		}
+	}
+
+	protected setDevice(device?: string): void {
+		if (this.device != device) {
+			this.device = device;
+			this.emit('deviceChange', device);
 		}
 	}
 

@@ -12,7 +12,7 @@ import { useTheme } from '@suid/material/styles';
 import { resolveURL } from '@/utils.js';
 import { Collapse } from '@/components/UI/Collapse';
 
-const DRAWER_WIDTH = 240;
+export const DRAWER_WIDTH = 240;
 
 export interface AppDrawerLinkProps {
 	href: string;
@@ -92,7 +92,7 @@ export const AppDrawer: Component<AppDrawerProps> = (props) => {
 	const links: DrawerLinkProps[] = [
 		{
 			icon: <ScreenshotIcon />,
-			title: "Screenshot",
+			title: "Screenshotter",
 			url: "/screenshot",
 		},
 		{

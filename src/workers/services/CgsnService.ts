@@ -138,6 +138,35 @@ export class CgsnService extends SerialService<CGSN> {
 		return { phoneVendor, phoneModel, phoneSwVersion, phoneImei, memoryRegions };
 	}
 
+	async getDeviceName() {
+		const atc = this.handle.getAtChannel();
+
+		let response: AtCommandResponse;
+		let phoneModel: string;
+		let phoneVendor: string;
+		let phoneSwVersion: string;
+
+		response = await atc.sendCommand("AT+CGMI");
+		if (!response.success)
+			return undefined;
+		phoneVendor = response.lines[0];
+
+		response = await atc.sendCommand("AT+CGMM");
+		if (!response.success)
+			return undefined;
+		phoneModel = response.lines[0];
+
+		response = await atc.sendCommand("AT+CGMR");
+		if (!response.success)
+			return undefined;
+		const match = response.lines[0].match(/^\s*(\d+)/);
+		if (!match)
+			return undefined;
+		phoneSwVersion = match[0];
+
+		return `${phoneVendor} ${phoneModel} v${phoneSwVersion}`;
+	}
+
 	async readMemory(addr: number, size: number, onProgress: (e: IoReadWriteProgress) => void) {
 		return this.handle.readMemory(addr, size, {
 			onProgress,

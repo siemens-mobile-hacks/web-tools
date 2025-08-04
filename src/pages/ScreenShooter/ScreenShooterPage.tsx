@@ -18,11 +18,12 @@ import TvIcon from '@suid/icons-material/Tv';
 import DownloadIcon from '@suid/icons-material/Download';
 import { CopyButton } from './CopyButton.js';
 import { SerialConnect } from '@/components/SerialConnect.js';
-import { useSerial } from '@/contexts/SerialProvider.js';
+import { useSerial } from '@/providers/SerialProvider.js';
 import { downloadCanvasImage, transferBufferToCanvas } from '@/utils.js';
 import { SerialReadyState } from "@/workers/SerialWorker.js";
 import { PhoneDisplay } from "@/workers/services/BfcService.js";
 import { IoReadWriteProgress } from "@sie-js/serial";
+import { Title } from "@/components/Layout/Title";
 
 type ProgressInfo = {
 	percent: number
@@ -49,10 +50,9 @@ export const ScreenShooterPage: Component = () => {
 	});
 
 	onMount(() => {
-		document.title = 'Screenshot';
-
 		const ctx = canvasRef.getContext('2d');
-		if (!ctx) return;
+		if (!ctx)
+			return;
 
 		ctx.rect(0, 0, canvasRef.width, canvasRef.height);
 		ctx.fillStyle = "rgba(0,0,0,0.1)";
@@ -130,6 +130,8 @@ export const ScreenShooterPage: Component = () => {
 
 	return (
 		<Box>
+			<Title>Screenshotter</Title>
+
 			<Grid container spacing={2}>
 				<Grid
 					item

@@ -18,7 +18,7 @@ import {
 import { sprintf } from 'sprintf-js';
 import ReportGmailerrorredIcon from '@suid/icons-material/ReportGmailerrorred';
 import SettingsIcon from '@suid/icons-material/Settings';
-import { useSerial } from '@/contexts/SerialProvider.js';
+import { useSerial } from '@/providers/SerialProvider.js';
 import { makePersisted } from "@solid-primitives/storage";
 import { WebSerialPortInfo } from "serialport-bindings-webserial";
 import { SerialProtocol, SerialReadyState } from '@/workers/SerialWorker.js';

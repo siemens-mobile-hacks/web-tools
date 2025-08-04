@@ -4,9 +4,11 @@ import { Box, CssBaseline, Toolbar, useMediaQuery } from '@suid/material';
 import { createPalette, createTheme, ThemeProvider } from '@suid/material/styles';
 import { AppHeader } from '@/components/App/Header.js';
 import { AppDrawer } from '@/components/App/Drawer.js';
-import { SerialProvider } from '@/contexts/SerialProvider.js';
+import { SerialProvider } from '@/providers/SerialProvider.js';
 import { makePersisted } from "@solid-primitives/storage";
 import { Toaster } from "@/components/App/Toaster.js";
+import { AppProvider } from "@/providers/AppProvider";
+import { MetaProvider } from "@solidjs/meta";
 
 type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -57,26 +59,30 @@ export const App: ParentComponent = (props) => {
 	};
 
 	return (
-		<ThemeProvider theme={theme}>
-			<SerialProvider>
-				<Toaster />
-				<Box sx={{ display: 'flex' }}>
-					<CssBaseline />
+		<MetaProvider>
+			<ThemeProvider theme={theme}>
+				<AppProvider>
+					<SerialProvider>
+						<Toaster />
+						<Box sx={{ display: 'flex' }}>
+							<CssBaseline />
 
-					<AppHeader
-						effectiveTheme={effectiveTheme()}
-						preferredTheme={preferredTheme()}
-						onDrawerOpen={() => toggleDrawer(!drawerIsOpen())}
-						onThemeChanged={(newTheme) => setPreferredTheme(newTheme)}
-					/>
-					<AppDrawer open={drawerIsOpen()} onClose={() => toggleDrawer(false)} />
+							<AppHeader
+								effectiveTheme={effectiveTheme()}
+								preferredTheme={preferredTheme()}
+								onDrawerOpen={() => toggleDrawer(!drawerIsOpen())}
+								onThemeChanged={(newTheme) => setPreferredTheme(newTheme)}
+							/>
+							<AppDrawer open={drawerIsOpen()} onClose={() => toggleDrawer(false)} />
 
-					<Box component="main" sx={{ flexGrow: 1, p: 1, maxWidth: '100%' }}>
-						<Toolbar />
-						{props.children}
-					</Box>
-				</Box>
-			</SerialProvider>
-		</ThemeProvider>
+							<Box component="main" sx={{ flexGrow: 1, p: 1, maxWidth: '100%' }}>
+								<Toolbar />
+								{props.children}
+							</Box>
+						</Box>
+					</SerialProvider>
+				</AppProvider>
+			</ThemeProvider>
+		</MetaProvider>
 	);
 };

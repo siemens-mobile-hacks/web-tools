@@ -46,6 +46,13 @@ export class BfcService extends SerialService {
 		});
 	}
 
+	async getDeviceName() {
+		const vendor = await this.handle.getVendorName();
+		const model = await this.handle.getProductName();
+		const version = await this.handle.getSwVersion();
+		return `${vendor} ${model} v${version}`;
+	}
+
 	async disconnect(): Promise<void> {
 		if (this.isConnected) {
 			const port = this.handle.getSerialPort();

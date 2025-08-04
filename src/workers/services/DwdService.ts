@@ -30,6 +30,11 @@ export class DwdService extends SerialService<DWD> {
 		});
 	}
 
+	async getDeviceName() {
+		const sw = await this.handle.getSWVersion();
+		return `${sw.sw} (${sw.cpu})`;
+	}
+
 	async disconnect(): Promise<void> {
 		if (this.isConnected) {
 			const port = this.handle.getSerialPort();

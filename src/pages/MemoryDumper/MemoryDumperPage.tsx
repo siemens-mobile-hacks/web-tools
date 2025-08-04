@@ -2,7 +2,7 @@ import * as Comlink from 'comlink';
 import { Component, createEffect, createMemo, createSignal, For, Show } from 'solid-js';
 import { Alert, Box, Button, FormControl, FormControlLabel, Radio, RadioGroup, Stack, TextField } from '@suid/material';
 import { SerialConnect } from '@/components/SerialConnect.js';
-import { useSerial } from '@/contexts/SerialProvider.js';
+import { useSerial } from '@/providers/SerialProvider.js';
 import { sprintf } from 'sprintf-js';
 import { downloadBlob, formatSize, validateHex } from '@/utils.js';
 import { SerialProtocol, SerialReadyState } from "@/workers/SerialWorker.js";
@@ -11,6 +11,7 @@ import { IoReadWriteProgress } from "@sie-js/serial";
 import { useParams } from "@solidjs/router";
 import { MemoryDumperPopup } from "@/pages/MemoryDumper/MemoryDumperPopup";
 import { MemoryDumperHelp } from "@/pages/MemoryDumper/MemoryDumperHelp";
+import { Title } from "@/components/Layout/Title";
 
 export type MemoryDumperState = 'idle' | 'download' | 'save';
 
@@ -199,6 +200,7 @@ export const MemoryDumperPage: Component = () => {
 
 	return (
 		<Box mt={1}>
+			<Title>Memory Dumper</Title>
 			<SerialConnect protocol={protocol} />
 
 			<FormControl>

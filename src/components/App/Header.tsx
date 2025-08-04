@@ -1,10 +1,12 @@
+import "./Header.scss";
 import { Component, createSignal, Match, Show, Switch } from "solid-js";
-import { AppBar, IconButton, Toolbar, Typography, useMediaQuery } from '@suid/material';
+import { AppBar, IconButton, Stack, Toolbar, Typography, useMediaQuery } from '@suid/material';
 import MenuIcon from '@suid/icons-material/Menu';
 import LightModeIcon from '@suid/icons-material/LightMode';
 import BedtimeIcon from '@suid/icons-material/Bedtime';
 import BrightnessMediumIcon from '@suid/icons-material/BrightnessMedium';
 import { useTheme } from '@suid/material/styles';
+import { useApp } from "@/providers/AppProvider";
 
 type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -19,6 +21,7 @@ export const AppHeader: Component<AppHeaderProps> = (props) => {
 	const theme = useTheme();
 	const isWideScreen = useMediaQuery(theme.breakpoints.up('md'));
 	const [clicks, setClicks] = createSignal<number>(0);
+	const app = useApp();
 
 	const changeTheme = () => {
 		if (clicks() < 2) {
@@ -48,9 +51,37 @@ export const AppHeader: Component<AppHeaderProps> = (props) => {
 					</IconButton>
 				</Show>
 
-				<Typography variant="h6" color="inherit" sx={{ flexGrow: 1 }}>
-					Siemens Web Tools
-				</Typography>
+				<Show when={isWideScreen()}>
+					<Stack sx={{ flexGrow: 1 }} direction="row" alignItems="center" gap={6}>
+						<Typography variant="h6" color="inherit">
+							Siemens Web Tools
+						</Typography>
+
+						<Show when={app.status()}>
+							<Typography color="inherit">
+								<div class="header-status-indicator"></div>
+								{app.status()}
+							</Typography>
+						</Show>
+					</Stack>
+				</Show>
+
+				<Show when={!isWideScreen()}>
+					<Stack sx={{ flexGrow: 1 }} direction="row" justifyContent="center" alignItems="center">
+						<Stack direction="column">
+							<Typography variant="h6" color="inherit">
+								{app.title()}
+							</Typography>
+
+							<Show when={app.status()}>
+								<Typography variant="caption" color="inherit" align="center">
+									<div class="header-status-indicator"></div>
+									{app.status()}
+								</Typography>
+							</Show>
+						</Stack>
+					</Stack>
+				</Show>
 
 				<IconButton size="large" edge="end" color="inherit" onClick={changeTheme}>
 					<Switch>
