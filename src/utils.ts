@@ -6,7 +6,7 @@ export type PublicMethods<T> = {
 };
 
 export function resolveURL(url: string): string {
-	return `${import.meta.env.BASE_URL}${url}`.replace(/\/+/g, '/');
+	return `${import.meta.env.BASE_URL}${url}`.replace(/\/+/g, '/').replace(/\/$/, '');
 }
 
 export function matchURL(url: string): boolean {
