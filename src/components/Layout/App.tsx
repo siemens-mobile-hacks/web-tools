@@ -1,5 +1,5 @@
 /* @refresh reload */
-import { createMemo, createSignal, ParentComponent } from "solid-js";
+import { createEffect, createMemo, createSignal, on, ParentComponent } from "solid-js";
 import { Box, CssBaseline, Toolbar, useMediaQuery } from '@suid/material';
 import { createPalette, createTheme, ThemeProvider } from '@suid/material/styles';
 import { AppHeader } from '@/components/App/Header.js';
@@ -8,10 +8,12 @@ import { SerialProvider } from '@/providers/SerialProvider.js';
 import { makePersisted } from "@solid-primitives/storage";
 import { Toaster } from "@/components/App/Toaster.js";
 import { AppProvider } from "@/providers/AppProvider";
+import { useLocation } from "@solidjs/router";
 
 type ThemeMode = 'light' | 'dark' | 'system';
 
 export const App: ParentComponent = (props) => {
+	const location = useLocation();
 	const [drawerIsOpen, setDrawerIsOpen] = createSignal<boolean>(false);
 	const [preferredTheme, setPreferredTheme] = makePersisted(createSignal<ThemeMode>("system"), { name: "theme" });
 	const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
@@ -56,6 +58,8 @@ export const App: ParentComponent = (props) => {
 	const toggleDrawer = (drawerState: boolean): void => {
 		setDrawerIsOpen(drawerState);
 	};
+
+	createEffect(on(() => location.pathname, () => toggleDrawer(false)));
 
 	return (
 		<ThemeProvider theme={theme}>
