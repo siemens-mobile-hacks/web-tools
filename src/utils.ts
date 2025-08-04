@@ -1,4 +1,5 @@
 import { intervalToDuration } from "date-fns/intervalToDuration";
+import { useLocation } from "@solidjs/router";
 
 export type PublicMethods<T> = {
 	[K in keyof T as T[K] extends (...args: any[]) => any ? K : never]: T[K];
@@ -6,6 +7,13 @@ export type PublicMethods<T> = {
 
 export function resolveURL(url: string): string {
 	return `${import.meta.env.BASE_URL}${url}`.replace(/\/+/g, '/');
+}
+
+export function matchURL(url: string): boolean {
+	const location = useLocation();
+	const target = resolveURL(url);
+	const effectiveURL = location.pathname.replace(/\/+/g, '/');
+	return target === effectiveURL;
 }
 
 export function recursiveUpdateObject(value: any, callback: (value: any) => any): any {

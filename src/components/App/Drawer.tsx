@@ -1,5 +1,5 @@
 import { Component, createMemo, createSignal, For, JSX, ParentComponent, Show } from "solid-js";
-import { A, useLocation, useMatch } from "@solidjs/router";
+import { A, useMatch } from "@solidjs/router";
 import { Box, Drawer, List, ListItemButton, ListItemIcon, ListItemText, Toolbar, useMediaQuery } from '@suid/material';
 import ScreenshotIcon from '@suid/icons-material/Screenshot';
 import SdCardIcon from '@suid/icons-material/SdCard';
@@ -9,7 +9,7 @@ import MailIcon from '@suid/icons-material/Mail';
 import ExpandMoreIcon from '@suid/icons-material/ExpandMore';
 import ExpandLessIcon from '@suid/icons-material/ExpandLess';
 import { useTheme } from '@suid/material/styles';
-import { resolveURL } from '@/utils.js';
+import { matchURL } from '@/utils.js';
 import { Collapse } from '@/components/UI/Collapse';
 
 export const DRAWER_WIDTH = 240;
@@ -41,13 +41,11 @@ type DrawerLinkProps = {
 };
 
 export const DrawerLink: Component<DrawerLinkProps> = (props) => {
-	const location = useLocation();
-	const isSelected = () => props.url != null && resolveURL(props.url) === location.pathname;
+	const isSelected = () => props.url != null && matchURL(props.url);
 	const isNestedSelected = () => {
 		if (props.sublinks) {
 			for (const sublink of props.sublinks) {
-				console.log(sublink.url && resolveURL(sublink.url), location.pathname);
-				if (sublink.url && resolveURL(sublink.url) === location.pathname)
+				if (sublink.url && matchURL(sublink.url))
 					return true;
 			}
 		}
