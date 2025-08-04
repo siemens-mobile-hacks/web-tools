@@ -170,6 +170,7 @@ export class CgsnService extends SerialService<CGSN> {
 	async readMemory(addr: number, size: number, onProgress: (e: IoReadWriteProgress) => void) {
 		return this.handle.readMemory(addr, size, {
 			onProgress,
+			progressInterval: 300,
 			signal: this.getAbortSignal(),
 		});
 	}

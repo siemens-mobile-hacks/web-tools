@@ -26,6 +26,7 @@ export class DwdService extends SerialService<DWD> {
 	async readMemory(addr: number, size: number, onProgress: (e: IoReadWriteProgress) => void) {
 		return this.handle.readMemory(addr, size, {
 			onProgress,
+			progressInterval: 300,
 			signal: this.getAbortSignal(),
 		});
 	}

@@ -42,6 +42,7 @@ export class BfcService extends SerialService {
 	async getDisplayBuffer(displayId: number, onProgress?: (e: IoReadWriteProgress) => void) {
 		return this.handle.getDisplayBuffer(displayId, {
 			onProgress,
+			progressInterval: 300,
 			signal: this.getAbortSignal(),
 		});
 	}
