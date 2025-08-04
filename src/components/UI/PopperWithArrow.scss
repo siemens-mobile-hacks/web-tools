@@ -1,3 +1,7 @@
+[role="tooltip"] .MuiAlert-root {
+	max-width: min(360px, calc(100vw - 16px));
+}
+
 .popper-arrow {
 	position: absolute;
 	font-size: 7px;

@@ -10,7 +10,6 @@ import {
 	InputLabel,
 	MenuItem,
 	Popover,
-	Popper,
 	Select,
 	Stack,
 	Typography
@@ -22,9 +21,9 @@ import { useSerial } from '@/providers/SerialProvider.js';
 import { makePersisted } from "@solid-primitives/storage";
 import { WebSerialPortInfo } from "serialport-bindings-webserial";
 import { SerialProtocol, SerialReadyState } from '@/workers/SerialWorker.js';
-import { PopperArrow } from "@/components/UI/PopperArrow";
 import { useTheme } from "@suid/material/styles";
 import { ButtonLoadingText } from "@/components/UI/ButtonLoadingText";
+import { PopperWithArrow } from "@/components/UI/PopperWithArrow";
 
 const USB_DEVICES: Record<string, string> = {
 	"067B:2303": "PL2303",
@@ -124,44 +123,21 @@ export const SerialConnect: Component<SerialConnectProps> = (props) => {
 					</Select>
 				</FormControl>
 
-				<Popper
-					style={{ "z-index": 1 }}
+				<PopperWithArrow
 					open={!!serial.connectError()}
-					anchorEl={popperAnchorRef}
 					placement="bottom"
-					disablePortal={false}
-					modifiers={[
-						{
-							name: 'preventOverflow',
-							enabled: true,
-							options: {
-								padding: 8,
-								boundary: document.querySelector("main")
-							},
-						},
-						{
-							name: 'offset',
-							options: {
-								offset: [0, 10],
-							},
-						},
-						{
-							name: 'arrow',
-							enabled: true,
-						},
-					]}
+					anchorEl={popperAnchorRef}
+					arrowColor={theme.palette.error.dark}
 				>
 					<Alert
 						severity="error"
 						variant="filled"
 						onClose={() => serial.resetError()}
-						sx={{ maxWidth: "360px" }}
 					>
 						ERROR: {serial.connectError()?.message}<br />
 						Try reconnecting the data cable if you are sure that your phone is connected and online.
 					</Alert>
-					<PopperArrow color={theme.palette.error.dark} />
-				</Popper>
+				</PopperWithArrow>
 
 				<Button
 					ref={settingsAnchorRef}
