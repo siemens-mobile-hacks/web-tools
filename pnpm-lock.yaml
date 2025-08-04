@@ -18,8 +18,8 @@ importers:
         specifier: ^13.0.0
         version: 13.0.0
       '@sie-js/serial':
-        specifier: link:../node-sie-serial
-        version: link:../node-sie-serial
+        specifier: ^1.1.3
+        version: 1.1.3(@serialport/stream@13.0.0)
       '@solid-primitives/storage':
         specifier: ^4.3.3
         version: 4.3.3(solid-js@1.9.7)
@@ -51,8 +51,8 @@ importers:
         specifier: ^4.7.0
         version: 4.7.0
       serialport-bindings-webserial:
-        specifier: link:../node-serialport-bindings-webserial
-        version: link:../node-serialport-bindings-webserial
+        specifier: ^0.5.2
+        version: 0.5.2
       siemens-sms-parser:
         specifier: ^0.3.5
         version: 0.3.5
@@ -605,6 +605,11 @@ packages:
   '@serialport/stream@13.0.0':
     resolution: {integrity: sha512-F7xLJKsjGo2WuEWMSEO1SimRcOA+WtWICsY13r0ahx8s2SecPQH06338g28OT7cW7uRXI7oEQAk62qh5gHJW3g==}
     engines: {node: '>=20.0.0'}
+
+  '@sie-js/serial@1.1.3':
+    resolution: {integrity: sha512-u2yJxxRfRK+Qp3eJIBKsxjx+c1TgVU6bWzB5guiyI1L8yNcMdkhFaA3/VkUkqHVJZ/3Qp/Q6WwwuIbLj+Upq1A==}
+    peerDependencies:
+      '@serialport/stream': ^13.0.0
 
   '@solid-primitives/event-listener@2.4.3':
     resolution: {integrity: sha512-h4VqkYFv6Gf+L7SQj+Y6puigL/5DIi7x5q07VZET7AWcS+9/G3WfIE9WheniHWJs51OEkRB43w6lDys5YeFceg==}
@@ -1444,6 +1449,9 @@ packages:
     resolution: {integrity: sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==}
     hasBin: true
 
+  serialport-bindings-webserial@0.5.2:
+    resolution: {integrity: sha512-IBsowQQDEL9w8wrm+i4+pp5Cd0n14hXqzg95VnlDPwSzO4gRiQZGFW3IjJyvluGlSK2wVJx1NbnjA9cIbR2vkQ==}
+
   seroval-plugins@1.3.2:
     resolution: {integrity: sha512-0QvCV2lM3aj/U3YozDiVwx9zpH0q8A60CTWIv4Jszj/givcudPb48B+rkU5D51NJ0pTpweGMttHjboPa9/zoIQ==}
     engines: {node: '>=10'}
@@ -2137,6 +2145,14 @@ snapshots:
     dependencies:
       '@serialport/bindings-interface': 1.2.2
       debug: 4.4.0
+    transitivePeerDependencies:
+      - supports-color
+
+  '@sie-js/serial@1.1.3(@serialport/stream@13.0.0)':
+    dependencies:
+      '@serialport/stream': 13.0.0
+      debug: 4.4.1
+      sprintf-js: 1.1.3
     transitivePeerDependencies:
       - supports-color
 
@@ -3123,6 +3139,8 @@ snapshots:
       '@parcel/watcher': 2.5.1
 
   semver@6.3.1: {}
+
+  serialport-bindings-webserial@0.5.2: {}
 
   seroval-plugins@1.3.2(seroval@1.3.2):
     dependencies:
