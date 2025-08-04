@@ -12,7 +12,7 @@ export function resolveURL(url: string): string {
 export function matchURL(url: string): boolean {
 	const location = useLocation();
 	const target = resolveURL(url);
-	const effectiveURL = location.pathname.replace(/\/+/g, '/');
+	const effectiveURL = location.pathname.replace(/\/+/g, '/').replace(/\/$/, '');
 	return target === effectiveURL;
 }
 
