@@ -1,0 +1,28 @@
+.collapse {
+	&__content {
+		overflow: hidden;
+		animation: collapseSlideUp 204ms ease-out;
+
+		&[data-expanded] {
+			animation: collapseSlideDown 204ms ease-out;
+		}
+	}
+}
+
+@keyframes collapseSlideUp {
+	from {
+		height: var(--kb-collapsible-content-height);
+	}
+	to {
+		height: 0;
+	}
+}
+
+@keyframes collapseSlideDown {
+	from {
+		height: 0;
+	}
+	to {
+		height: var(--kb-collapsible-content-height);
+	}
+}

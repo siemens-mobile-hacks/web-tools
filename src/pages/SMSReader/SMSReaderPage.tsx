@@ -29,7 +29,7 @@ type ParsedMessage = Partial<DecodedSMS> & DecodedPDU & {
 };
 
 const htmlRenderer = new HTMLRenderer();
-const SMSReaderPage: Component = () => {
+export const SMSReaderPage: Component = () => {
 	const [parsedMessages, setParsedMessages] = createSignal<ParsedMessage[]>([]);
 	const [isLoading, setIsLoading] = createSignal(false);
 	const [filesPicked, setFilesPicked] = createSignal(false);

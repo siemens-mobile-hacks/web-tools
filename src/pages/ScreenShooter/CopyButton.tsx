@@ -26,7 +26,7 @@ export const CopyButton: Component<CopyButtonProps> = (props) => {
 		<Button
 			color={isCopied() ? 'success' : 'primary'}
 			variant="outlined"
-			sx={{ minWidth: 0 }}
+			sx={{ minWidth: 0, padding: "6px" }}
 			disabled={props.disabled}
 			onClick={onClick}
 		>

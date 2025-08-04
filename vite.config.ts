@@ -42,9 +42,6 @@ function postBuildPlugin(): Plugin {
 }
 
 export default defineConfig({
-	resolve: {
-		alias: [{ find: '~', replacement: path.resolve(import.meta.dirname, '/src') }],
-	},
 	worker: {
 		format: 'es',
 		plugins: () => [ tsconfigPaths(), nodePolyfills() ]

@@ -6,19 +6,22 @@ import { SerialProtocol, SerialReadyState, serialWorker } from '@/workers/Serial
 import { makePersisted } from "@solid-primitives/storage";
 import { BfcService } from "@/workers/services/BfcService.js";
 import { CgsnService } from "@/workers/services/CgsnService.js";
+import { DwdService } from "@/workers/services/DwdService.js";
 
 interface SerialContext {
 	bfc: Comlink.Remote<BfcService>;
 	cgsn: Comlink.Remote<CgsnService>;
+	dwd: Comlink.Remote<DwdService>;
 	ports: Accessor<WebSerialPortInfo[]>;
 	lastUsedPort: Accessor<string | undefined>;
 	readyState: Accessor<SerialReadyState>;
 	connectError: Accessor<Error | undefined>;
 	protocol: Accessor<string>;
 
-	isPortExists: (path: string) => boolean;
-	connect: (protocol: SerialProtocol, prevPortPath?: string, limitBaudrate?: number, debug?: string) => Promise<void>;
-	disconnect: () => Promise<void>;
+	isPortExists(path: string): boolean;
+	connect(protocol: SerialProtocol, prevPortPath?: string, limitBaudrate?: number, debug?: string): Promise<void>;
+	disconnect(): Promise<void>;
+	resetError(): void;
 }
 
 const SerialContext = createContext<SerialContext | undefined>(undefined);
@@ -43,8 +46,8 @@ export const SerialProvider: ParentComponent = (props) => {
 
 	const connect = async (protocol: SerialProtocol, prevPortPath?: string, limitBaudrate?: number, debug?: string): Promise<void> => {
 		try {
-			await serialWorker.connect(protocol, prevPortPath, limitBaudrate, debug);
 			setConnectError(undefined);
+			await serialWorker.connect(protocol, prevPortPath, limitBaudrate, debug);
 		} catch (e) {
 			setConnectError(e as Error);
 			monitorNewPorts();
@@ -64,6 +67,10 @@ export const SerialProvider: ParentComponent = (props) => {
 				return true;
 		}
 		return false;
+	};
+
+	const resetError = () => {
+		setConnectError(undefined);
 	};
 
 	const onReadyStateChange = (readyState: SerialReadyState) => setReadyState(readyState);
@@ -99,6 +106,7 @@ export const SerialProvider: ParentComponent = (props) => {
 		<SerialContext.Provider value={{
 			bfc: serialWorker.getService("BFC"),
 			cgsn: serialWorker.getService("CGSN"),
+			dwd: serialWorker.getService("DWD"),
 			ports,
 			lastUsedPort,
 			isPortExists,
@@ -108,6 +116,7 @@ export const SerialProvider: ParentComponent = (props) => {
 
 			connect,
 			disconnect,
+			resetError,
 		}}>
 			{props.children}
 		</SerialContext.Provider>

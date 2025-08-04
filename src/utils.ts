@@ -1,3 +1,5 @@
+import { intervalToDuration } from "date-fns/intervalToDuration";
+
 export type PublicMethods<T> = {
 	[K in keyof T as T[K] extends (...args: any[]) => any ? K : never]: T[K];
 };
@@ -121,4 +123,27 @@ export function downloadBlob(blob: Blob, filename: string): void {
 	a.download = filename;
 	a.click();
 	URL.revokeObjectURL(url);
+}
+
+export function formatDuration(seconds: number): string {
+	const duration = intervalToDuration({ start: 0, end: seconds * 1000 });
+	return [duration.hours, duration.minutes || 0, duration.seconds || 0]
+		.filter((v) => v != null)
+		.map((num) => String(num).padStart(2, '0'))
+		.join(':');
+}
+
+export function validateHex(value: string): boolean {
+	if (!value.match(/^([A-F0-9]+)$/i))
+		return false;
+	const num = parseInt(value, 16);
+	return num <= 0xFFFFFFFF;
+}
+
+export function formatSize(size: number): string {
+	if (size > 1024 * 1024) {
+		return +(size / 1024 / 1024).toFixed(2) + " Mb";
+	} else {
+		return +(size / 1024).toFixed(2) + " kB";
+	}
 }

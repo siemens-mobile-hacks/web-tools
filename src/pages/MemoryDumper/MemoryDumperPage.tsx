@@ -1,38 +1,26 @@
 import * as Comlink from 'comlink';
-import { createEffect, createMemo, createSignal, For, JSX, Match, Show, Switch } from 'solid-js';
-import { intervalToDuration } from 'date-fns/intervalToDuration';
-import {
-	Alert,
-	Box,
-	Button,
-	Dialog,
-	DialogActions,
-	DialogContent,
-	DialogContentText,
-	DialogTitle,
-	FormControl,
-	FormControlLabel,
-	LinearProgress,
-	Link,
-	List,
-	ListItem,
-	Radio,
-	RadioGroup,
-	Stack,
-	TextField
-} from '@suid/material';
-import CheckCircleOutlineIcon from '@suid/icons-material/CheckCircleOutline';
-import { SerialConnect } from '../../components/SerialConnect';
-import { useSerial } from '../../contexts/SerialProvider';
+import { Component, createEffect, createMemo, createSignal, For, Show } from 'solid-js';
+import { Alert, Box, Button, FormControl, FormControlLabel, Radio, RadioGroup, Stack, TextField } from '@suid/material';
+import { SerialConnect } from '@/components/SerialConnect.js';
+import { useSerial } from '@/contexts/SerialProvider.js';
 import { sprintf } from 'sprintf-js';
-import { downloadBlob } from '../../utils';
-import { SerialReadyState } from "../../workers/SerialWorker";
-import { MemoryRegion } from "../../workers/services/CgsnService";
-import { CgsnReadMemoryResponse, IoReadWriteProgress } from "../../../../node-sie-serial/src";
+import { downloadBlob, formatSize, validateHex } from '@/utils.js';
+import { SerialProtocol, SerialReadyState } from "@/workers/SerialWorker.js";
+import { MemoryRegion } from "@/workers/services/CgsnService.js";
+import { IoReadWriteProgress } from "@sie-js/serial";
+import { useParams } from "@solidjs/router";
+import { MemoryDumperPopup } from "@/pages/MemoryDumper/MemoryDumperPopup";
+import { MemoryDumperHelp } from "@/pages/MemoryDumper/MemoryDumperHelp";
 
-type MemoryDownloadState = 'idle' | 'download' | 'save';
+export type MemoryDumperState = 'idle' | 'download' | 'save';
 
-interface ProgressInfo {
+export interface MemoryDumperResult {
+	error?: string;
+	buffer?: Buffer;
+	canceled: boolean;
+}
+
+export interface MemoryDumperProgress {
 	percent: number;
 	cursorHex: string;
 	totalHex: string;
@@ -52,119 +40,17 @@ const DEFAULT_MEMORY_PRESETS: MemoryRegion[] = [
 	}
 ];
 
-function formatDuration(seconds: number): string {
-	const duration = intervalToDuration({ start: 0, end: seconds * 1000 });
-	return [duration.hours, duration.minutes || 0, duration.seconds || 0]
-		.filter((v) => v != null)
-		.map((num) => String(num).padStart(2, '0'))
-		.join(':');
-}
+const MEMORY_REGION_DESCR: Record<string, string> = {
+	BROM:	'Built-in 1st stage bootloader firmware.',
+	TCM:	'Built-in memory in the CPU, used for IRQ handlers.',
+	SRAM:	'Built-in memory in the CPU.',
+	RAM:	'External RAM.',
+	FLASH:	'NOR flash.',
+};
 
-function validateHex(value: string): boolean {
-	if (!value.match(/^([A-F0-9]+)$/i))
-		return false;
-	const num = parseInt(value, 16);
-	return num <= 0xFFFFFFFF;
-}
-
-function formatSize(size: number): string {
-	if (size > 1024 * 1024) {
-		return +(size / 1024 / 1024).toFixed(2) + " Mb";
-	} else {
-		return +(size / 1024).toFixed(2) + " kB";
-	}
-}
-
-interface MemoryDumperPopupProps {
-	memoryAddr: number;
-	memorySize: number;
-	progress?: ProgressInfo;
-	readResult?: CgsnReadMemoryResponse;
-	state: MemoryDownloadState;
-	onClose: () => void;
-	onCancel: () => void;
-	onFileSave: () => void;
-}
-
-function MemoryDumperPopup(props: MemoryDumperPopupProps): JSX.Element {
-	return (
-		<Dialog
-			open={props.state === 'download' || props.state === 'save'}
-			onClose={() => {}}
-			maxWidth="sm"
-			fullWidth={true}
-		>
-			<DialogTitle>
-				{sprintf("%08X", props.memoryAddr)} … {sprintf("%08X", props.memoryAddr + props.memorySize - 1)}
-			</DialogTitle>
-
-			<DialogContent>
-				<Show when={props.state === 'download' && props.progress}>
-					<Box sx={{ justifyContent: 'space-between', display: 'flex' }}>
-						<Box sx={{ color: 'text.secondary' }}>
-							{props.progress?.cursor} / {props.progress?.total}, {props.progress?.speed}
-						</Box>
-						<Box sx={{ color: 'text.secondary' }}>
-							{formatDuration(props.progress?.remaining || 0)}
-						</Box>
-					</Box>
-					<LinearProgress variant="determinate" value={props.progress?.percent || 0} />
-				</Show>
-
-				<Show when={props.state === 'save' && props.readResult}>
-					<DialogContentText>
-						<Switch>
-							<Match when={props.readResult?.error}>
-								<Box sx={{ color: 'error.main' }}>
-									Due to an error, only {' '}
-									<b>{formatSize(props.readResult?.buffer?.length ?? 0)}</b> {' '}
-									from <b>{formatSize(props.memorySize)}</b> {' '}
-									was successfully read.<br />
-									You can save this partial read result as a file.
-								</Box>
-							</Match>
-							<Match when={props.readResult?.canceled}>
-								<Box sx={{ color: 'error.main' }}>
-									Due to an interruption, only {' '}
-									<b>{formatSize(props.readResult?.buffer?.length ?? 0)}</b> {' '}
-									from <b>{formatSize(props.memorySize)}</b> {' '}
-									was successfully read.<br />
-									You can save this partial read result as a file.
-								</Box>
-							</Match>
-							<Match when={props.readResult?.success}>
-								<Stack alignItems="center" direction="row" gap={1} sx={{ color: 'success.main' }}>
-									<CheckCircleOutlineIcon />
-									<span>
-										Memory was successfully read in {' '}
-										<b>{formatDuration(props.progress?.elapsed || 0)}</b> at a speed of {props.progress?.speed}.
-									</span>
-								</Stack>
-							</Match>
-						</Switch>
-					</DialogContentText>
-				</Show>
-			</DialogContent>
-			<DialogActions>
-				<Show when={props.state === 'save'}>
-					<Button color="success" onClick={props.onFileSave}>
-						Save as file
-					</Button>
-					<Button color="error" onClick={props.onClose}>
-						Cancel
-					</Button>
-				</Show>
-				<Show when={props.state === 'download'}>
-					<Button color="error" onClick={props.onCancel}>
-						Cancel
-					</Button>
-				</Show>
-			</DialogActions>
-		</Dialog>
-	);
-}
-
-export default function MemoryDumperPage(): JSX.Element {
+export const MemoryDumperPage: Component = () => {
+	const params = useParams();
+	const protocol = (params.protocol?.toUpperCase() ?? "CGSN") as SerialProtocol;
 	const serial = useSerial();
 	const [memoryPresets, setMemoryPresets] = createSignal<MemoryRegion[]>(DEFAULT_MEMORY_PRESETS);
 	const [customMemoryAddr, setCustomMemoryAddr] = createSignal<string>('A0000000');
@@ -172,9 +58,9 @@ export default function MemoryDumperPage(): JSX.Element {
 	const [customMemoryAddrError, setCustomMemoryAddrError] = createSignal<boolean>(false);
 	const [customMemorySizeError, setCustomMemorySizeError] = createSignal<boolean>(false);
 	const [memoryPresetId, setMemoryPresetId] = createSignal<number>(0);
-	const [progressValue, setProgressValue] = createSignal<ProgressInfo | undefined>();
-	const [state, setState] = createSignal<MemoryDownloadState>('idle');
-	const [readResult, setReadResult] = createSignal<CgsnReadMemoryResponse | undefined>();
+	const [progressValue, setProgressValue] = createSignal<MemoryDumperProgress | undefined>();
+	const [state, setState] = createSignal<MemoryDumperState>('idle');
+	const [readResult, setReadResult] = createSignal<MemoryDumperResult | undefined>();
 	const [phone, setPhone] = createSignal<string | undefined>();
 
 	const memoryPreset = createMemo<MemoryRegion>(() => memoryPresets()[memoryPresetId()]);
@@ -192,40 +78,65 @@ export default function MemoryDumperPage(): JSX.Element {
 			return parseInt(customMemorySize(), 16);
 		}
 	});
-	const cgsnReady = createMemo<boolean>(() => {
-		return serial.readyState() === SerialReadyState.CONNECTED && serial.protocol() === "CGSN";
+	const serialReady = createMemo<boolean>(() => {
+		return serial.readyState() === SerialReadyState.CONNECTED && serial.protocol() === protocol;
 	});
 
 	createEffect(async () => {
-		if (cgsnReady()) {
-			const response = await serial.cgsn.getPhoneInfo();
-			setMemoryPresets([
-				...DEFAULT_MEMORY_PRESETS,
-				...response?.memoryRegions ?? [],
-			]);
-			setPhone(`${response?.phoneModel ?? "??"}v${response?.phoneSwVersion ?? "??"}`);
+		if (serialReady()) {
+			switch (protocol) {
+				case "CGSN": {
+					const response = await serial.cgsn.getPhoneInfo();
+					setMemoryPresets([
+						...DEFAULT_MEMORY_PRESETS,
+						...response?.memoryRegions ?? [],
+					]);
+					setPhone(`${response?.phoneModel ?? "??"}v${response?.phoneSwVersion ?? "??"}`);
+					break;
+				}
+				case "DWD": {
+					const swInfo = await serial.dwd.getSWVersion();
+					const memoryRegions = await serial.dwd.getMemoryRegions();
+					setMemoryPresets([
+						...DEFAULT_MEMORY_PRESETS,
+						...memoryRegions.map((region) => {
+							return { ...region, descr: MEMORY_REGION_DESCR[region.name] ?? "Unknown memory region." };
+						})
+					]);
+					setPhone(swInfo.sw);
+					break;
+				}
+			}
 		}
 	});
 
 	const onClose = (): void => {
 		setState('idle');
 		setReadResult(undefined);
+		setProgressValue(undefined);
 	};
 
 	const onCancel = (): void => {
-		void serial.cgsn.abort();
+		switch (protocol) {
+			case "CGSN":
+				void serial.cgsn.abort();
+				break;
+			case "DWD":
+				void serial.dwd.abort();
+				break;
+		}
 	};
 
 	const onFileSave = (): void => {
 		const result = readResult();
-		if (!result || !result.success)
+		if (!result?.buffer)
 			return;
 
 		const buffer = result.buffer.subarray(0, result.buffer.length);
 		const fileName = (phone() ? `${phone()}_` : "") +
 			(memoryPresetId() !== 0 ? memoryPreset().name + "_" : '') +
 			sprintf("%08X_%08X.bin", memoryAddr(), buffer.length);
-		const blob = new Blob([new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength)], { type: 'application/octet-stream' });
+		const blob = new Blob([buffer as BlobPart], { type: 'application/octet-stream' });
 		downloadBlob(blob, fileName);
 	};
 
@@ -261,7 +172,24 @@ export default function MemoryDumperPage(): JSX.Element {
 		setState('download');
 
 		try {
-			setReadResult(await serial.cgsn.readMemory(memoryAddr(), memorySize(), Comlink.proxy(onProgress)));
+			switch (protocol) {
+				case "CGSN": {
+					const response = await serial.cgsn.readMemory(memoryAddr(), memorySize(), Comlink.proxy(onProgress));
+					setReadResult({
+						buffer: response.buffer,
+						canceled: response.canceled ?? false,
+					});
+					break;
+				}
+				case "DWD": {
+					const response = await serial.dwd.readMemory(memoryAddr(), memorySize(), Comlink.proxy(onProgress));
+					setReadResult({
+						buffer: response.buffer,
+						canceled: response.canceled,
+					});
+					break;
+				}
+			}
 		} catch (e) {
 			console.error(e);
 		} finally {
@@ -270,15 +198,8 @@ export default function MemoryDumperPage(): JSX.Element {
 	};
 
 	return (
-		<Box>
-			<Show when={serial.connectError()}>
-				<Alert severity="error" sx={{ mb: 1 }}>
-					ERROR: {serial.connectError()?.message}<br />
-					Try reconnecting the data cable if you are sure that your phone is connected and online.
-				</Alert>
-			</Show>
-
-			<SerialConnect protocol="CGSN" />
+		<Box mt={1}>
+			<SerialConnect protocol={protocol} />
 
 			<FormControl>
 				<RadioGroup row value={memoryPresetId()} onChange={(e) => setMemoryPresetId(Number(e.target.value))}>
@@ -320,7 +241,7 @@ export default function MemoryDumperPage(): JSX.Element {
 			</Stack>
 
 			<Stack alignItems="center" direction="row" gap={1} sx={{ mt: 2 }}>
-				<Button variant="outlined" onClick={startReadMemory} disabled={!cgsnReady()}>
+				<Button variant="outlined" onClick={startReadMemory} disabled={!serialReady()}>
 					Read memory
 				</Button>
 			</Stack>
@@ -338,28 +259,7 @@ export default function MemoryDumperPage(): JSX.Element {
 
 			<Alert severity="info" sx={{ mt: 2 }}>
 				<b>TIPS & TRICKS:</b>
-
-				<List sx={{ listStyleType: 'disc' }}>
-					<ListItem sx={{ display: 'list-item' }}>
-						<Link href="https://siemens-mobile-hacks.github.io/reverse-engineering/arm-debugger.html" target="_blank" rel="noopener">
-							CGSN patch is required.
-						</Link>
-					</ListItem>
-					<ListItem sx={{ display: 'list-item' }}>
-						You can achieve maximum speed using a DCA-540 or DCA-510 data cables.
-					</ListItem>
-					<ListItem sx={{ display: 'list-item' }}>
-						Bluetooth is also possible, but has the worst speed.
-					</ListItem>
-					<ListItem sx={{ display: 'list-item' }}>
-						It is better to read memory before ArmDebugger is used.
-					</ListItem>
-					<ListItem sx={{ display: 'list-item' }}>
-						<Link href="https://siemens-mobile-hacks.github.io/reverse-engineering/memory-dump" target="_blank" rel="noopener">
-							Read more about memory dumping.
-						</Link>
-					</ListItem>
-				</List>
+				<MemoryDumperHelp protocol={protocol} />
 			</Alert>
 		</Box>
 	);

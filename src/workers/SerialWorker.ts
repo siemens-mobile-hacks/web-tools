@@ -5,6 +5,7 @@ import { getSerialPort } from "@/utils/serial.js";
 import { BfcService } from "@/workers/services/BfcService.js";
 import { CgsnService } from "@/workers/services/CgsnService.js";
 import { SerialService } from "./services/SerialService";
+import { DwdService } from "./services/DwdService";
 
 export enum SerialReadyState {
 	DISCONNECTED,
@@ -13,7 +14,7 @@ export enum SerialReadyState {
 	DISCONNECTING
 }
 
-export type SerialProtocol = 'none' | 'BFC' | 'CGSN';
+export type SerialProtocol = 'none' | 'BFC' | 'CGSN' | 'DWD';
 
 interface RemoteSerialWorker {
 	getService(name: SerialProtocol): any;
@@ -28,12 +29,14 @@ type SerialWorkerEvents = {
 type SerialWorkerServices = {
 	CGSN: Comlink.Remote<CgsnService>;
 	BFC: Comlink.Remote<BfcService>;
+	DWD: Comlink.Remote<DwdService>;
 };
 
 const remoteSerialWorker = Comlink.wrap<RemoteSerialWorker>(new WorkerModule());
 const SERVICES: SerialWorkerServices = {
 	BFC: await remoteSerialWorker.getService('BFC'),
 	CGSN: await remoteSerialWorker.getService('CGSN'),
+	DWD: await remoteSerialWorker.getService('DWD'),
 };
 
 export class SerialWorker extends EventEmitter<SerialWorkerEvents> {
@@ -73,7 +76,8 @@ export class SerialWorker extends EventEmitter<SerialWorkerEvents> {
 	async disconnect(): Promise<void> {
 		if (this.readyState == SerialReadyState.DISCONNECTED || this.readyState == SerialReadyState.DISCONNECTING)
 			return;
-		this.setReadyState(SerialReadyState.DISCONNECTING);
+		if (this.readyState == SerialReadyState.CONNECTED)
+			this.setReadyState(SerialReadyState.DISCONNECTING);
 		await this.service.disconnect();
 		this.setProtocol('none');
 		this.setReadyState(SerialReadyState.DISCONNECTED);

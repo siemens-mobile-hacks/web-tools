@@ -1,5 +1,5 @@
 import * as Comlink from 'comlink';
-import { createEffect, createMemo, createSignal, Index, JSX, on, onMount, Show } from 'solid-js';
+import { Component, createEffect, createMemo, createSignal, Index, on, onMount, Show } from 'solid-js';
 import { format as dateFormat } from 'date-fns/format';
 import {
 	Alert,
@@ -16,13 +16,13 @@ import {
 } from '@suid/material';
 import TvIcon from '@suid/icons-material/Tv';
 import DownloadIcon from '@suid/icons-material/Download';
-import { CopyButton } from './CopyButton';
-import { SerialConnect } from '../../components/SerialConnect';
-import { useSerial } from '../../contexts/SerialProvider';
-import { downloadCanvasImage, transferBufferToCanvas } from '../../utils';
-import { SerialReadyState } from "../../workers/SerialWorker";
-import { PhoneDisplay } from "../../workers/services/BfcService";
-import { IoReadWriteProgress } from "../../../../node-sie-serial/src";
+import { CopyButton } from './CopyButton.js';
+import { SerialConnect } from '@/components/SerialConnect.js';
+import { useSerial } from '@/contexts/SerialProvider.js';
+import { downloadCanvasImage, transferBufferToCanvas } from '@/utils.js';
+import { SerialReadyState } from "@/workers/SerialWorker.js";
+import { PhoneDisplay } from "@/workers/services/BfcService.js";
+import { IoReadWriteProgress } from "@sie-js/serial";
 
 type ProgressInfo = {
 	percent: number
@@ -31,7 +31,7 @@ type ProgressInfo = {
 	speed?: string;
 };
 
-function ScreenShooterPage(): JSX.Element {
+export const ScreenShooterPage: Component = () => {
 	const [displayNumber, setDisplayNumber] = createSignal<number>(0);
 	const [phoneDisplays, setPhoneDisplays] = createSignal<PhoneDisplay[]>([
 		{ width: 240, height: 320, bufferWidth: 240, bufferHeight: 320 }
@@ -130,14 +130,6 @@ function ScreenShooterPage(): JSX.Element {
 
 	return (
 		<Box>
-			<Show when={serial.connectError()}>
-				<Alert severity="error" sx={{ mb: 1 }}>
-					ERROR: {serial.connectError()?.message}<br />
-					Try reconnecting the data cable if you are sure that your phone is connected and online. {' '}
-					Also make sure that you enter SKEY/BKEY to your phone.
-				</Alert>
-			</Show>
-
 			<Grid container spacing={2}>
 				<Grid
 					item
@@ -163,27 +155,27 @@ function ScreenShooterPage(): JSX.Element {
 					</Paper>
 				</Grid>
 
-				<Grid item mt={1} sx={{ order: { xs: 1, sm: 2 } }}>
-					<SerialConnect protocol="BFC" />
+				<Grid mt={1} item sx={{ order: { xs: 1, sm: 2 } }}>
+					<Box mb={1}>
+						<SerialConnect protocol="BFC" />
+					</Box>
 
-					<Show when={phoneDisplays().length > 0}>
-						<Stack alignItems="center" direction="row" gap={2}>
-							<TvIcon />
-							<FormControl>
-								<RadioGroup row value={displayNumber()} onChange={(e) => setDisplayNumber(Number(e.target.value))}>
-									<Index each={phoneDisplays()}>{(display, index) =>
-										<FormControlLabel
-											value={index}
-											control={<Radio />}
-											label={`Display #${index + 1} (${display().width}x${display().height})`}
-										/>
-									}</Index>
-								</RadioGroup>
-							</FormControl>
-						</Stack>
-					</Show>
+					<Stack alignItems="center" direction="row" gap={2}>
+						<TvIcon />
+						<FormControl>
+							<RadioGroup row value={displayNumber()} onChange={(e) => setDisplayNumber(Number(e.target.value))}>
+								<Index each={phoneDisplays()}>{(display, index) =>
+									<FormControlLabel
+										value={index}
+										control={<Radio />}
+										label={`Display #${index + 1} (${display().width}x${display().height})`}
+									/>
+								}</Index>
+							</RadioGroup>
+						</FormControl>
+					</Stack>
 
-					<Stack alignItems="center" direction="row" gap={2} mt={1}>
+					<Stack alignItems="center" direction="row" gap={1} mt={1}>
 						<FormControl variant="standard">
 							<Button
 								variant="outlined"
@@ -197,7 +189,8 @@ function ScreenShooterPage(): JSX.Element {
 						<FormControl variant="standard">
 							<Button
 								variant="outlined"
-								title="Download screenshot" sx={{ minWidth: 0 }}
+								title="Download screenshot"
+								sx={{ minWidth: 0, padding: "6px" }}
 								disabled={!hasScreenshot()}
 								onClick={saveScreenshot}
 							>

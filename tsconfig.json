@@ -17,9 +17,10 @@
 		"noFallthroughCasesInSwitch": true,
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
+		"baseUrl": ".",
 		"paths": {
-			"@/*.js": [
-				"./src/*.js"
+			"@/*": [
+				"./src/*"
 			]
 		},
 		"resolveJsonModule": true,

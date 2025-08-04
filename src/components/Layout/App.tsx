@@ -6,6 +6,7 @@ import { AppHeader } from '@/components/App/Header.js';
 import { AppDrawer } from '@/components/App/Drawer.js';
 import { SerialProvider } from '@/contexts/SerialProvider.js';
 import { makePersisted } from "@solid-primitives/storage";
+import { Toaster } from "@/components/App/Toaster.js";
 
 type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -58,6 +59,7 @@ export const App: ParentComponent = (props) => {
 	return (
 		<ThemeProvider theme={theme}>
 			<SerialProvider>
+				<Toaster />
 				<Box sx={{ display: 'flex' }}>
 					<CssBaseline />
 
@@ -69,7 +71,7 @@ export const App: ParentComponent = (props) => {
 					/>
 					<AppDrawer open={drawerIsOpen()} onClose={() => toggleDrawer(false)} />
 
-					<Box component="main" sx={{ flexGrow: 1, p: 1 }}>
+					<Box component="main" sx={{ flexGrow: 1, p: 1, maxWidth: '100%' }}>
 						<Toolbar />
 						{props.children}
 					</Box>
