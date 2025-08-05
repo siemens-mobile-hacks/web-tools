@@ -2,6 +2,7 @@ import { defineConfig, Plugin } from 'vite';
 import solidPlugin from 'vite-plugin-solid';
 import suidPlugin from "@suid/vite-plugin";
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
+import solidSvg from 'vite-plugin-solid-svg'
 import tsconfigPaths from 'vite-tsconfig-paths';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -53,6 +54,24 @@ export default defineConfig({
 		tsconfigPaths(),
 		nodePolyfills(),
 		postBuildPlugin(),
+		solidSvg({
+			 defaultAsComponent: true,
+			 svgo: {
+				 enabled: true,
+				 svgoConfig: {
+					 plugins: [
+						 {
+							 name: 'preset-default',
+							 params: {
+								 overrides: {
+									 removeViewBox: false,
+								 },
+							 },
+						 },
+					 ],
+				 },
+			 },
+		 }),
 	],
 	optimizeDeps: {
 		exclude: ['siemens-sms-parser'],

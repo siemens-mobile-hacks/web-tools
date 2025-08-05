@@ -3,11 +3,12 @@ import { A, useMatch } from "@solidjs/router";
 import { Box, Drawer, List, ListItemButton, ListItemIcon, ListItemText, Toolbar, useMediaQuery } from '@suid/material';
 import ScreenshotIcon from '@suid/icons-material/Screenshot';
 import SdCardIcon from '@suid/icons-material/SdCard';
-import PhonelinkSetupIcon from '@suid/icons-material/PhonelinkSetup';
-// import PhonelinkLockIcon from '@suid/icons-material/PhonelinkLock';
 import MailIcon from '@suid/icons-material/Mail';
 import ExpandMoreIcon from '@suid/icons-material/ExpandMore';
 import ExpandLessIcon from '@suid/icons-material/ExpandLess';
+import ApoxiIcon from '@/assets/apoxi.svg';
+import SgoldIcon from '@/assets/sgold.svg';
+import EgoldIcon from '@/assets/egold.svg';
 import { useTheme } from '@suid/material/styles';
 import { matchURL } from '@/utils.js';
 import { Collapse } from '@/components/UI/Collapse';
@@ -90,7 +91,7 @@ export const AppDrawer: Component<AppDrawerProps> = (props) => {
 
 	const links: DrawerLinkProps[] = [
 		{
-			icon: <PhonelinkSetupIcon />,
+			icon: <SgoldIcon width="1.5em" height="1.5em" />,
 			title: "SGOLD Tools",
 			sublinks: [
 				{
@@ -105,8 +106,21 @@ export const AppDrawer: Component<AppDrawerProps> = (props) => {
 				},
 			]
 		},
+		/*
 		{
-			icon: <PhonelinkSetupIcon />,
+			icon: <EgoldIcon width="1.5em" height="1.5em" />,
+			title: "EGOLD Tools",
+			sublinks: [
+				{
+					icon: <ScreenshotIcon />,
+					title: "Screenshotter",
+					url: "/screenshot",
+				},
+			]
+		},
+		 */
+		{
+			icon: <ApoxiIcon width="1.5em" height="1.5em" />,
 			title: "APOXI Tools",
 			sublinks: [
 				/*
