@@ -8,7 +8,6 @@ import ExpandMoreIcon from '@suid/icons-material/ExpandMore';
 import ExpandLessIcon from '@suid/icons-material/ExpandLess';
 import ApoxiIcon from '@/assets/apoxi.svg';
 import SgoldIcon from '@/assets/sgold.svg';
-import EgoldIcon from '@/assets/egold.svg';
 import { useTheme } from '@suid/material/styles';
 import { matchURL } from '@/utils.js';
 import { Collapse } from '@/components/UI/Collapse';
