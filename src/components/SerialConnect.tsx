@@ -257,7 +257,7 @@ function serialPortName(port: WebSerialPortInfo): string {
 	const postfix = Number(url.searchParams.get("n") ?? "") > 0 ? ` (${url.searchParams.get("n")})` : "";
 	if (url.hostname === "usb") {
 		const key = sprintf("%04X:%04X", port.vendorId, port.productId);
-		return getUSBDeviceName(port.vendorId, port.productId) ?? `USB ${key}${postfix}`;
+		return getUSBDeviceName(+port.vendorId!, +port.productId!) ?? `USB ${key}${postfix}`;
 	} else if (url.hostname === "bluetooth") {
 		return `BT #${url.searchParams.get("n")}`;
 	}
