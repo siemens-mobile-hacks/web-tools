@@ -24,27 +24,7 @@ import { SerialProtocol, SerialReadyState } from '@/workers/SerialWorker.js';
 import { useTheme } from "@suid/material/styles";
 import { ButtonLoadingText } from "@/components/UI/ButtonLoadingText";
 import { PopperWithArrow } from "@/components/UI/PopperWithArrow";
-
-const USB_DEVICES: Record<string, string> = {
-	"067B:2303": "PL2303",
-	"1A86:7523": "CH340",
-	"0403:6001": "FT232",
-	"10C4:EA60": "СР2102",
-	"11F5:0001": "DCA-540",
-	"11F5:0002": "DCA-540",
-	"11F5:0003": "DCA-540",
-	"11F5:0004": "DCA-540",
-	"11F5:0005": "DCA-540",
-	"11F5:0006": "DCA-540",
-	"11F5:0007": "DCA-540",
-	"11F5:1004": "DCA-540",
-	"04DA:2121": "Panasonic VS/MX/SA",
-	"04DA:2129": "Softbank 705p",
-	"04DA:213C": "Softbank 810p",
-	"04DA:2149": "Softbank 820p",
-	"04DA:2159": "Softbank 821p",
-	"04DA:2173": "Softbank 831p",
-};
+import { getUSBDeviceName } from "@sie-js/serial";
 
 interface SerialConnectProps {
 	protocol: SerialProtocol;
@@ -277,9 +257,7 @@ function serialPortName(port: WebSerialPortInfo): string {
 	const postfix = Number(url.searchParams.get("n") ?? "") > 0 ? ` (${url.searchParams.get("n")})` : "";
 	if (url.hostname === "usb") {
 		const key = sprintf("%04X:%04X", port.vendorId, port.productId);
-		if (key in USB_DEVICES)
-			return `${USB_DEVICES[key]}${postfix}`;
-		return `USB ${key}${postfix}`;
+		return getUSBDeviceName(port.vendorId, port.productId) ?? `USB ${key}${postfix}`;
 	} else if (url.hostname === "bluetooth") {
 		return `BT #${url.searchParams.get("n")}`;
 	}
