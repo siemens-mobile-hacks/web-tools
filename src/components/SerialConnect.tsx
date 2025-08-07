@@ -30,11 +30,20 @@ const USB_DEVICES: Record<string, string> = {
 	"1A86:7523": "CH340",
 	"0403:6001": "FT232",
 	"10C4:EA60": "СР2102",
+	"11F5:0001": "DCA-540",
+	"11F5:0002": "DCA-540",
 	"11F5:0003": "DCA-540",
 	"11F5:0004": "DCA-540",
+	"11F5:0005": "DCA-540",
+	"11F5:0006": "DCA-540",
+	"11F5:0007": "DCA-540",
 	"11F5:1004": "DCA-540",
-	"04DA:2121": "Panasonic VS7",
+	"04DA:2121": "Panasonic VS/MX/SA",
 	"04DA:2129": "Softbank 705p",
+	"04DA:213C": "Softbank 810p",
+	"04DA:2149": "Softbank 820p",
+	"04DA:2159": "Softbank 821p",
+	"04DA:2173": "Softbank 831p",
 };
 
 interface SerialConnectProps {
