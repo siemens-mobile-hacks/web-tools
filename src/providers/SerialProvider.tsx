@@ -7,6 +7,7 @@ import { makePersisted } from "@solid-primitives/storage";
 import { BfcService } from "@/workers/services/BfcService.js";
 import { CgsnService } from "@/workers/services/CgsnService.js";
 import { DwdService } from "@/workers/services/DwdService.js";
+import { SerialService } from "@/workers/services/SerialService";
 import { useApp } from "@/providers/AppProvider";
 
 interface SerialContext {
@@ -14,11 +15,12 @@ interface SerialContext {
 	cgsn: Comlink.Remote<CgsnService>;
 	dwd: Comlink.Remote<DwdService>;
 	ports: Accessor<WebSerialPortInfo[]>;
-	lastUsedPort: Accessor<string | undefined>;
 	readyState: Accessor<SerialReadyState>;
 	connectError: Accessor<Error | undefined>;
 	protocol: Accessor<string>;
 
+	getAdapter(type: string): typeof SerialService<any>;
+	getLastUsedPort(type: string): string | undefined;
 	isPortExists(path: string): boolean;
 	connect(protocol: SerialProtocol, prevPortPath?: string, limitBaudrate?: number, debug?: string): Promise<void>;
 	disconnect(): Promise<void>;
@@ -40,7 +42,7 @@ export const SerialProvider: ParentComponent = (props) => {
 	const [readyState, setReadyState] = createSignal<SerialReadyState>(SerialReadyState.DISCONNECTED);
 	const [connectError, setConnectError] = createSignal<Error | undefined>();
 	const [ports, setPorts] = createSignal<WebSerialPortInfo[]>([]);
-	const [lastUsedPort, setLastUsedPort] = makePersisted(createSignal<string | undefined>(), { name: "lastUsedPort" });
+	const [lastUsedPorts, setLastUsedPorts] = makePersisted(createSignal<Record<string, string>>({}), { name: "lastUsedPorts" });
 
 	const monitorNewPorts = () => {
 		WebSerialBinding.list().then(setPorts);
@@ -79,7 +81,10 @@ export const SerialProvider: ParentComponent = (props) => {
 	const onReadyStateChange = (readyState: SerialReadyState) => setReadyState(readyState);
 	const onProtocolChange = (protocol: SerialProtocol) => setCurrentProtocol(protocol);
 	const onSerialPortChange = (portPath: string) => {
-		setLastUsedPort(portPath);
+		setLastUsedPorts((prev) => {
+			prev[currentProtocol()] = portPath;
+			return prev;
+		});
 		monitorNewPorts();
 	};
 	const onDeviceChange = (deviceName?: string) => {
@@ -115,8 +120,21 @@ export const SerialProvider: ParentComponent = (props) => {
 			bfc: serialWorker.getService("BFC"),
 			cgsn: serialWorker.getService("CGSN"),
 			dwd: serialWorker.getService("DWD"),
+			getAdapter(type: string) {
+				switch (type) {
+					case "BFC":
+						return BfcService;
+					case "CGSN":
+						return CgsnService;
+					case "DWD":
+						return DwdService;
+				}
+				throw new Error("Unknown protocol: " + currentProtocol());
+			},
+			getLastUsedPort(type: string) {
+				return lastUsedPorts()[type];
+			},
 			ports,
-			lastUsedPort,
 			isPortExists,
 			readyState,
 			connectError,

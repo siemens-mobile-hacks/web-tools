@@ -45,4 +45,30 @@ export class DwdService extends SerialService<DWD> {
 			await port!.close();
 		}
 	}
+
+	static getDebugFilters() {
+		return [
+			{
+				name: "AT debug",
+				filter: "atc",
+			},
+			{
+				name: "DWD debug",
+				filter: "dwd",
+			},
+			{
+				name: "DWD debug (TRX)",
+				filter: "dwd:trx",
+			}
+		];
+	}
+
+	static getBaudrates() {
+		return [
+			{
+				name: "Maximum",
+				value: 0,
+			},
+		];
+	}
 }

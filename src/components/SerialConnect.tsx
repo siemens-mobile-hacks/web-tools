@@ -32,8 +32,12 @@ interface SerialConnectProps {
 
 export const SerialConnect: Component<SerialConnectProps> = (props) => {
 	const theme = useTheme();
-	const [currentBaudrate, setCurrentBaudrate] = makePersisted(createSignal<number>(0), { name: 'limitMaxBaudrate' });
-	const [serialDebug, setSerialDebug] = makePersisted(createSignal<string[]>([]), { name: 'serialDebugFilter' });
+	const [currentBaudrate, setCurrentBaudrate] = makePersisted(createSignal<number>(0), {
+		name: 'limitMaxBaudrate' + props.protocol
+	});
+	const [serialDebug, setSerialDebug] = makePersisted(createSignal<string[]>([]), {
+		name: 'serialDebugFilter'
+	});
 	const [selectedSerialPort, setSelectedSerialPort] = createSignal<string>('webserial://any');
 	const [showSettings, setShowSettings] = createSignal<boolean>(false);
 	const serial = useSerial();
@@ -51,8 +55,8 @@ export const SerialConnect: Component<SerialConnectProps> = (props) => {
 	};
 
 	createMemo(on(
-		[serial.readyState, serial.lastUsedPort],
-		() => setSelectedSerialPort(serial.lastUsedPort() ?? 'webserial://any')
+		[serial.readyState, () => serial.getLastUsedPort(props.protocol)],
+		([_, port]) => setSelectedSerialPort(port ?? 'webserial://any')
 	));
 
 	const toggleDebug = (type: string): void => {
@@ -190,61 +194,27 @@ export const SerialConnect: Component<SerialConnectProps> = (props) => {
 								label="Baudrate"
 								onChange={(e) => setCurrentBaudrate(Number(e.target.value))}
 							>
-								<MenuItem value={0}>
-									Maximum
-								</MenuItem>
-								<MenuItem value={921600}>
-									{'≤ 921600'}
-								</MenuItem>
-								<MenuItem value={230400}>
-									{'≤ 230400'}
-								</MenuItem>
-								<MenuItem value={115200}>
-									{'≤ 115200'}
-								</MenuItem>
+								<For each={serial.getAdapter(props.protocol).getBaudrates()}>{(item) =>
+									<MenuItem value={item.value}>
+										{item.name}
+									</MenuItem>
+								}</For>
 							</Select>
 						</FormControl>
 
-						<FormGroup>
-							<FormControlLabel
-								control={<Checkbox onChange={() => toggleDebug('atc')} checked={serialDebug().includes('atc')} />}
-								label="AT debug"
-							/>
-						</FormGroup>
-
-						<Show when={props.protocol === 'BFC'}>
+						<For each={serial.getAdapter(props.protocol).getDebugFilters()}>{(item) =>
 							<FormGroup>
 								<FormControlLabel
-									control={<Checkbox onChange={() => toggleDebug('bfc')} checked={serialDebug().includes('bfc')} />}
-									label="BFC debug"
+									control={
+										<Checkbox
+											onChange={() => toggleDebug(item.filter)}
+											checked={serialDebug().includes(item.filter)}
+										/>
+									}
+									label={item.name}
 								/>
 							</FormGroup>
-						</Show>
-
-						<Show when={props.protocol === 'CGSN'}>
-							<FormGroup>
-								<FormControlLabel
-									control={<Checkbox onChange={() => toggleDebug('cgsn')} checked={serialDebug().includes('cgsn')} />}
-									label="CGSN debug"
-								/>
-							</FormGroup>
-						</Show>
-
-						<Show when={props.protocol === 'DWD'}>
-							<FormGroup>
-								<FormControlLabel
-									control={<Checkbox onChange={() => toggleDebug('dwd')} checked={serialDebug().includes('dwd')} />}
-									label="DWD debug"
-								/>
-							</FormGroup>
-
-							<FormGroup>
-								<FormControlLabel
-									control={<Checkbox onChange={() => toggleDebug('dwd:trx')} checked={serialDebug().includes('dwd:trx')} />}
-									label="DWD TRX debug"
-								/>
-							</FormGroup>
-						</Show>
+						}</For>
 					</Box>
 				</Box>
 			</Popover>
@@ -256,8 +226,9 @@ function serialPortName(port: WebSerialPortInfo): string {
 	const url = new URL(port.path);
 	const postfix = Number(url.searchParams.get("n") ?? "") > 0 ? ` (${url.searchParams.get("n")})` : "";
 	if (url.hostname === "usb") {
-		const key = sprintf("%04X:%04X", port.vendorId, port.productId);
-		return getUSBDeviceName(+port.vendorId!, +port.productId!) ?? `USB ${key}${postfix}`;
+		const vid = parseInt(port.vendorId!, 16);
+		const pid = parseInt(port.productId!, 16);
+		return getUSBDeviceName(vid, pid) ?? `USB ${sprintf("%04X:%04X", vid, pid)}${postfix}`;
 	} else if (url.hostname === "bluetooth") {
 		return `BT #${url.searchParams.get("n")}`;
 	}

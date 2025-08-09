@@ -184,4 +184,32 @@ export class CgsnService extends SerialService<CGSN> {
 			await port!.close();
 		}
 	}
+
+	static getDebugFilters() {
+		return [
+			{
+				name: "AT debug",
+				filter: "atc",
+			},
+			{
+				name: "CGSN debug",
+				filter: "cgsn",
+			},
+			{
+				name: "CGSN debug (TRX)",
+				filter: "cgsn:trx",
+			}
+		];
+	}
+
+	static getBaudrates() {
+		const baudrates = [57600, 115200, 200000, 230400, 400000, 460800, 526600, 614400, 737300, 812500, 921600];
+		return [
+			{
+				name: "Maximum",
+				value: 0,
+			},
+			...baudrates.reverse().map((value) => ({ name: `≤ ${value}`, value }))
+		];
+	}
 }

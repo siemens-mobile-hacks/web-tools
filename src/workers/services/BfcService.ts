@@ -9,7 +9,7 @@ export interface PhoneDisplay {
 	bufferHeight: number;
 }
 
-export class BfcService extends SerialService {
+export class BfcService extends SerialService<BFC> {
 	protocol(): string {
 		return "BFC";
 	}
@@ -62,5 +62,43 @@ export class BfcService extends SerialService {
 			this.handle = undefined;
 			await port!.close();
 		}
+	}
+
+	static getDebugFilters() {
+		return [
+			{
+				name: "AT debug",
+				filter: "atc",
+			},
+			{
+				name: "BFC debug",
+				filter: "bfc",
+			},
+			{
+				name: "BFC debug (TRX)",
+				filter: "bfc:trx",
+			}
+		];
+	}
+
+	static getBaudrates() {
+		return [
+			{
+				name: "Maximum",
+				value: 0,
+			},
+			{
+				name: "≤ 921600",
+				value: 921600,
+			},
+			{
+				name: "≤ 230400",
+				value: 230400,
+			},
+			{
+				name: "≤ 115200",
+				value: 115200,
+			},
+		];
 	}
 }
