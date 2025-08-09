@@ -1,4 +1,4 @@
-import { Component, createMemo, createSignal, For, JSX, ParentComponent, Show } from "solid-js";
+import { Component, createEffect, createMemo, createSignal, For, JSX, ParentComponent, Show } from "solid-js";
 import { A, useMatch } from "@solidjs/router";
 import { Box, Drawer, List, ListItemButton, ListItemIcon, ListItemText, Toolbar, useMediaQuery } from '@suid/material';
 import ScreenshotIcon from '@suid/icons-material/Screenshot';
@@ -42,7 +42,7 @@ type DrawerLinkProps = {
 
 export const DrawerLink: Component<DrawerLinkProps> = (props) => {
 	const isSelected = () => props.url != null && matchURL(props.url);
-	const isNestedSelected = () => {
+	const isNestedSelected = createMemo(() => {
 		if (props.sublinks) {
 			for (const sublink of props.sublinks) {
 				if (sublink.url && matchURL(sublink.url))
@@ -50,9 +50,15 @@ export const DrawerLink: Component<DrawerLinkProps> = (props) => {
 			}
 		}
 		return false;
-	};
+	});
 	const [isOpen, setIsOpen] = createSignal(isNestedSelected());
 	const depth = () => props.depth ?? 1;
+
+	createEffect(() => {
+		// Update on navigation
+		if (isNestedSelected())
+			setIsOpen(true);
+	});
 
 	return (
 		<Show when={props.sublinks && props.sublinks.length > 0} fallback={
