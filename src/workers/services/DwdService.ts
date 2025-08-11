@@ -1,7 +1,7 @@
 import { DWD, IoReadWriteProgress } from "@sie-js/serial";
 import { SerialService } from "./SerialService";
 import { openSerialPort } from "@/utils/serial.js";
-import { isApoxiBootUnlocked, unlockApoxiBootloader, UnlockBootloaderOptions } from "@sie-js/apoxi-tool";
+import { isApoxiBootUnlocked, unlockApoxiBootloader } from "@sie-js/apoxi-tool";
 
 export class DwdService extends SerialService<DWD> {
 	async connect(portIndex: number): Promise<void> {

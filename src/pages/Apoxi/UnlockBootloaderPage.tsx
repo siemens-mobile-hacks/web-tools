@@ -7,7 +7,11 @@ import {
 	DialogActions,
 	DialogContent,
 	DialogContentText,
-	DialogTitle, Link, List, ListItem, ListItemText,
+	DialogTitle,
+	Link,
+	List,
+	ListItem,
+	ListItemText,
 	Stack,
 	TextField
 } from "@suid/material";

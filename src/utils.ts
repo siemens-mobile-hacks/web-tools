@@ -33,11 +33,10 @@ export function recursiveUpdateObject(value: any, callback: (value: any) => any)
 	}
 }
 
-type ColorMode = 'rgb332' | 'rgba4444' | 'rgb565be' | 'rgb565' | 'rgb888' | 'rgb8888';
-
-export function transferBufferToCanvas(mode: ColorMode, buffer: Uint8Array, canvas: HTMLCanvasElement): void {
+export function transferBufferToCanvas(mode: string, buffer: Uint8Array, canvas: HTMLCanvasElement): void {
 	const ctx = canvas.getContext('2d', { willReadFrequently: true });
-	if (!ctx) return;
+	if (!ctx)
+		return;
 
 	let pixelIndex = 0;
 	const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
