@@ -1,6 +1,16 @@
 import * as Comlink from 'comlink';
 import { Component, createEffect, createMemo, createSignal, For, Show } from 'solid-js';
-import { Alert, Box, Button, FormControl, FormControlLabel, Radio, RadioGroup, Stack, TextField } from '@suid/material';
+import {
+	Box,
+	Button,
+	Divider,
+	FormControl,
+	FormControlLabel,
+	Radio,
+	RadioGroup,
+	Stack,
+	TextField
+} from '@suid/material';
 import { SerialConnect } from '@/components/SerialConnect.js';
 import { useSerial } from '@/providers/SerialProvider.js';
 import { sprintf } from 'sprintf-js';
@@ -12,6 +22,7 @@ import { useParams } from "@solidjs/router";
 import { MemoryDumperPopup } from "@/pages/MemoryDumper/MemoryDumperPopup";
 import { MemoryDumperHelp } from "@/pages/MemoryDumper/MemoryDumperHelp";
 import { Title } from "@/components/Layout/Title";
+import { TipsAndTricks } from "@/components/UI/TipsAndTricks";
 
 export type MemoryDumperState = 'idle' | 'download' | 'save';
 
@@ -259,10 +270,13 @@ export const MemoryDumperPage: Component = () => {
 				onFileSave={onFileSave}
 			/>
 
-			<Alert severity="info" sx={{ mt: 2 }}>
-				<b>TIPS & TRICKS:</b>
+			<Box pt={2} pb={1}>
+				<Divider />
+			</Box>
+
+			<TipsAndTricks dialogTitle="TIPS & TRICKS">
 				<MemoryDumperHelp protocol={protocol} />
-			</Alert>
+			</TipsAndTricks>
 		</Box>
 	);
 }

@@ -1,4 +1,4 @@
-import { Component, createSignal } from "solid-js";
+import { Component, createSignal, For } from "solid-js";
 import {
 	Alert,
 	Box,
@@ -7,7 +7,7 @@ import {
 	DialogActions,
 	DialogContent,
 	DialogContentText,
-	DialogTitle,
+	DialogTitle, Link, List, ListItem, ListItemText,
 	Stack,
 	TextField
 } from "@suid/material";
@@ -16,6 +16,7 @@ import { SerialConnect } from "@/components/SerialConnect";
 import { useSerial } from "@/providers/SerialProvider";
 import * as Comlink from "comlink";
 import { ButtonLoadingText } from "@/components/UI/ButtonLoadingText";
+import { TipsAndTricks } from "@/components/UI/TipsAndTricks";
 
 export const UnlockBootloaderPage: Component = () => {
 	let logFieldRef!: HTMLTextAreaElement;
@@ -23,6 +24,20 @@ export const UnlockBootloaderPage: Component = () => {
 	const [isBusy, setIsBusy] = createSignal<boolean>(false);
 	const [showConfirm, setShowConfirm] = createSignal(false);
 	const isSerialReady = () => serial.protocol() == "DWD";
+
+	const tipsTricks = [
+		<>Only phones with NOR flash are supported. NAND support is coming soon.</>,
+		<>With a USB cable, you can work both in P-Test and Normal modes. {' '}
+			However, the serial cable works only in P-Test mode.</>,
+		<>To enter P-Test mode: press the <b>*</b> and <b>#</b> keys simultaneously,  {' '}
+			then turn on the phone using the power key. {' '}
+			You should see a rainbow screen.</>,
+		<>
+			<Link href="https://siemens-mobile-hacks.github.io/docs/panasonic" target="_blank" rel="noopener">
+				Read more about APOXI.
+			</Link>
+		</>
+	];
 
 	const serial = useSerial();
 
@@ -76,11 +91,11 @@ export const UnlockBootloaderPage: Component = () => {
 			</Box>
 
 			<Dialog open={showConfirm()} onClose={handleCancelUnlock}>
-				<DialogTitle id="alert-dialog-title">
+				<DialogTitle>
 					Unlocking bootloader
 				</DialogTitle>
 				<DialogContent>
-					<DialogContentText id="alert-dialog-description">
+					<DialogContentText>
 						Unlocking the APOXI bootloader MAY BREAK THE DEVICE and it may never work again.<br /><br />
 						<b>MAKE A FULL BACKUP BEFORE THE OPERATION.</b>
 					</DialogContentText>
@@ -104,6 +119,20 @@ export const UnlockBootloaderPage: Component = () => {
 					label="Log output"
 				/>
 			</Stack>
+
+			<Box mt={1}>
+				<TipsAndTricks dialogTitle="TIPS & TRICKS">
+					<List>
+						<For each={tipsTricks}>{(item, index) =>
+							<ListItem>
+								<ListItemText>
+									{index() + 1}. {item}
+								</ListItemText>
+							</ListItem>
+						}</For>
+					</List>
+				</TipsAndTricks>
+			</Box>
 		</Box>
 	);
 }
