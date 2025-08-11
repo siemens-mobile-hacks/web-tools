@@ -18,8 +18,8 @@ importers:
         specifier: ^13.0.0
         version: 13.0.0
       '@sie-js/apoxi-tool':
-        specifier: ^1.0.7
-        version: 1.0.7(@sie-js/serial@1.1.10(@serialport/stream@13.0.0))(@types/node@24.2.1)
+        specifier: ^1.0.9
+        version: 1.0.9(@sie-js/serial@1.1.10(@serialport/stream@13.0.0))(@types/node@24.2.1)
       '@sie-js/serial':
         specifier: ^1.1.10
         version: 1.1.10(@serialport/stream@13.0.0)
@@ -801,8 +801,8 @@ packages:
     resolution: {integrity: sha512-F7xLJKsjGo2WuEWMSEO1SimRcOA+WtWICsY13r0ahx8s2SecPQH06338g28OT7cW7uRXI7oEQAk62qh5gHJW3g==}
     engines: {node: '>=20.0.0'}
 
-  '@sie-js/apoxi-tool@1.0.7':
-    resolution: {integrity: sha512-6cNmIJCTyB1Cvpn94SKFJsxwhnGDbE35mR2DMUTzKlW2/dBkqUmNJ5ZQm64jSEvMU7Gq4HIiNnZcqdxm2/PeHg==}
+  '@sie-js/apoxi-tool@1.0.9':
+    resolution: {integrity: sha512-dhx41yNk+jE19HjNjHqxdOc2n3Ln3/iIZZ/2MXYAlYMrlVQVjqTri2vU9TmR4WOe2vsSsmQ6JB9kdYHgQoL4xg==}
     hasBin: true
     peerDependencies:
       '@sie-js/serial': ^1.1.10
@@ -2704,7 +2704,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@sie-js/apoxi-tool@1.0.7(@sie-js/serial@1.1.10(@serialport/stream@13.0.0))(@types/node@24.2.1)':
+  '@sie-js/apoxi-tool@1.0.9(@sie-js/serial@1.1.10(@serialport/stream@13.0.0))(@types/node@24.2.1)':
     dependencies:
       '@sie-js/creampie': 1.0.3
       '@sie-js/serial': 1.1.10(@serialport/stream@13.0.0)
