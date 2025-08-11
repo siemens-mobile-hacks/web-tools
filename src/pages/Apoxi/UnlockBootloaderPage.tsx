@@ -81,7 +81,7 @@ export const UnlockBootloaderPage: Component = () => {
 				</DialogTitle>
 				<DialogContent>
 					<DialogContentText id="alert-dialog-description">
-						Unlocking the APOXI bootloader WILL BREAK THE DEVICE and it may never work again.<br /><br />
+						Unlocking the APOXI bootloader MAY BREAK THE DEVICE and it may never work again.<br /><br />
 						<b>MAKE A FULL BACKUP BEFORE THE OPERATION.</b>
 					</DialogContentText>
 				</DialogContent>

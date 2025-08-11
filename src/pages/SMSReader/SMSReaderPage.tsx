@@ -121,14 +121,14 @@ export const SMSReaderPage: Component = () => {
 			.forEach((phoneKey) => {
 				const sorted = messagesByPhoneNumber[phoneKey].
 					sort(function (msg1, msg2) {
-						//Trying to get as close as possible to chronological order,
-						// while not knowing the date for outgoing messages. The current version is non-deterministic,
-					    // there is a potential for improving the sorting by implementing a custom sort function
+						// Trying to get as close as possible to chronological order,
+						// while not knowing the date for outgoing messages. The current version is non-deterministic.
+						// There is potential for improving the sorting by implementing a custom sort function.
 						if (msg1.dateAndTimeZoneOffset !== undefined && msg2.dateAndTimeZoneOffset !== undefined) {
 							return msg1.dateAndTimeZoneOffset.date > msg2.dateAndTimeZoneOffset.date ? 1 : -1;
 						}
 						if (msg1.file.name === msg2.file.name && msg1.messageIndex !== undefined && msg2.messageIndex !== undefined) {
-							//Order in SMS.dat is not always chronological,
+							// Order in SMS.dat is not always chronological,
 							// it's going to depend on which messages were deleted previously,
 							// but it's more likely to be chronological than the file last modified date.
 							return msg1.messageIndex > msg2.messageIndex ? 1: -1;
@@ -253,9 +253,7 @@ export const SMSReaderPage: Component = () => {
 										<Typography variant="caption">
 											<em>{messageIso}</em>
 											<b> {message.file.webkitRelativePath || message.file.name}{message.messageIndex !== undefined && `#${message.messageIndex}`}</b>
-											{fileIso !== undefined && (<> File mtime: <em>{fileIso}</em></>)
-											}
-											<br/>
+											{fileIso !== undefined && (<> File mtime: <em>{fileIso}</em></>)}<br/>
 											<span> Format: <em>{message.format}</em></span>
 											<span> Segments: <em>{message.segmentsStored}/{message.segmentsTotal}</em></span>
 											<span> Encoding:  <em>{message.encoding ?? 'N/A'}</em></span>

@@ -1,4 +1,4 @@
 # Siemens Mobile Web Tools
-Working with a mobile from a browser.
+Tools for working with mobile phones from a browser.
 
 https://siemens-mobile-hacks.github.io/web-tools/

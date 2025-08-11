@@ -38,13 +38,13 @@ export const MemoryDumperHelp: Component<MemoryDumperHelpProps> = (props) => {
 						</Link>
 					</ListItem>
 					<ListItem sx={{ display: 'list-item' }}>
-						You can achieve maximum speed using a DCA-540 or DCA-510 data cables.
+						You can achieve maximum speed using DCA-540 or DCA-510 data cables.
 					</ListItem>
 					<ListItem sx={{ display: 'list-item' }}>
-						Bluetooth is also possible, but has the worst speed.
+						Bluetooth is also possible, but has the slowest speed.
 					</ListItem>
 					<ListItem sx={{ display: 'list-item' }}>
-						It is better to read memory before ArmDebugger is used.
+						It is better to read memory before using ArmDebugger.
 					</ListItem>
 					<ListItem sx={{ display: 'list-item' }}>
 						<Link href="https://siemens-mobile-hacks.github.io/docs/reverse-engineering/memory-dump" target="_blank" rel="noopener">

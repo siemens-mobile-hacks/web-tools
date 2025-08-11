@@ -60,7 +60,7 @@ export const MemoryDumperPopup: Component<MemoryDumperPopupProps> = (props) => {
 									Due to an error, only {' '}
 									<b>{formatSize(props.readResult?.buffer?.length ?? 0)}</b> {' '}
 									from <b>{formatSize(props.memorySize)}</b> {' '}
-									was successfully read.<br />
+									were successfully read.<br />
 									You can save this partial read result as a file.
 								</Box>
 							</Match>
@@ -69,7 +69,7 @@ export const MemoryDumperPopup: Component<MemoryDumperPopupProps> = (props) => {
 									Due to an interruption, only {' '}
 									<b>{formatSize(props.readResult?.buffer?.length ?? 0)}</b> {' '}
 									from <b>{formatSize(props.memorySize)}</b> {' '}
-									was successfully read.<br />
+									were successfully read.<br />
 									You can save this partial read result as a file.
 								</Box>
 							</Match>

@@ -107,7 +107,7 @@ export const AppDrawer: Component<AppDrawerProps> = (props) => {
 				},
 				{
 					icon: <SdCardIcon />,
-					title: "RAM dumper",
+					title: "RAM Dumper",
 					url: "/dumper",
 				},
 			]
@@ -131,12 +131,12 @@ export const AppDrawer: Component<AppDrawerProps> = (props) => {
 			sublinks: [
 				{
 					icon: <PhonelinkLockIcon />,
-					title: "Unlock boot",
+					title: "Unlock Boot",
 					url: "/apoxi/unlock-boot",
 				},
 				{
 					icon: <SdCardIcon />,
-					title: "Memory dumper",
+					title: "Memory Dumper",
 					url: "/dumper/dwd",
 				}
 			]
