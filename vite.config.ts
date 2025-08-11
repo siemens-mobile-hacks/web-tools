@@ -11,7 +11,8 @@ const ROUTES = [
 	`/screenshot`,
 	`/dumper`,
 	`/dumper/dwd`,
-	`/sms-reader`
+	`/sms-reader`,
+	`/apoxi/unlock-boot`,
 ];
 
 function postBuildPlugin(): Plugin {
