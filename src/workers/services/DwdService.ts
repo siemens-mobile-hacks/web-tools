@@ -1,6 +1,7 @@
 import { DWD, IoReadWriteProgress } from "@sie-js/serial";
 import { SerialService } from "./SerialService";
 import { openSerialPort } from "@/utils/serial.js";
+import { isApoxiBootUnlocked, unlockApoxiBootloader, UnlockBootloaderOptions } from "@sie-js/apoxi-tool";
 
 export class DwdService extends SerialService<DWD> {
 	async connect(portIndex: number): Promise<void> {
@@ -34,6 +35,14 @@ export class DwdService extends SerialService<DWD> {
 	async getDeviceName() {
 		const sw = await this.handle.getSWVersion();
 		return `${sw.sw} (${sw.cpu})`;
+	}
+
+	async isBootUnlocked() {
+		return await isApoxiBootUnlocked(this.handle);
+	}
+
+	async unlockBoot(onDebugLog: (log: string) => void) {
+		await unlockApoxiBootloader(this.handle, { debug: onDebugLog });
 	}
 
 	async disconnect(): Promise<void> {

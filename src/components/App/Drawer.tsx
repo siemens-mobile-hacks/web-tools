@@ -6,6 +6,7 @@ import SdCardIcon from '@suid/icons-material/SdCard';
 import MailIcon from '@suid/icons-material/Mail';
 import ExpandMoreIcon from '@suid/icons-material/ExpandMore';
 import ExpandLessIcon from '@suid/icons-material/ExpandLess';
+import PhonelinkLockIcon from '@suid/icons-material/PhonelinkLock';
 import ApoxiIcon from '@/assets/apoxi.svg';
 import SgoldIcon from '@/assets/sgold.svg';
 import { useTheme } from '@suid/material/styles';
@@ -128,13 +129,11 @@ export const AppDrawer: Component<AppDrawerProps> = (props) => {
 			icon: <ApoxiIcon width="1.5em" height="1.5em" />,
 			title: "APOXI Tools",
 			sublinks: [
-				/*
 				{
 					icon: <PhonelinkLockIcon />,
 					title: "Unlock boot",
 					url: "/apoxi/unlock-boot",
 				},
-				 */
 				{
 					icon: <SdCardIcon />,
 					title: "Memory dumper",

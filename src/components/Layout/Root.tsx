@@ -4,6 +4,7 @@ import { Navigate, Route, Router } from "@solidjs/router";
 import ScreenShooterPage from "@/pages/ScreenShooter/ScreenShooterPage";
 import { MemoryDumperPage } from "@/pages/MemoryDumper/MemoryDumperPage";
 import SMSReaderPage from "@/pages/SMSReader/SMSReaderPage";
+import UnlockBootloaderPage from "@/pages/Apoxi/UnlockBootloaderPage";
 
 export const Root: Component = () => {
 	const showAppError = (err: any) => {
@@ -19,7 +20,7 @@ export const Root: Component = () => {
 				<Route path="/dumper" component={MemoryDumperPage} />
 				<Route path="/dumper/:protocol" component={MemoryDumperPage} />
 				<Route path="/sms-reader" component={SMSReaderPage} />
-				<Route path="/apoxi/unlock-boot" component={SMSReaderPage} />
+				<Route path="/apoxi/unlock-boot" component={UnlockBootloaderPage} />
 				<Route path="*" component={() => <Navigate href="/" />} />
 			</Router>
 		</ErrorBoundary>
