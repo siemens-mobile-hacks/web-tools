@@ -13,6 +13,7 @@ const ROUTES = [
 	`/dumper/dwd`,
 	`/sms-reader`,
 	`/apoxi/unlock-boot`,
+	`/video-converter`,
 ];
 
 function postBuildPlugin(): Plugin {
