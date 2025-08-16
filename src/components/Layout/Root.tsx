@@ -8,6 +8,7 @@ const MemoryDumperPage = lazy(() => import("@/pages/MemoryDumper/MemoryDumperPag
 const SMSReaderPage = lazy(() => import("@/pages/SMSReader/SMSReaderPage"));
 const UnlockBootloaderPage = lazy(() => import("@/pages/Apoxi/UnlockBootloaderPage"));
 const FFSExplorerPage = lazy(() => import("@/pages/FFSExplorerPage/FFSExplorerPage"));
+import VideoConverter from "@/pages/VideoConverter/VideoConverterPage";
 
 export const Root: Component = () => {
 	const showAppError = (err: any) => {
@@ -25,6 +26,7 @@ export const Root: Component = () => {
 				<Route path="/dumper/:protocol" component={MemoryDumperPage} />
 				<Route path="/sms-reader" component={SMSReaderPage} />
 				<Route path="/apoxi/unlock-boot" component={UnlockBootloaderPage} />
+				<Route path="/video-converter" component={VideoConverter} />
 				<Route path="*" component={() => <Navigate href="/" />} />
 			</Router>
 		</ErrorBoundary>
