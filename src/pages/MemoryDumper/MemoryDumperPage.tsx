@@ -15,13 +15,13 @@ import { SerialConnect } from '@/components/SerialConnect.js';
 import { useSerial } from '@/providers/SerialProvider.js';
 import { sprintf } from 'sprintf-js';
 import { downloadBlob, formatSize, validateHex } from '@/utils.js';
-import { SerialProtocol, SerialReadyState } from "@/workers/SerialWorker.js";
+import { SerialProtocol, SerialReadyState } from "@/workers/endpoints/serial";
 import { MemoryRegion } from "@/workers/services/CgsnService.js";
 import { IoReadWriteProgress } from "@sie-js/serial";
 import { useParams } from "@solidjs/router";
 import { MemoryDumperPopup } from "@/pages/MemoryDumper/MemoryDumperPopup";
 import { MemoryDumperHelp } from "@/pages/MemoryDumper/MemoryDumperHelp";
-import { Title } from "@/components/Layout/Title";
+import { PageTitle } from "@/components/Layout/PageTitle";
 import { TipsAndTricks } from "@/components/UI/TipsAndTricks";
 
 export type MemoryDumperState = 'idle' | 'download' | 'save';
@@ -211,7 +211,7 @@ export const MemoryDumperPage: Component = () => {
 
 	return (
 		<Box mt={1}>
-			<Title>Memory Dumper</Title>
+			<PageTitle>Memory Dumper</PageTitle>
 			<SerialConnect protocol={protocol} />
 
 			<FormControl>
@@ -280,3 +280,5 @@ export const MemoryDumperPage: Component = () => {
 		</Box>
 	);
 }
+
+export default MemoryDumperPage;

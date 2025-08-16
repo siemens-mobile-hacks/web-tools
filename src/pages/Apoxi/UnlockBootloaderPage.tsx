@@ -15,7 +15,7 @@ import {
 	Stack,
 	TextField
 } from "@suid/material";
-import { Title } from "@/components/Layout/Title";
+import { PageTitle } from "@/components/Layout/PageTitle";
 import { SerialConnect } from "@/components/SerialConnect";
 import { useSerial } from "@/providers/SerialProvider";
 import * as Comlink from "comlink";
@@ -70,7 +70,7 @@ export const UnlockBootloaderPage: Component = () => {
 
 	return (
 		<Box mt={1}>
-			<Title>Unlock Bootloader</Title>
+			<PageTitle>Unlock Bootloader</PageTitle>
 
 			<SerialConnect protocol="DWD" />
 

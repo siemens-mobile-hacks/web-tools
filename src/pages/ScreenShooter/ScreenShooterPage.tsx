@@ -20,10 +20,10 @@ import { CopyButton } from './CopyButton.js';
 import { SerialConnect } from '@/components/SerialConnect.js';
 import { useSerial } from '@/providers/SerialProvider.js';
 import { downloadCanvasImage, transferBufferToCanvas } from '@/utils.js';
-import { SerialReadyState } from "@/workers/SerialWorker.js";
+import { SerialReadyState } from "@/workers/endpoints/serial";
 import { PhoneDisplay } from "@/workers/services/BfcService.js";
 import { IoReadWriteProgress } from "@sie-js/serial";
-import { Title } from "@/components/Layout/Title";
+import { PageTitle } from "@/components/Layout/PageTitle";
 
 type ProgressInfo = {
 	percent: number
@@ -130,7 +130,7 @@ export const ScreenShooterPage: Component = () => {
 
 	return (
 		<Box>
-			<Title>Screenshotter</Title>
+			<PageTitle>Screenshotter</PageTitle>
 
 			<Grid container spacing={2}>
 				<Grid

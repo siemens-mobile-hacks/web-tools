@@ -20,7 +20,7 @@ import SettingsIcon from '@suid/icons-material/Settings';
 import { useSerial } from '@/providers/SerialProvider.js';
 import { makePersisted } from "@solid-primitives/storage";
 import { WebSerialPortInfo } from "serialport-bindings-webserial";
-import { SerialProtocol, SerialReadyState } from '@/workers/SerialWorker.js';
+import { SerialProtocol, SerialReadyState } from '@/workers/endpoints/serial';
 import { useTheme } from "@suid/material/styles";
 import { ButtonLoadingText } from "@/components/UI/ButtonLoadingText";
 import { PopperWithArrow } from "@/components/UI/PopperWithArrow";

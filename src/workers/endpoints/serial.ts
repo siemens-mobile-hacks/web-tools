@@ -1,11 +1,11 @@
-import WorkerModule from './worker?worker';
 import * as Comlink from 'comlink';
 import EventEmitter from "eventemitter3";
-import { getSerialPort } from "@/utils/serial.js";
-import { BfcService } from "@/workers/services/BfcService.js";
-import { CgsnService } from "@/workers/services/CgsnService.js";
-import { SerialService } from "./services/SerialService";
-import { DwdService } from "./services/DwdService";
+import { getSerialPort } from "@/utils/serial";
+import { BfcService } from "@/workers/services/BfcService";
+import { CgsnService } from "@/workers/services/CgsnService";
+import { SerialService } from "../services/SerialService";
+import { DwdService } from "../services/DwdService";
+import { commonWorker } from "@/workers/endpoints/common";
 
 export enum SerialReadyState {
 	DISCONNECTED,
@@ -15,10 +15,6 @@ export enum SerialReadyState {
 }
 
 export type SerialProtocol = 'none' | 'BFC' | 'CGSN' | 'DWD';
-
-interface RemoteSerialWorker {
-	getService(name: SerialProtocol): any;
-}
 
 type SerialWorkerEvents = {
 	protocolChange: [SerialProtocol];
@@ -33,14 +29,13 @@ type SerialWorkerServices = {
 	DWD: Comlink.Remote<DwdService>;
 };
 
-const remoteSerialWorker = Comlink.wrap<RemoteSerialWorker>(new WorkerModule());
 const SERVICES: SerialWorkerServices = {
-	BFC: await remoteSerialWorker.getService('BFC'),
-	CGSN: await remoteSerialWorker.getService('CGSN'),
-	DWD: await remoteSerialWorker.getService('DWD'),
+	BFC: await commonWorker.getService('BFC'),
+	CGSN: await commonWorker.getService('CGSN'),
+	DWD: await commonWorker.getService('DWD'),
 };
 
-export class SerialWorker extends EventEmitter<SerialWorkerEvents> {
+export class Serial extends EventEmitter<SerialWorkerEvents> {
 	private readyState: SerialReadyState = SerialReadyState.DISCONNECTED;
 	private protocol: SerialProtocol = 'none';
 	private device: string | undefined;
@@ -133,4 +128,4 @@ export class SerialWorker extends EventEmitter<SerialWorkerEvents> {
 	}
 }
 
-export const serialWorker = new SerialWorker();
+export const serialWorker = new Serial();

@@ -22,7 +22,7 @@ import {
 	SMSDatParser,
 	SMSDecoder
 } from 'siemens-sms-parser';
-import { Title } from "@/components/Layout/Title";
+import { PageTitle } from "@/components/Layout/PageTitle";
 
 type ParsedMessage = Partial<DecodedSMS> & DecodedPDU & {
 	phoneKey: string;
@@ -154,7 +154,7 @@ export const SMSReaderPage: Component = () => {
 
 	return (
 		<Box>
-			<Title>SMS Reader</Title>
+			<PageTitle>SMS Reader</PageTitle>
 
 			<Typography>
 				Files must be present on your device, retrieving from the phone is not supported.

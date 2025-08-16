@@ -1,10 +1,13 @@
-import { type Component, ErrorBoundary } from "solid-js";
+import { type Component, ErrorBoundary, lazy } from "solid-js";
 import { App } from "@/components/Layout/App.js";
 import { Navigate, Route, Router } from "@solidjs/router";
-import ScreenShooterPage from "@/pages/ScreenShooter/ScreenShooterPage";
-import { MemoryDumperPage } from "@/pages/MemoryDumper/MemoryDumperPage";
-import SMSReaderPage from "@/pages/SMSReader/SMSReaderPage";
-import UnlockBootloaderPage from "@/pages/Apoxi/UnlockBootloaderPage";
+
+// lazy imports
+const ScreenShooterPage = lazy(() => import("@/pages/ScreenShooter/ScreenShooterPage"));
+const MemoryDumperPage = lazy(() => import("@/pages/MemoryDumper/MemoryDumperPage"));
+const SMSReaderPage = lazy(() => import("@/pages/SMSReader/SMSReaderPage"));
+const UnlockBootloaderPage = lazy(() => import("@/pages/Apoxi/UnlockBootloaderPage"));
+const FFSExplorerPage = lazy(() => import("@/pages/FFSExplorerPage/FFSExplorerPage"));
 
 export const Root: Component = () => {
 	const showAppError = (err: any) => {
@@ -17,6 +20,7 @@ export const Root: Component = () => {
 			<Router root={App} base={import.meta.env.BASE_URL}>
 				<Route path="/" component={() => <Navigate href={() => "/screenshot"} />} />
 				<Route path="/screenshot" component={ScreenShooterPage} />
+				<Route path="/ffs" component={FFSExplorerPage} />
 				<Route path="/dumper" component={MemoryDumperPage} />
 				<Route path="/dumper/:protocol" component={MemoryDumperPage} />
 				<Route path="/sms-reader" component={SMSReaderPage} />

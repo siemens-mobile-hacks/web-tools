@@ -75,7 +75,7 @@ export default defineConfig({
 		 }),
 	],
 	optimizeDeps: {
-		exclude: ['siemens-sms-parser', '@sie-js/creampie'],
+		exclude: ['siemens-sms-parser', '@sie-js/creampie', '@sie-js/libffshit'],
 	},
 	server: {
 		port: 3000,

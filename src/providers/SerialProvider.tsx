@@ -2,7 +2,7 @@
 import * as Comlink from 'comlink';
 import { Accessor, createContext, createSignal, onCleanup, onMount, ParentComponent, useContext } from 'solid-js';
 import { WebSerialBinding, WebSerialPortInfo } from 'serialport-bindings-webserial';
-import { SerialProtocol, SerialReadyState, serialWorker } from '@/workers/SerialWorker.js';
+import { SerialProtocol, SerialReadyState, serialWorker } from '@/workers/endpoints/serial';
 import { makePersisted } from "@solid-primitives/storage";
 import { BfcService } from "@/workers/services/BfcService.js";
 import { CgsnService } from "@/workers/services/CgsnService.js";
