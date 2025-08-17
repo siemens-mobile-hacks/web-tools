@@ -1,22 +1,29 @@
-import {Component, createEffect, createSignal, onCleanup, onMount} from 'solid-js';
-import {Box, Button, LinearProgress, Link, Typography, useTheme} from '@suid/material';
-import {FFmpeg, type FileData, type LogEvent, type ProgressEvent} from '@ffmpeg/ffmpeg';
-import {PageTitle} from "@/components/Layout/PageTitle";
+import { Component, createEffect, createSignal, onCleanup, onMount } from 'solid-js';
+import { Box, Button, LinearProgress, Link, Typography, useTheme } from '@suid/material';
+import { FFmpeg, type FileData, type LogEvent, type ProgressEvent } from '@ffmpeg/ffmpeg';
+import { PageTitle } from "@/components/Layout/PageTitle";
+// single-thread core (fallback)
 import ffmpegCoreJavascriptUrl from '@ffmpeg/core?url';
 import ffmpegCoreWasmUrl from '@ffmpeg/core/wasm?url';
 
+// multithread core (preferred when crossOriginIsolated)
+import ffmpegCoreJavascriptMtUrl from '@ffmpeg/core-mt?url';
+import ffmpegCoreWasmMtUrl from '@ffmpeg/core-mt/wasm?url';
+import ffmpegCoreWorkerMtUrl from '@ffmpeg/core-mt/worker?url';
+
+
 export const VideoConverterPage: Component = () => {
-    const [userSelectedFile, setUserSelectedFile] = createSignal<File | null>(null);
-    const [isEngineLoadingOrBusy, setIsEngineLoadingOrBusy] = createSignal(false);
-    const [isEngineLoaded, setIsEngineLoaded] = createSignal(false);
-    const [conversionProgressRatio, setConversionProgressRatio] = createSignal(0);
-    const [isProgressVisible, setIsProgressVisible] = createSignal(false);
-    const [logTextContent, setLogTextContent] = createSignal('');
-    const [downloadObjectUrl, setDownloadObjectUrl] = createSignal<string | null>(null);
-    const [outputPath, setOutputPath] = createSignal('');
-    const totalPipelinePassCount = 2; // maps per-pass progress (0..1) across two passes
-    let currentPassZeroBasedIndex = 0; // 0 for pass 1, 1 for pass 2
-    const theme = useTheme();
+	const [userSelectedFile, setUserSelectedFile] = createSignal<File | null>(null);
+	const [isEngineLoadingOrBusy, setIsEngineLoadingOrBusy] = createSignal(false);
+	const [isEngineLoaded, setIsEngineLoaded] = createSignal(false);
+	const [conversionProgressRatio, setConversionProgressRatio] = createSignal(0);
+	const [isProgressVisible, setIsProgressVisible] = createSignal(false);
+	const [logTextContent, setLogTextContent] = createSignal('');
+	const [downloadObjectUrl, setDownloadObjectUrl] = createSignal<string | null>(null);
+	const [outputPath, setOutputPath] = createSignal('');
+	const totalPipelinePassCount = 2;
+	let currentPassZeroBasedIndex = 0;
+	const theme = useTheme();
 
     let logPreElement: HTMLPreElement | undefined;
     let scheduledScrollAnimationFrameId: number | null = null;
@@ -78,50 +85,60 @@ export const VideoConverterPage: Component = () => {
         void ffmpegEngineInstance.terminate();
     });
 
-    const ffmpegEngineInstance = new FFmpeg();
+	const ffmpegEngineInstance = new FFmpeg();
+	let ffmpegLoadPromise: Promise<void> | null = null;
 
-    let ffmpegLoadPromise: Promise<void> | null = null;
+	function appendLogAndScroll(nonAnsiText: string) {
+		const sanitized = nonAnsiText.replace(/\u001b\[[0-9;]*m/g, '');
+		setLogTextContent(prev => prev + sanitized + '\n');
+	}
 
-    function appendLogAndScroll(nonAnsiText: string) {
-        const sanitized = nonAnsiText.replace(/\u001b\[[0-9;]*m/g, '');
-        setLogTextContent(prev => prev + sanitized + '\n');
-    }
+	const handleFfmpegLogEvent = ({message}: LogEvent) => appendLogAndScroll(message);
+	const handleFfmpegProgressEvent = ({progress}: ProgressEvent) => {
+		setIsProgressVisible(true);
+		const perPassProgressClamped = Math.max(0, Math.min(1, progress ?? 0));
+		const overallProgress =
+			currentPassZeroBasedIndex / totalPipelinePassCount +
+			perPassProgressClamped / totalPipelinePassCount;
+		setConversionProgressRatio(overallProgress);
+	};
 
-    const handleFfmpegLogEvent = ({message}: LogEvent) => appendLogAndScroll(message);
-    const handleFfmpegProgressEvent = ({progress}: ProgressEvent) => {
-        setIsProgressVisible(true);
-        const perPassProgressClamped = Math.max(0, Math.min(1, progress ?? 0));
-        const overallProgress =
-            currentPassZeroBasedIndex / totalPipelinePassCount +
-            perPassProgressClamped / totalPipelinePassCount;
-        setConversionProgressRatio(overallProgress);
-    };
+	function canUseMultiThread(): boolean {
+		return typeof crossOriginIsolated !== 'undefined' && crossOriginIsolated && typeof SharedArrayBuffer !== 'undefined';
+	}
 
+	async function loadFfmpegEngineOnce() {
+		if (ffmpegEngineInstance.loaded) return;
+		if (ffmpegLoadPromise !== null) return ffmpegLoadPromise;
 
-    async function loadFfmpegEngineOnce() {
-        if (ffmpegEngineInstance.loaded) return;
-        if (ffmpegLoadPromise !== null) return ffmpegLoadPromise;
+		ffmpegEngineInstance.on('log', handleFfmpegLogEvent);
+		ffmpegEngineInstance.on('progress', handleFfmpegProgressEvent);
 
-        ffmpegEngineInstance.on('log', handleFfmpegLogEvent);
-        ffmpegEngineInstance.on('progress', handleFfmpegProgressEvent);
-        appendLogAndScroll('Loading FFmpeg worker...');
+		const useMt = canUseMultiThread();
+		appendLogAndScroll(`Loading FFmpeg worker (${useMt ? 'multi-threaded' : 'single-threaded'})...`);
 
-        ffmpegLoadPromise = ffmpegEngineInstance
-            .load({
-                coreURL: ffmpegCoreJavascriptUrl,
-                wasmURL: ffmpegCoreWasmUrl,
-            })
-            .then(() => {
-                appendLogAndScroll('FFmpeg loaded.');
-                setIsEngineLoaded(true);
-            })
-            .finally(() => {
-                // allow a future reload() if you ever terminate the worker
-                ffmpegLoadPromise = null;
-            });
+		const coreURL = useMt ? ffmpegCoreJavascriptMtUrl : ffmpegCoreJavascriptUrl;
+		const wasmURL = useMt ? ffmpegCoreWasmMtUrl : ffmpegCoreWasmUrl;
+		const workerURL = useMt ? ffmpegCoreWorkerMtUrl : undefined;
+		const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.10/dist/umd'
 
-        return ffmpegLoadPromise;
-    }
+		return ffmpegEngineInstance.load({
+			coreURL: coreURL,
+			wasmURL: wasmURL,
+			workerURL: workerURL,
+		});
+		ffmpegLoadPromise = ffmpegEngineInstance
+			.load(workerURL ? {coreURL, wasmURL, workerURL} : {coreURL, wasmURL})
+			.then(() => {
+				appendLogAndScroll(`FFmpeg loaded (${useMt ? 'MT' : 'ST'} core).`);
+				setIsEngineLoaded(true);
+			})
+			.finally(() => {
+				ffmpegLoadPromise = null;
+			});
+
+		return ffmpegLoadPromise;
+	}
 
     async function loadFFmpegEngine() {
         setIsEngineLoadingOrBusy(true);
@@ -140,156 +157,70 @@ export const VideoConverterPage: Component = () => {
     }
 
     async function runTwoPassThreeGpPipeline(inputVirtualPath: string, outputVirtualPath: string) {
-        const videoFilterChain =
-            'scale=320:240:force_original_aspect_ratio=decrease,pad=320:240:(ow-iw)/2:(oh-ih)/2,setsar=1';
+		const videoFilterChain = 'scale=320:240:force_original_aspect_ratio=decrease:force_divisible_by=2,setsar=1';
+		const pass1Arguments = [
+			'-y',
+			'-i',inputVirtualPath,
+			'-vf',videoFilterChain,
+			'-c:v','mpeg4',
+			'-pix_fmt','yuv420p',
+			'-tag:v','mp4v',
+			'-bf','0',
+			'-r','15',
+			'-fps_mode','cfr',
+			'-g','150',
+			'-sc_threshold','40',
+			'-qmin','3',
+			'-qmax','31',
+			'-mbd','rd',
+			'-b:v','190k',
+			'-maxrate','380k',
+			'-bufsize','1140k',
+			'-rc_init_occupancy','1083k',
+			'-trellis','1',
+			'-pass','1',
+			'-passlogfile','mp4v_pass',
+			'-an',
+			'-f','null',
+			'/dev/null'
+		];
 
-        const pass1Arguments = [
-            '-y',
-            '-i',
-            inputVirtualPath,
-            '-vf',
-            videoFilterChain,
-            '-c:v',
-            'mpeg4',
-            '-pix_fmt',
-            'yuv420p',
-            '-tag:v',
-            'mp4v',
-            '-threads',
-            '1',
-            '-slices',
-            '1',
-            '-bf',
-            '0',
-            '-r',
-            '14.5',
-            '-vsync',
-            'cfr',
-            '-g',
-            '72',
-            '-keyint_min',
-            '1',
-            '-sc_threshold',
-            '100',
-            '-i_qfactor',
-            '0.5',
-            '-i_qoffset',
-            '-1.0',
-            '-qcomp',
-            '0.80',
-            '-qmin',
-            '2',
-            '-qmax',
-            '31',
-            '-mbd',
-            'rd',
-            '-subq',
-            '7',
-            '-me_method',
-            'umh',
-            '-me_range',
-            '32',
-            '-b:v',
-            '185k',
-            '-maxrate',
-            '190k',
-            '-bufsize',
-            '40000k',
-            '-rc_init_occupancy',
-            '30000k',
-            '-trellis',
-            '2',
-            '-pass',
-            '1',
-            '-passlogfile',
-            'mp4v_pass',
-            '-an',
-            '-f',
-            'null',
-            '/dev/null',
-        ];
+		const pass2Arguments = [
+			'-y',
+			'-i',inputVirtualPath,
+			'-vf',videoFilterChain,
+			'-c:v','mpeg4',
+			'-pix_fmt','yuv420p',
+			'-tag:v','mp4v',
+			'-bf','0',
+			'-r','15',
+			'-fps_mode','cfr',
+			'-g','150',
+			'-sc_threshold','40',
+			'-qmin','3',
+			'-qmax','31',
+			'-mbd','rd',
+			'-b:v','190k',
+			'-maxrate','380k',
+			'-bufsize','1140k',
+			'-rc_init_occupancy','1083k',
+			'-trellis','1',
+			'-pass','2',
+			'-passlogfile','mp4v_pass',
+			'-c:a','aac',
+			'-profile:a','aac_low',
+			'-b:a','64k',
+			'-ar','44100',
+			'-ac','2',
+			'-movflags',
+			'+faststart',
+			outputVirtualPath
+		];
 
-        const pass2Arguments = [
-            '-y',
-            '-i',
-            inputVirtualPath,
-            '-vf',
-            videoFilterChain,
-            '-c:v',
-            'mpeg4',
-            '-pix_fmt',
-            'yuv420p',
-            '-tag:v',
-            'mp4v',
-            '-threads',
-            '1',
-            '-slices',
-            '1',
-            '-bf',
-            '0',
-            '-r',
-            '14.5',
-            '-vsync',
-            'cfr',
-            '-g',
-            '72',
-            '-keyint_min',
-            '1',
-            '-sc_threshold',
-            '100',
-            '-i_qfactor',
-            '0.5',
-            '-i_qoffset',
-            '-1.0',
-            '-qcomp',
-            '0.80',
-            '-qmin',
-            '2',
-            '-qmax',
-            '31',
-            '-mbd',
-            'rd',
-            '-subq',
-            '7',
-            '-me_method',
-            'umh',
-            '-me_range',
-            '32',
-            '-b:v',
-            '185k',
-            '-maxrate',
-            '190k',
-            '-bufsize',
-            '40000k',
-            '-rc_init_occupancy',
-            '30000k',
-            '-trellis',
-            '2',
-            '-pass',
-            '2',
-            '-passlogfile',
-            'mp4v_pass',
-            '-c:a',
-            'aac',
-            '-profile:a',
-            'aac_low',
-            '-b:a',
-            '88k',
-            '-ar',
-            '44100',
-            '-ac',
-            '2',
-            '-movflags',
-            '+faststart',
-            '-video_track_timescale',
-            '29',
-            outputVirtualPath,
-        ];
-
-        appendLogAndScroll('\n— PASS 1 —');
+		appendLogAndScroll('\n— PASS 1 —\nffmpeg ' + pass1Arguments.join(" "));
         currentPassZeroBasedIndex = 0;
         await ffmpegEngineInstance.exec(pass1Arguments);
-        appendLogAndScroll('\n— PASS 2 —');
+        appendLogAndScroll('\n— PASS 2 —\nffmpeg ' + pass1Arguments.join(" "));
         currentPassZeroBasedIndex = 1;
         await ffmpegEngineInstance.exec(pass2Arguments);
         setConversionProgressRatio(1);
