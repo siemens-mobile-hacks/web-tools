@@ -140,14 +140,14 @@ export const VideoConverterPage: Component = () => {
     }
 
     async function runTwoPassThreeGpPipeline(inputVirtualPath: string, outputVirtualPath: string) {
-		const videoFilterChain = 'scale=w=if(gte(iw/ih\\,320/240)\\,320\\,trunc(240*iw/ih/2)*2):h=if(gte(iw/ih\\,320/240)\\,trunc(320*ih/iw/2)*2\\,240),setsar=1';
+		const videoFilterChain = 'scale=320:240:force_original_aspect_ratio=decrease:force_divisible_by=2,setsar=1';
 		const pass1Arguments = [
-			'-y','-i',inputVirtualPath,
+			'-y',
+			'-i',inputVirtualPath,
 			'-vf',videoFilterChain,
 			'-c:v','mpeg4',
 			'-pix_fmt','yuv420p',
 			'-tag:v','mp4v',
-			'-threads','1',
 			'-bf','0',
 			'-r','15',
 			'-fps_mode','cfr',
@@ -169,12 +169,12 @@ export const VideoConverterPage: Component = () => {
 		];
 
 		const pass2Arguments = [
-			'-y','-i',inputVirtualPath,
+			'-y',
+			'-i',inputVirtualPath,
 			'-vf',videoFilterChain,
 			'-c:v','mpeg4',
 			'-pix_fmt','yuv420p',
 			'-tag:v','mp4v',
-			'-threads','1',
 			'-bf','0',
 			'-r','15',
 			'-fps_mode','cfr',
