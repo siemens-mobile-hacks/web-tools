@@ -1,22 +1,29 @@
-import {Component, createEffect, createSignal, onCleanup, onMount} from 'solid-js';
-import {Box, Button, LinearProgress, Link, Typography, useTheme} from '@suid/material';
-import {FFmpeg, type FileData, type LogEvent, type ProgressEvent} from '@ffmpeg/ffmpeg';
-import {PageTitle} from "@/components/Layout/PageTitle";
+import { Component, createEffect, createSignal, onCleanup, onMount } from 'solid-js';
+import { Box, Button, LinearProgress, Link, Typography, useTheme } from '@suid/material';
+import { FFmpeg, type FileData, type LogEvent, type ProgressEvent } from '@ffmpeg/ffmpeg';
+import { PageTitle } from "@/components/Layout/PageTitle";
+// single-thread core (fallback)
 import ffmpegCoreJavascriptUrl from '@ffmpeg/core?url';
 import ffmpegCoreWasmUrl from '@ffmpeg/core/wasm?url';
 
+// multithread core (preferred when crossOriginIsolated)
+import ffmpegCoreJavascriptMtUrl from '@ffmpeg/core-mt?url';
+import ffmpegCoreWasmMtUrl from '@ffmpeg/core-mt/wasm?url';
+import ffmpegCoreWorkerMtUrl from '@ffmpeg/core-mt/worker?url';
+
+
 export const VideoConverterPage: Component = () => {
-    const [userSelectedFile, setUserSelectedFile] = createSignal<File | null>(null);
-    const [isEngineLoadingOrBusy, setIsEngineLoadingOrBusy] = createSignal(false);
-    const [isEngineLoaded, setIsEngineLoaded] = createSignal(false);
-    const [conversionProgressRatio, setConversionProgressRatio] = createSignal(0);
-    const [isProgressVisible, setIsProgressVisible] = createSignal(false);
-    const [logTextContent, setLogTextContent] = createSignal('');
-    const [downloadObjectUrl, setDownloadObjectUrl] = createSignal<string | null>(null);
-    const [outputPath, setOutputPath] = createSignal('');
-    const totalPipelinePassCount = 2; // maps per-pass progress (0..1) across two passes
-    let currentPassZeroBasedIndex = 0; // 0 for pass 1, 1 for pass 2
-    const theme = useTheme();
+	const [userSelectedFile, setUserSelectedFile] = createSignal<File | null>(null);
+	const [isEngineLoadingOrBusy, setIsEngineLoadingOrBusy] = createSignal(false);
+	const [isEngineLoaded, setIsEngineLoaded] = createSignal(false);
+	const [conversionProgressRatio, setConversionProgressRatio] = createSignal(0);
+	const [isProgressVisible, setIsProgressVisible] = createSignal(false);
+	const [logTextContent, setLogTextContent] = createSignal('');
+	const [downloadObjectUrl, setDownloadObjectUrl] = createSignal<string | null>(null);
+	const [outputPath, setOutputPath] = createSignal('');
+	const totalPipelinePassCount = 2;
+	let currentPassZeroBasedIndex = 0;
+	const theme = useTheme();
 
     let logPreElement: HTMLPreElement | undefined;
     let scheduledScrollAnimationFrameId: number | null = null;
@@ -78,50 +85,60 @@ export const VideoConverterPage: Component = () => {
         void ffmpegEngineInstance.terminate();
     });
 
-    const ffmpegEngineInstance = new FFmpeg();
+	const ffmpegEngineInstance = new FFmpeg();
+	let ffmpegLoadPromise: Promise<void> | null = null;
 
-    let ffmpegLoadPromise: Promise<void> | null = null;
+	function appendLogAndScroll(nonAnsiText: string) {
+		const sanitized = nonAnsiText.replace(/\u001b\[[0-9;]*m/g, '');
+		setLogTextContent(prev => prev + sanitized + '\n');
+	}
 
-    function appendLogAndScroll(nonAnsiText: string) {
-        const sanitized = nonAnsiText.replace(/\u001b\[[0-9;]*m/g, '');
-        setLogTextContent(prev => prev + sanitized + '\n');
-    }
+	const handleFfmpegLogEvent = ({message}: LogEvent) => appendLogAndScroll(message);
+	const handleFfmpegProgressEvent = ({progress}: ProgressEvent) => {
+		setIsProgressVisible(true);
+		const perPassProgressClamped = Math.max(0, Math.min(1, progress ?? 0));
+		const overallProgress =
+			currentPassZeroBasedIndex / totalPipelinePassCount +
+			perPassProgressClamped / totalPipelinePassCount;
+		setConversionProgressRatio(overallProgress);
+	};
 
-    const handleFfmpegLogEvent = ({message}: LogEvent) => appendLogAndScroll(message);
-    const handleFfmpegProgressEvent = ({progress}: ProgressEvent) => {
-        setIsProgressVisible(true);
-        const perPassProgressClamped = Math.max(0, Math.min(1, progress ?? 0));
-        const overallProgress =
-            currentPassZeroBasedIndex / totalPipelinePassCount +
-            perPassProgressClamped / totalPipelinePassCount;
-        setConversionProgressRatio(overallProgress);
-    };
+	function canUseMultiThread(): boolean {
+		return typeof crossOriginIsolated !== 'undefined' && crossOriginIsolated && typeof SharedArrayBuffer !== 'undefined';
+	}
 
+	async function loadFfmpegEngineOnce() {
+		if (ffmpegEngineInstance.loaded) return;
+		if (ffmpegLoadPromise !== null) return ffmpegLoadPromise;
 
-    async function loadFfmpegEngineOnce() {
-        if (ffmpegEngineInstance.loaded) return;
-        if (ffmpegLoadPromise !== null) return ffmpegLoadPromise;
+		ffmpegEngineInstance.on('log', handleFfmpegLogEvent);
+		ffmpegEngineInstance.on('progress', handleFfmpegProgressEvent);
 
-        ffmpegEngineInstance.on('log', handleFfmpegLogEvent);
-        ffmpegEngineInstance.on('progress', handleFfmpegProgressEvent);
-        appendLogAndScroll('Loading FFmpeg worker...');
+		const useMt = canUseMultiThread();
+		appendLogAndScroll(`Loading FFmpeg worker (${useMt ? 'multi-threaded' : 'single-threaded'})...`);
 
-        ffmpegLoadPromise = ffmpegEngineInstance
-            .load({
-                coreURL: ffmpegCoreJavascriptUrl,
-                wasmURL: ffmpegCoreWasmUrl,
-            })
-            .then(() => {
-                appendLogAndScroll('FFmpeg loaded.');
-                setIsEngineLoaded(true);
-            })
-            .finally(() => {
-                // allow a future reload() if you ever terminate the worker
-                ffmpegLoadPromise = null;
-            });
+		const coreURL = useMt ? ffmpegCoreJavascriptMtUrl : ffmpegCoreJavascriptUrl;
+		const wasmURL = useMt ? ffmpegCoreWasmMtUrl : ffmpegCoreWasmUrl;
+		const workerURL = useMt ? ffmpegCoreWorkerMtUrl : undefined;
+		const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core-mt@0.12.10/dist/umd'
 
-        return ffmpegLoadPromise;
-    }
+		return ffmpegEngineInstance.load({
+			coreURL: coreURL,
+			wasmURL: wasmURL,
+			workerURL: workerURL,
+		});
+		ffmpegLoadPromise = ffmpegEngineInstance
+			.load(workerURL ? {coreURL, wasmURL, workerURL} : {coreURL, wasmURL})
+			.then(() => {
+				appendLogAndScroll(`FFmpeg loaded (${useMt ? 'MT' : 'ST'} core).`);
+				setIsEngineLoaded(true);
+			})
+			.finally(() => {
+				ffmpegLoadPromise = null;
+			});
+
+		return ffmpegLoadPromise;
+	}
 
     async function loadFFmpegEngine() {
         setIsEngineLoadingOrBusy(true);
