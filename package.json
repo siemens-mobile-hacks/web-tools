@@ -7,7 +7,7 @@
 		"start": "vite",
 		"dev": "vite",
 		"build": "vite build",
-		"gh-pages-build": "vite build --base=/web-tools",
+		"gh-pages-build": "vite build",
 		"serve": "vite preview"
 	},
 	"license": "MIT",
