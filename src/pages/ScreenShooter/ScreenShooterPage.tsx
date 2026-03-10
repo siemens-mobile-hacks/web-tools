@@ -19,11 +19,13 @@ import DownloadIcon from '@suid/icons-material/Download';
 import { CopyButton } from './CopyButton.js';
 import { SerialConnect } from '@/components/SerialConnect.js';
 import { useSerial } from '@/providers/SerialProvider.js';
-import { downloadCanvasImage, transferBufferToCanvas } from '@/utils.js';
 import { SerialReadyState } from "@/workers/endpoints/serial";
 import { PhoneDisplay } from "@/workers/services/BfcService.js";
 import { IoReadWriteProgress } from "@sie-js/serial";
 import { PageTitle } from "@/components/Layout/PageTitle";
+import { downloadCanvasImage } from "@/utils/canvas";
+
+import { decodeBfcDisplayBuffer } from "@/utils/bfc";
 
 type ProgressInfo = {
 	percent: number
@@ -43,7 +45,6 @@ export const ScreenShooterPage: Component = () => {
 
 	const serial = useSerial();
 	let canvasRef!: HTMLCanvasElement;
-	let bufferCanvasRef!: HTMLCanvasElement;
 
 	const bfcReady = createMemo<boolean>(() => {
 		return serial.readyState() === SerialReadyState.CONNECTED && serial.protocol() === "BFC";
@@ -83,19 +84,18 @@ export const ScreenShooterPage: Component = () => {
 		});
 
 		try {
-			const buffer = await serial.bfc.getDisplayBuffer(displayNumber() + 1, onProgress);
-			if (bufferCanvasRef.width !== canvasRef.width || bufferCanvasRef.height !== canvasRef.height) {
-				transferBufferToCanvas(buffer.mode, buffer.buffer, bufferCanvasRef);
-				const ctx = canvasRef.getContext('2d');
-				if (!ctx)
-					return;
+			const response = await serial.bfc.getDisplayBuffer(displayNumber() + 1, onProgress);
+			const decodedBuffer = decodeBfcDisplayBuffer(response);
+			const imageData = new ImageData(
+				new Uint8ClampedArray(decodedBuffer.data),
+				decodedBuffer.width,
+				decodedBuffer.height
+			);
 
-				const x = Math.round((bufferCanvasRef.width - canvasRef.width) / 2);
-				const y = Math.round((bufferCanvasRef.height - canvasRef.height) / 2);
-				ctx.drawImage(bufferCanvasRef, -x, -y);
-			} else {
-				transferBufferToCanvas(buffer.mode, buffer.buffer, canvasRef);
-			}
+			const ctx = canvasRef.getContext('2d');
+			if (!ctx)
+				return;
+			ctx.putImageData(imageData, 0, 0);
 
 			setHasScreenshot(true);
 		} finally {
@@ -147,12 +147,6 @@ export const ScreenShooterPage: Component = () => {
 							width={phoneDisplays()[displayNumber()].width}
 							height={phoneDisplays()[displayNumber()].height}
 							ref={canvasRef!}
-						/>
-						<canvas
-							width={phoneDisplays()[displayNumber()].bufferWidth}
-							height={phoneDisplays()[displayNumber()].bufferHeight}
-							ref={bufferCanvasRef!}
-							style={{ display: 'none' }}
 						/>
 					</Paper>
 				</Grid>

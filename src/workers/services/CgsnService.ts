@@ -1,6 +1,7 @@
 import { AtCommandResponse, CGSN, IoReadWriteProgress } from "@sie-js/serial";
 import { SerialService } from "./SerialService";
 import { openSerialPort } from "@/utils/serial.js";
+import * as Comlink from "comlink";
 
 export interface MemoryRegion {
 	name: string;
@@ -168,18 +169,18 @@ export class CgsnService extends SerialService<CGSN> {
 	}
 
 	async readMemory(addr: number, size: number, onProgress: (e: IoReadWriteProgress) => void) {
-		return this.handle.readMemory(addr, size, {
+		const response = await this.handle.readMemory(addr, size, {
 			onProgress,
 			progressInterval: 300,
 			signal: this.getAbortSignal(),
 		});
+		return Comlink.transfer(response, response.buffer ? [response.buffer] : []);
 	}
 
 	async disconnect(): Promise<void> {
 		if (this.isConnected) {
 			const port = this.handle.getSerialPort();
 			await this.handle.disconnect();
-			this.handle.detachSerialPort();
 			this.handle = undefined;
 			await port!.close();
 		}

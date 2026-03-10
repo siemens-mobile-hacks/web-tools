@@ -1,6 +1,7 @@
 import { BFC, IoReadWriteProgress } from "@sie-js/serial";
 import { SerialService } from "./SerialService";
 import { openSerialPort } from "@/utils/serial.js";
+import * as Comlink from "comlink";
 
 export interface PhoneDisplay {
 	width: number;
@@ -40,11 +41,12 @@ export class BfcService extends SerialService<BFC> {
 	}
 
 	async getDisplayBuffer(displayId: number, onProgress?: (e: IoReadWriteProgress) => void) {
-		return this.handle.getDisplayBuffer(displayId, {
+		const response = await this.handle.getDisplayBuffer(displayId, {
 			onProgress,
 			progressInterval: 300,
 			signal: this.getAbortSignal(),
 		});
+		return Comlink.transfer(response, [response.buffer]);
 	}
 
 	async getDeviceName() {
@@ -58,7 +60,6 @@ export class BfcService extends SerialService<BFC> {
 		if (this.isConnected) {
 			const port = this.handle.getSerialPort();
 			await this.handle.disconnect();
-			this.handle.detachSerialPort();
 			this.handle = undefined;
 			await port!.close();
 		}

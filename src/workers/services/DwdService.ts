@@ -2,6 +2,7 @@ import { DWD, IoReadWriteProgress } from "@sie-js/serial";
 import { SerialService } from "./SerialService";
 import { openSerialPort } from "@/utils/serial.js";
 import { isApoxiBootUnlocked, unlockApoxiBootloader } from "@sie-js/apoxi-tool";
+import * as Comlink from "comlink";
 
 export class DwdService extends SerialService<DWD> {
 	async connect(portIndex: number): Promise<void> {
@@ -25,11 +26,12 @@ export class DwdService extends SerialService<DWD> {
 	}
 
 	async readMemory(addr: number, size: number, onProgress: (e: IoReadWriteProgress) => void) {
-		return this.handle.readMemory(addr, size, {
+		const response = await this.handle.readMemory(addr, size, {
 			onProgress,
 			progressInterval: 300,
 			signal: this.getAbortSignal(),
 		});
+		return Comlink.transfer(response, response.buffer ? [response.buffer] : []);
 	}
 
 	async getDeviceName() {
@@ -49,7 +51,6 @@ export class DwdService extends SerialService<DWD> {
 		if (this.isConnected) {
 			const port = this.handle.getSerialPort();
 			await this.handle.disconnect();
-			this.handle.detachSerialPort();
 			this.handle = undefined;
 			await port!.close();
 		}

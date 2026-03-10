@@ -1,15 +1,8 @@
 import * as Comlink from "comlink";
-import { CgsnService } from "@/workers/services/CgsnService.js";
-import { BfcService } from "@/workers/services/BfcService.js";
-import { DwdService } from "./services/DwdService";
-import { FFSService } from "@/workers/services/FFSService";
+import { services } from "@/workers/services";
+import { initComlinkDataTransfers } from "@/utils/comlink";
 
-const services: Record<string, any> = {
-	'BFC': new BfcService(),
-	'CGSN': new CgsnService(),
-	'DWD': new DwdService(),
-	'FFS': new FFSService(),
-}
+initComlinkDataTransfers();
 
 Comlink.expose({
 	getService(name: string): any {
