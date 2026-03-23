@@ -137,9 +137,9 @@ export function setPixelARGB8888P(x: number, y: number, w: number, _h: number, b
 	bitmap.writeUInt32LE(bgra, (y * w + x) * 4);
 }
 
-/* ================= BGR233 ================= */
+/* ================= RGB332 ================= */
 
-export function getPixelBGR233(x: number, y: number, w: number, _h: number, bitmap: Buffer): number {
+export function getPixelRGB332(x: number, y: number, w: number, _h: number, bitmap: Buffer): number {
 	const c = bitmap[y * w + x];
 	const r = ((c >>> 5) & 0x7) * 0xFF / 0x7;
 	const g = ((c >>> 2) & 0x7) * 0xFF / 0x7;
@@ -147,7 +147,7 @@ export function getPixelBGR233(x: number, y: number, w: number, _h: number, bitm
 	return ((0xFF << 24) | (b << 16) | (g << 8) | r) >>> 0;
 }
 
-export function setPixelBGR233(x: number, y: number, w: number, _h: number, bitmap: Buffer, color: number): void {
+export function setPixelRGB332(x: number, y: number, w: number, _h: number, bitmap: Buffer, color: number): void {
 	const b = ((color >>> 16) & 0xFF) >>> 5;
 	const g = ((color >>> 8) & 0xFF) >>> 5;
 	const r = (color & 0xFF) >>> 6;
@@ -159,7 +159,7 @@ export function setPixelBGR233(x: number, y: number, w: number, _h: number, bitm
 export function getBitmapDecoder(type: BitmapType): BitmapPixelReader {
 	switch (type) {
 		case "wb":				return getPixelWB;
-		case "rgb332":			return getPixelBGR233;
+		case "rgb332":			return getPixelRGB332;
 		case "argb4444":		return getPixelARGB4444;
 		case "rgb565":			return getPixelRGB565;
 		case "rgb888":			return getPixelRGB888;
@@ -172,7 +172,7 @@ export function getBitmapDecoder(type: BitmapType): BitmapPixelReader {
 export function getBitmapEncoder(type: BitmapType): BitmapPixelWriter {
 	switch (type) {
 		case "wb":				return setPixelWB;
-		case "rgb332":			return setPixelBGR233;
+		case "rgb332":			return setPixelRGB332;
 		case "argb4444":		return setPixelARGB4444;
 		case "rgb565":			return setPixelRGB565;
 		case "rgb888":			return setPixelRGB888;
