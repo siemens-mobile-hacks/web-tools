@@ -10,8 +10,8 @@ interface BfcDisplayDecodedBuffer {
 export function decodeBfcDisplayBuffer(response: BfcDisplayBufferData): BfcDisplayDecodedBuffer {
 	let type = response.type;
 	let isYuvMask = false;
-	if (type == 'bgra8888+yuv') {
-		type = 'bgra8888';
+	if (type == 'argb8888+yuv') {
+		type = 'argb8888';
 		isYuvMask = true;
 	}
 

@@ -38,7 +38,7 @@
 		"@serialport/stream": "^13.0.0",
 		"@sie-js/apoxi-tool": "^1.0.10",
 		"@sie-js/libffshit": "^0.0.9",
-		"@sie-js/serial": "^1.1.16",
+		"@sie-js/serial": "^1.1.17",
 		"@solid-primitives/storage": "^4.3.4",
 		"@solidjs/router": "^0.15.4",
 		"@suid/icons-material": "^0.9.0",

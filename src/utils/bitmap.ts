@@ -1,12 +1,11 @@
 export type BitmapType =
 	| "wb"
-	| "bgr233"
-	| "bgra4444"
-	| "bgr565"
-	| "bgr888"
-	| "bgra8888"
-	| "bgra8888p"
-	| "bgra8888mask";
+	| "rgb332"
+	| "argb4444"
+	| "rgb565"
+	| "rgb888"
+	| "argb8888"
+	| "argb8888p";
 
 export type BitmapPixelReader = (x: number, y: number, w: number, h: number, bitmap: Buffer) => number;
 export type BitmapPixelWriter = (x: number, y: number, w: number, h: number, bitmap: Buffer, color: number) => void;
@@ -36,9 +35,9 @@ export function setPixelWB(x: number, y: number, w: number, _h: number, bitmap: 
 	}
 }
 
-/* ================= BGRA4444 ================= */
+/* ================= ARGB4444 ================= */
 
-export function getPixelBGRA4444(x: number, y: number, w: number, _h: number, bitmap: Buffer): number {
+export function getPixelARGB4444(x: number, y: number, w: number, _h: number, bitmap: Buffer): number {
 	const o = (y * w + x) * 2;
 	const c16 = bitmap.readUInt16LE(o);
 	const a = ((c16 >>> 12) & 0xF) * 0xFF / 0xF;
@@ -48,7 +47,7 @@ export function getPixelBGRA4444(x: number, y: number, w: number, _h: number, bi
 	return ((a << 24) | (b << 16) | (g << 8) | r) >>> 0;
 }
 
-export function setPixelBGRA4444(x: number, y: number, w: number, _h: number, bitmap: Buffer, color: number): void {
+export function setPixelARGB4444(x: number, y: number, w: number, _h: number, bitmap: Buffer, color: number): void {
 	const a = ((color >>> 24) & 0xFF) >>> 4;
 	const b = ((color >>> 16) & 0xFF) >>> 4;
 	const g = ((color >>> 8) & 0xFF) >>> 4;
@@ -57,9 +56,9 @@ export function setPixelBGRA4444(x: number, y: number, w: number, _h: number, bi
 	bitmap.writeUInt16LE(c16, (y * w + x) * 2);
 }
 
-/* ================= BGR565 ================= */
+/* ================= RGB565 ================= */
 
-export function getPixelBGR565(x: number, y: number, w: number, _h: number, bitmap: Buffer): number {
+export function getPixelRGB565(x: number, y: number, w: number, _h: number, bitmap: Buffer): number {
 	const o = (y * w + x) * 2;
 	const c16 = bitmap.readUInt16LE(o);
 	const r = ((((c16 >>> 11) & 0x1F) * 527) + 23) >> 6;
@@ -68,7 +67,7 @@ export function getPixelBGR565(x: number, y: number, w: number, _h: number, bitm
 	return ((0xFF << 24) | (b << 16) | (g << 8) | r) >>> 0;
 }
 
-export function setPixelBGR565(x: number, y: number, w: number, _h: number, bitmap: Buffer, color: number): void {
+export function setPixelRGB565(x: number, y: number, w: number, _h: number, bitmap: Buffer, color: number): void {
 	const b = (color >>> 16) & 0xFF;
 	const g = (color >>> 8) & 0xFF;
 	const r = color & 0xFF;
@@ -76,9 +75,9 @@ export function setPixelBGR565(x: number, y: number, w: number, _h: number, bitm
 	bitmap.writeUInt16LE(c16, (y * w + x) * 2);
 }
 
-/* ================= BGR888 ================= */
+/* ================= RGB888 ================= */
 
-export function getPixelBGR888(x: number, y: number, w: number, _h: number, bitmap: Buffer): number {
+export function getPixelRGB888(x: number, y: number, w: number, _h: number, bitmap: Buffer): number {
 	const o = (y * w + x) * 3;
 	const b = bitmap[o];
 	const g = bitmap[o + 1];
@@ -86,7 +85,7 @@ export function getPixelBGR888(x: number, y: number, w: number, _h: number, bitm
 	return ((0xFF << 24) | (b << 16) | (g << 8) | r) >>> 0;
 }
 
-export function setPixelBGR888(x: number, y: number, w: number, _h: number, bitmap: Buffer, color: number): void {
+export function setPixelRGB888(x: number, y: number, w: number, _h: number, bitmap: Buffer, color: number): void {
 	const b = (color >>> 16) & 0xFF;
 	const g = (color >>> 8) & 0xFF;
 	const r = color & 0xFF;
@@ -96,9 +95,9 @@ export function setPixelBGR888(x: number, y: number, w: number, _h: number, bitm
 	bitmap[o + 2] = r;
 }
 
-/* ================= BGRA8888 ================= */
+/* ================= ARGB8888 ================= */
 
-export function getPixelBGRA8888(x: number, y: number, w: number, _h: number, bitmap: Buffer): number {
+export function getPixelARGB8888(x: number, y: number, w: number, _h: number, bitmap: Buffer): number {
 	const bgra = bitmap.readUInt32LE((y * w + x) * 4);
 	const a = (bgra >>> 24) & 0xFF;
 	const r = (bgra >>> 16) & 0xFF;
@@ -107,7 +106,7 @@ export function getPixelBGRA8888(x: number, y: number, w: number, _h: number, bi
 	return ((a << 24) | (b << 16) | (g << 8) | r) >>> 0;
 }
 
-export function setPixelBGRA8888(x: number, y: number, w: number, _h: number, bitmap: Buffer, color: number): void {
+export function setPixelARGB8888(x: number, y: number, w: number, _h: number, bitmap: Buffer, color: number): void {
 	const a = ((color >>> 24) & 0xFF) >>> 4;
 	const b = ((color >>> 16) & 0xFF) >>> 4;
 	const g = ((color >>> 8) & 0xFF) >>> 4;
@@ -116,9 +115,9 @@ export function setPixelBGRA8888(x: number, y: number, w: number, _h: number, bi
 	bitmap.writeUInt32LE(bgra, (y * w + x) * 4);
 }
 
-/* ================= BGRA8888P ================= */
+/* ================= ARGB8888P ================= */
 
-export function getPixelBGRA8888P(x: number, y: number, w: number, _h: number, bitmap: Buffer): number {
+export function getPixelARGB8888P(x: number, y: number, w: number, _h: number, bitmap: Buffer): number {
 	const bgra = bitmap.readUInt32LE((y * w + x) * 4);
 	const a100 = (bgra >>> 24) & 0xFF;
 	const r = (bgra >>> 16) & 0xFF;
@@ -128,7 +127,7 @@ export function getPixelBGRA8888P(x: number, y: number, w: number, _h: number, b
 	return ((a << 24) | (b << 16) | (g << 8) | r) >>> 0;
 }
 
-export function setPixelBGRA8888P(x: number, y: number, w: number, _h: number, bitmap: Buffer, color: number): void {
+export function setPixelARGB8888P(x: number, y: number, w: number, _h: number, bitmap: Buffer, color: number): void {
 	const a = ((color >>> 24) & 0xFF) >>> 4;
 	const b = ((color >>> 16) & 0xFF) >>> 4;
 	const g = ((color >>> 8) & 0xFF) >>> 4;
@@ -160,12 +159,12 @@ export function setPixelBGR233(x: number, y: number, w: number, _h: number, bitm
 export function getBitmapDecoder(type: BitmapType): BitmapPixelReader {
 	switch (type) {
 		case "wb":				return getPixelWB;
-		case "bgr233":			return getPixelBGR233;
-		case "bgra4444":		return getPixelBGRA4444;
-		case "bgr565":			return getPixelBGR565;
-		case "bgr888":			return getPixelBGR888;
-		case "bgra8888":		return getPixelBGRA8888;
-		case "bgra8888p":		return getPixelBGRA8888P;
+		case "rgb332":			return getPixelBGR233;
+		case "argb4444":		return getPixelARGB4444;
+		case "rgb565":			return getPixelRGB565;
+		case "rgb888":			return getPixelRGB888;
+		case "argb8888":		return getPixelARGB8888;
+		case "argb8888p":		return getPixelARGB8888P;
 	}
 	throw new Error("Unknown bitmap type: " + type);
 }
@@ -173,12 +172,12 @@ export function getBitmapDecoder(type: BitmapType): BitmapPixelReader {
 export function getBitmapEncoder(type: BitmapType): BitmapPixelWriter {
 	switch (type) {
 		case "wb":				return setPixelWB;
-		case "bgr233":			return setPixelBGR233;
-		case "bgra4444":		return setPixelBGRA4444;
-		case "bgr565":			return setPixelBGR565;
-		case "bgr888":			return setPixelBGR888;
-		case "bgra8888":		return setPixelBGRA8888;
-		case "bgra8888p":		return setPixelBGRA8888P;
+		case "rgb332":			return setPixelBGR233;
+		case "argb4444":		return setPixelARGB4444;
+		case "rgb565":			return setPixelRGB565;
+		case "rgb888":			return setPixelRGB888;
+		case "argb8888":		return setPixelARGB8888;
+		case "argb8888p":		return setPixelARGB8888P;
 	}
 	throw new Error("Unknown bitmap type: " + type);
 }

@@ -28,13 +28,13 @@ importers:
         version: 13.0.0
       '@sie-js/apoxi-tool':
         specifier: ^1.0.10
-        version: 1.0.10(@sie-js/serial@1.1.16(@serialport/stream@13.0.0)(debug@4.4.3))(@types/node@25.4.0)
+        version: 1.0.10(@sie-js/serial@1.1.17(@serialport/stream@13.0.0)(debug@4.4.3))(@types/node@25.4.0)
       '@sie-js/libffshit':
         specifier: ^0.0.9
         version: 0.0.9
       '@sie-js/serial':
-        specifier: ^1.1.16
-        version: 1.1.16(@serialport/stream@13.0.0)(debug@4.4.3)
+        specifier: ^1.1.17
+        version: 1.1.17(@serialport/stream@13.0.0)(debug@4.4.3)
       '@solid-primitives/storage':
         specifier: ^4.3.4
         version: 4.3.4(solid-js@1.9.11)
@@ -878,8 +878,8 @@ packages:
   '@sie-js/libffshit@0.0.9':
     resolution: {integrity: sha512-xO1XqV7DIlBzTw0ca/lZ5368+ncYKag06QTurwhI7ajiKExoskSY1SxavJR7yQWXeDkNqiELTDNyajwGmuF0JQ==}
 
-  '@sie-js/serial@1.1.16':
-    resolution: {integrity: sha512-Jv31+UZGfhVcqC4GgK/LNcBcbBUqtmWdtOY7grGjVuD6Si9Uwe8a2WDI7gjGWUXlD6/B/VQQ9vQQsCiiGpnGgQ==}
+  '@sie-js/serial@1.1.17':
+    resolution: {integrity: sha512-9V16kOOiGyjbmOj8jLFH16YT8VzHAf4v6kcf/BLkLHl8gFBP5fcA7FiGxahu6sGIC0p5J+cb30NNmRUWloR+uQ==}
     peerDependencies:
       '@serialport/stream': ^13.0.0
       debug: ^4.4.3
@@ -2774,10 +2774,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@sie-js/apoxi-tool@1.0.10(@sie-js/serial@1.1.16(@serialport/stream@13.0.0)(debug@4.4.3))(@types/node@25.4.0)':
+  '@sie-js/apoxi-tool@1.0.10(@sie-js/serial@1.1.17(@serialport/stream@13.0.0)(debug@4.4.3))(@types/node@25.4.0)':
     dependencies:
       '@sie-js/creampie': 1.0.3
-      '@sie-js/serial': 1.1.16(@serialport/stream@13.0.0)(debug@4.4.3)
+      '@sie-js/serial': 1.1.17(@serialport/stream@13.0.0)(debug@4.4.3)
       '@types/debug': 4.1.12
       chalk: 5.6.2
       cli-progress: 3.12.0
@@ -2795,7 +2795,7 @@ snapshots:
 
   '@sie-js/libffshit@0.0.9': {}
 
-  '@sie-js/serial@1.1.16(@serialport/stream@13.0.0)(debug@4.4.3)':
+  '@sie-js/serial@1.1.17(@serialport/stream@13.0.0)(debug@4.4.3)':
     dependencies:
       '@serialport/stream': 13.0.0
       debug: 4.4.3
