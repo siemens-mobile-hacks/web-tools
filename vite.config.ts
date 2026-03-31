@@ -83,10 +83,25 @@ export default defineConfig({
 			'@ffmpeg/util',
 			'@ffmpeg/ffmpeg',
 			'@ffmpeg/core',
+			'@ffmpeg/core-mt',
 		],
 	},
 	server: {
 		port: 3000,
+		// Required for SharedArrayBuffer and ffmpeg.wasm multithreading
+		headers: {
+			'Cross-Origin-Opener-Policy': 'same-origin',
+			'Cross-Origin-Embedder-Policy': 'require-corp',
+			'Cross-Origin-Resource-Policy': 'same-origin'
+		}
+	},
+	preview: {
+		// Mirrors dev behavior when running `vite preview`
+		headers: {
+			'Cross-Origin-Opener-Policy': 'same-origin',
+			'Cross-Origin-Embedder-Policy': 'require-corp',
+			'Cross-Origin-Resource-Policy': 'same-origin'
+		}
 	},
 	build: {
 		target: 'esnext'
