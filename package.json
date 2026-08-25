@@ -8,7 +8,8 @@
 		"dev": "vite",
 		"build": "tsc && vite build",
 		"gh-pages-build": "tsc && vite build",
-		"serve": "vite preview"
+		"serve": "vite preview",
+		"test": "node scripts/run-tests.mjs"
 	},
 	"license": "MIT",
 	"devDependencies": {

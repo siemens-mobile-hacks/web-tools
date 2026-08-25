@@ -8,6 +8,7 @@ import ExpandMoreIcon from '@suid/icons-material/ExpandMore';
 import ExpandLessIcon from '@suid/icons-material/ExpandLess';
 import PhonelinkLockIcon from '@suid/icons-material/PhonelinkLock';
 // import FolderSpecialIcon from '@suid/icons-material/FolderSpecial';
+import FolderOpenIcon from '@suid/icons-material/FolderOpen';
 import VideocamIcon from '@suid/icons-material/Videocam';
 import ApoxiIcon from '@/assets/apoxi.svg';
 import SgoldIcon from '@/assets/sgold.svg';
@@ -159,6 +160,11 @@ export const AppDrawer: Component<AppDrawerProps> = (props) => {
 			icon: <VideocamIcon />,
 			title: "Video Converter",
 			url: "/video-converter",
+		},
+		{
+			icon: <FolderOpenIcon />,
+			title: "File Explorer",
+			url: "/file-explorer",
 		},
 	];
 
