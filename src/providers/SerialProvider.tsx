@@ -7,6 +7,8 @@ import { makePersisted } from "@solid-primitives/storage";
 import { BfcService } from "@/workers/services/BfcService.js";
 import { CgsnService } from "@/workers/services/CgsnService.js";
 import { DwdService } from "@/workers/services/DwdService.js";
+import { ObexService } from "@/workers/services/ObexService.js";
+import { LogService } from "@/workers/services/LogService.js";
 import { SerialService } from "@/workers/services/SerialService";
 import { useApp } from "@/providers/AppProvider";
 
@@ -14,6 +16,8 @@ interface SerialContext {
 	bfc: Comlink.Remote<BfcService>;
 	cgsn: Comlink.Remote<CgsnService>;
 	dwd: Comlink.Remote<DwdService>;
+	obex: Comlink.Remote<ObexService>;
+	logs: Comlink.Remote<LogService>;
 	ports: Accessor<WebSerialPortInfo[]>;
 	readyState: Accessor<SerialReadyState>;
 	connectError: Accessor<Error | undefined>;
@@ -120,6 +124,8 @@ export const SerialProvider: ParentComponent = (props) => {
 			bfc: serialWorker.getService("BFC"),
 			cgsn: serialWorker.getService("CGSN"),
 			dwd: serialWorker.getService("DWD"),
+			obex: serialWorker.getService("OBEX"),
+			logs: serialWorker.getService("LOG"),
 			getAdapter(type: string) {
 				switch (type) {
 					case "BFC":
@@ -128,6 +134,8 @@ export const SerialProvider: ParentComponent = (props) => {
 						return CgsnService;
 					case "DWD":
 						return DwdService;
+					case "OBEX":
+						return ObexService;
 				}
 				throw new Error("Unknown protocol: " + currentProtocol());
 			},

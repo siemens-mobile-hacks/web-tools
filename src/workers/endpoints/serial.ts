@@ -5,6 +5,8 @@ import { BfcService } from "@/workers/services/BfcService";
 import { CgsnService } from "@/workers/services/CgsnService";
 import { SerialService } from "../services/SerialService";
 import { DwdService } from "../services/DwdService";
+import { ObexService } from "../services/ObexService";
+import { LogService } from "../services/LogService";
 import { commonWorker } from "@/workers/endpoints/common";
 
 export enum SerialReadyState {
@@ -14,7 +16,7 @@ export enum SerialReadyState {
 	DISCONNECTING
 }
 
-export type SerialProtocol = 'none' | 'BFC' | 'CGSN' | 'DWD';
+export type SerialProtocol = 'none' | 'BFC' | 'CGSN' | 'DWD' | 'OBEX';
 
 type SerialWorkerEvents = {
 	protocolChange: [SerialProtocol];
@@ -27,12 +29,15 @@ type SerialWorkerServices = {
 	CGSN: Comlink.Remote<CgsnService>;
 	BFC: Comlink.Remote<BfcService>;
 	DWD: Comlink.Remote<DwdService>;
+	OBEX: Comlink.Remote<ObexService>;
+	LOG: Comlink.Remote<LogService>;
 };
-
 const SERVICES: SerialWorkerServices = {
 	BFC: await commonWorker.getService('BFC'),
 	CGSN: await commonWorker.getService('CGSN'),
 	DWD: await commonWorker.getService('DWD'),
+	OBEX: await commonWorker.getService('OBEX'),
+	LOG: await commonWorker.getService('LOG'),
 };
 
 export class Serial extends EventEmitter<SerialWorkerEvents> {
@@ -42,9 +47,10 @@ export class Serial extends EventEmitter<SerialWorkerEvents> {
 	private lastPortPath?: string;
 
 	protected get service(): Comlink.Remote<SerialService> {
-		if (!SERVICES[this.protocol as keyof typeof SERVICES])
+		// LOG is not a connectable protocol service, it lives in SERVICES only for getService()
+		if (this.protocol == 'none')
 			throw new Error(`Can't get service for protocol ${this.protocol}.`);
-		return SERVICES[this.protocol as keyof typeof SERVICES];
+		return SERVICES[this.protocol as 'BFC' | 'CGSN' | 'DWD' | 'OBEX'] as unknown as Comlink.Remote<SerialService>;
 	}
 
 	async connect(protocol: SerialProtocol, prevPortPath?: string, limitBaudrate?: number, debug?: string): Promise<void> {

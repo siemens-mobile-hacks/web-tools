@@ -14,6 +14,7 @@ const ROUTES = [
 	`/sms-reader`,
 	`/apoxi/unlock-boot`,
 	`/video-converter`,
+	`/file-explorer`,
 ];
 
 function postBuildPlugin(): Plugin {
