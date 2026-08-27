@@ -41,7 +41,7 @@ import { SerialReadyState, serialWorker } from '@/workers/endpoints/serial';
 import { PageTitle } from '@/components/Layout/PageTitle';
 import { downloadBlob, formatSize } from '@/utils';
 import { createFilePreviewUrl, prepareFilePreview } from '@/utils/filePreview';
-import { ZipWriter } from '@/utils/zip';
+import JSZip from 'jszip';
 import type { ObexDirEntry, ObexProgress } from '@/utils/obex';
 import { useTheme } from '@suid/material/styles';
 import { useApp } from '@/providers/AppProvider';
@@ -429,9 +429,9 @@ export const FileExplorerPage: Component = () => {
 	});
 
 	// Recursively adds an entry (file or directory) to the zip
-	const addEntryToZip = async (zip: ZipWriter, root: string, entry: ObexDirEntry, counters: { bytes: number }): Promise<void> => {
+	const addEntryToZip = async (zip: JSZip, root: string, entry: ObexDirEntry, counters: { bytes: number }): Promise<void> => {
 		if (entry.isDir) {
-			zip.addDir(`${root}/${entry.name}`, entry.mtime);
+			zip.file(`${root}/${entry.name}/`, null, { dir: true, date: entry.mtime });
 			const children = await serial.obex.readDir(`${root}/${entry.name}`);
 			children.sort((a, b) => a.name.localeCompare(b.name));
 			for (const child of children)
@@ -448,7 +448,7 @@ export const FileExplorerPage: Component = () => {
 			});
 		});
 		const data = await serial.obex.getFile(`${root}/${entry.name}`, onProgress);
-		zip.addFile(`${root}/${entry.name}`, data, entry.mtime);
+		zip.file(`${root}/${entry.name}`, data, { date: entry.mtime });
 		counters.bytes += data.length;
 	};
 
@@ -468,10 +468,10 @@ export const FileExplorerPage: Component = () => {
 		setTransfer({ kind: 'download', name: zipName, percent: -1, cursor: 0, total: 0, speed: 0 });
 		const counters = { bytes: 0 };
 		try {
-			const zip = new ZipWriter();
+			const zip = new JSZip();
 			for (const entry of list)
 				await addEntryToZip(zip, "", entry, counters);
-			downloadBlob(new Blob([new Uint8Array(zip.build())]), zipName);
+			downloadBlob(new Blob([new Uint8Array(await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' }))]), zipName);
 		} finally {
 			setTransfer(undefined);
 		}
