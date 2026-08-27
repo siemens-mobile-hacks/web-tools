@@ -97,8 +97,12 @@ enum ObexMode {
 // booted x55/EGOLD phones default to 19200, and 57600 is the DCA-510 default.
 const AT_PROBE_SPEEDS = [115200, 57600, 19200, 230400, 9600];
 
-// Max OBEX packet size we request, siefs uses BLOCKSIZE + 6
-const REQUESTED_MAX_PACKET_SIZE = 2048 + 6;
+// Max OBEX packet size we advertise in the CONNECT request, SiMoCo's value.
+// The phone answers with its own limit and obexConnect() keeps the smaller of
+// the two, so a high offer is free: phones that allow bigger packets need up
+// to 8x fewer round trips than with siefs' conservative BLOCKSIZE + 6, while
+// conservative phones (the C60 answers 474) still negotiate down safely.
+const REQUESTED_MAX_PACKET_SIZE = 0x4006;
 
 export type ObexResponsePacket = {
 	code: number;
@@ -324,7 +328,7 @@ export function detectPhonePlatform(model: string | undefined): string {
 		return "SGOLD";
 	if (NEW_SGOLD_MODELS.test(name))
 		return "NewSGOLD";
-	return "legacy";
+	return "EGOLD";
 }
 
 /**
@@ -658,6 +662,9 @@ export class Obex {
 	}
 
 	private async obexConnect(): Promise<void> {
+		// Re-advertise the full local offer instead of whatever the previous
+		// (possibly dead) session negotiated down to
+		this.maxPacketSize = REQUESTED_MAX_PACKET_SIZE;
 		const packet = new ObexPacketWriter(ObexOpcode.CONNECT);
 		packet.appendByte(OBEX_VERSION_1_0);
 		packet.appendByte(0x00); // flags

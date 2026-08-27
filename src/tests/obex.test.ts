@@ -71,6 +71,8 @@ class MockPhone {
 	wireMode: WireMode;
 	connectSendsConnectionId: boolean;
 	enforceConnectionId: boolean;
+	// Max packet size the phone answers in the OBEX CONNECT response, overridable per test
+	connectMaxPacket = 0x0806;
 	connectionId = 0x100;
 	emitter = new EventEmitter();
 	rxBuffer = Buffer.alloc(0);
@@ -89,11 +91,13 @@ class MockPhone {
 		wireMode?: WireMode;
 		connectSendsConnectionId?: boolean;
 		enforceConnectionId?: boolean;
+		connectMaxPacket?: number;
 	} = {}) {
 		this.model = opts.model ?? "S65";
 		this.wireMode = opts.wireMode ?? "at";
 		this.connectSendsConnectionId = opts.connectSendsConnectionId ?? true;
 		this.enforceConnectionId = opts.enforceConnectionId ?? true;
+		this.connectMaxPacket = opts.connectMaxPacket ?? 0x0806;
 		const self = this;
 		this.port = {
 			baudRate: 115200,
@@ -255,9 +259,13 @@ class MockPhone {
 		}
 
 		switch (opcode) {
-			case ObexOpcode.CONNECT:
-				this.push(this.connectSendsConnectionId ? FLEXMEM_CONNECT_WITH_ID : FLEXMEM_CONNECT_NO_ID);
+			case ObexOpcode.CONNECT: {
+				// The canned answers advertise 0x0806; patch in the phone's own limit
+				const resp = Buffer.from(this.connectSendsConnectionId ? FLEXMEM_CONNECT_WITH_ID : FLEXMEM_CONNECT_NO_ID);
+				resp.writeUInt16BE(this.connectMaxPacket, 5);
+				this.push(resp);
 				break;
+			}
 			case ObexOpcode.SETPATH:
 				this.push(Buffer.from([0xA0, 0x00, 0x03]));
 				break;
@@ -296,7 +304,7 @@ test("detects NewSGOLD models", () => {
 
 test("detects legacy and unknown models", () => {
 	for (const model of ["C60", "S55", "SL45", "MC60", "C65v"])
-		assert.equal(detectPhonePlatform(model), "legacy", model);
+		assert.equal(detectPhonePlatform(model), "EGOLD", model);
 	assert.equal(detectPhonePlatform(undefined), "unknown");
 });
 
@@ -304,14 +312,14 @@ test("detects legacy and unknown models", () => {
 // Packet encoding
 // ---------------------------------------------------------------------------
 
-test("CONNECT packet matches the siefs layout", () => {
+test("CONNECT packet advertises SiMoCo's max packet size", () => {
 	const p = new ObexPacketWriter(ObexOpcode.CONNECT);
 	p.appendByte(0x10);
 	p.appendByte(0x00);
-	p.appendUint16(2054);
+	p.appendUint16(0x4006);
 	p.appendHeader(ObexHeaderId.TARGET, OBEX_TARGET_FLEXMEM);
 	assert.equal(p.toBuffer().toString("hex"),
-		"80001a10000806" + "460013" + "6b01cb31410611d49a770050da3f471f");
+		"80001a10004006" + "460013" + "6b01cb31410611d49a770050da3f471f");
 });
 
 test("SETPATH root/up/down packets match the siefs layout", () => {
@@ -337,7 +345,8 @@ test("SETPATH root/up/down packets match the siefs layout", () => {
 });
 
 test("PUT body chunks fit the negotiated packet size with a connection id", () => {
-	const maxPacketSize = 2054;
+	// 0x4006 negotiated in full, also exercises the writer's buffer growth
+	const maxPacketSize = 0x4006;
 	const maxBody = maxPacketSize - 6 - 5;
 	const p = new ObexPacketWriter(ObexOpcode.PUT);
 	p.appendHeader(ObexHeaderId.BODY, Buffer.alloc(maxBody));
@@ -424,6 +433,24 @@ test("AT transport: NewSGOLD phone with connection id", async () => {
 	assert.equal(entries.length, 2);
 	assert.ok(phone.cbValidated >= 2);
 	assert.equal(phone.cbRejected, 0);
+});
+
+test("CONNECT offers SiMoCo's 0x4006 and keeps it when the phone agrees", async () => {
+	const phone = new MockPhone({ wireMode: "at", model: "S65", connectMaxPacket: 0x4006 });
+	const obex = new Obex(phone.port);
+	await obex.connect(115200);
+	const connectPkt = phone.obexPacketsIn.find((p) => p[0] == ObexOpcode.CONNECT);
+	assert.equal(connectPkt?.readUInt16BE(5), 0x4006, "local offer must be 0x4006");
+	assert.equal(obex.getMaxPacketSize(), 0x4006);
+	await obex.disconnect();
+});
+
+test("CONNECT negotiation keeps the phone's smaller limit (C60 answers 474)", async () => {
+	const phone = new MockPhone({ wireMode: "at", model: "S65", connectMaxPacket: 474 });
+	const obex = new Obex(phone.port);
+	await obex.connect(115200);
+	assert.equal(obex.getMaxPacketSize(), 474);
+	await obex.disconnect();
 });
 
 // ---------------------------------------------------------------------------
