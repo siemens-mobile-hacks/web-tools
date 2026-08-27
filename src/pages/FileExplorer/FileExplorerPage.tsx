@@ -841,15 +841,7 @@ export const FileExplorerPage: Component = () => {
 						</IconButton>
 					</Stack>
 
-					{/* Actions: kept on their own row so long paths don't wrap them */}
 					<Stack direction="row" alignItems="center" gap={1} flexWrap="wrap">
-						<IconButton
-							title="New folder"
-							disabled={isBusy()}
-							onClick={() => void createDirectory()}
-						>
-							<CreateNewFolderIcon />
-						</IconButton>
 
 						<Button
 							variant="outlined"
@@ -869,6 +861,14 @@ export const FileExplorerPage: Component = () => {
 						>
 							Delete selected{selectedEntries().length > 1 ? ` (${selectedEntries().length})` : ''}
 						</Button>
+						
+						<IconButton
+							title="New folder"
+							disabled={isBusy()}
+							onClick={() => void createDirectory()}
+						>
+							<CreateNewFolderIcon />
+						</IconButton>
 
 						<Button
 							variant="contained"
