@@ -428,27 +428,21 @@ export const FileExplorerPage: Component = () => {
 		}
 	});
 
-	// Recursively adds an entry (file or directory) to the zip
-	const addEntryToZip = async (zip: JSZip, root: string, entry: ObexDirEntry, counters: { bytes: number }): Promise<void> => {
+	// Recursively adds an entry (file or directory) to the zip. remoteRoot is the
+	// absolute phone path of the directory containing the entry, zipRoot the matching
+	// path inside the archive.
+	const addEntryToZip = async (zip: JSZip, remoteRoot: string, zipRoot: string, entry: ObexDirEntry, onProgress: (e: ObexProgress) => void, counters: { bytes: number }): Promise<void> => {
 		if (entry.isDir) {
-			zip.file(`${root}/${entry.name}/`, null, { dir: true, date: entry.mtime });
-			const children = await serial.obex.readDir(`${root}/${entry.name}`);
+			zip.file(`${zipRoot}${entry.name}/`, null, { dir: true, date: entry.mtime });
+			const children = await serial.obex.readDir(`${remoteRoot}/${entry.name}`);
 			children.sort((a, b) => a.name.localeCompare(b.name));
 			for (const child of children)
-				await addEntryToZip(zip, `${root}/${entry.name}`, child, counters);
+				await addEntryToZip(zip, `${remoteRoot}/${entry.name}`, `${zipRoot}${entry.name}/`, child, onProgress, counters);
 			return;
 		}
 
-		const onProgress = Comlink.proxy((e: ObexProgress) => {
-			setTransfer((prev) => prev && {
-				...prev,
-				cursor: counters.bytes + e.cursor,
-				percent: prev.total > 0 ? Math.min(100, ((counters.bytes + e.cursor) / prev.total) * 100) : -1,
-				speed: e.speed,
-			});
-		});
-		const data = await serial.obex.getFile(`${root}/${entry.name}`, onProgress);
-		zip.file(`${root}/${entry.name}`, data, { date: entry.mtime });
+		const data = await serial.obex.getFile(`${remoteRoot}/${entry.name}`, onProgress);
+		zip.file(`${zipRoot}${entry.name}`, data, { date: entry.mtime });
 		counters.bytes += data.length;
 	};
 
@@ -467,10 +461,21 @@ export const FileExplorerPage: Component = () => {
 			: `${path().length ? path()[path().length - 1] : 'Phone'}.zip`;
 		setTransfer({ kind: 'download', name: zipName, percent: -1, cursor: 0, total: 0, speed: 0 });
 		const counters = { bytes: 0 };
+		// One proxy for the whole archive, reading counters at call time, instead of
+		// leaking a new Comlink endpoint per transferred file
+		const onProgress = Comlink.proxy((e: ObexProgress) => {
+			setTransfer((prev) => prev && {
+				...prev,
+				cursor: counters.bytes + e.cursor,
+				percent: prev.total > 0 ? Math.min(100, ((counters.bytes + e.cursor) / prev.total) * 100) : -1,
+				speed: e.speed,
+			});
+		});
+		const remoteRoot = path().length ? "/" + path().join("/") : "";
 		try {
 			const zip = new JSZip();
 			for (const entry of list)
-				await addEntryToZip(zip, "", entry, counters);
+				await addEntryToZip(zip, remoteRoot, "", entry, onProgress, counters);
 			downloadBlob(new Blob([new Uint8Array(await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' }))]), zipName);
 		} finally {
 			setTransfer(undefined);
