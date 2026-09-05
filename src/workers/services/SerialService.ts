@@ -42,7 +42,7 @@ export abstract class SerialService<T = any> {
 		return this.#abortController.signal;
 	}
 
-	abstract connect(portIndex: number, limitBaudrate?: number): Promise<void>;
+	abstract connect(portIndex: number, limitBaudrate?: number, data?: any): Promise<void>;
 	abstract disconnect(): Promise<void>;
 	abstract protocol(): string;
 	abstract getDeviceName(): Promise<string | undefined>;
