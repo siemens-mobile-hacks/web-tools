@@ -4,12 +4,14 @@ import { Box, Drawer, List, ListItemButton, ListItemIcon, ListItemText, Toolbar,
 import ScreenshotIcon from '@suid/icons-material/Screenshot';
 import SdCardIcon from '@suid/icons-material/SdCard';
 import MailIcon from '@suid/icons-material/Mail';
+import MemoryIcon from "@suid/icons-material/Memory";
 import ExpandMoreIcon from '@suid/icons-material/ExpandMore';
 import ExpandLessIcon from '@suid/icons-material/ExpandLess';
 import PhonelinkLockIcon from '@suid/icons-material/PhonelinkLock';
 // import FolderSpecialIcon from '@suid/icons-material/FolderSpecial';
 import FolderOpenIcon from '@suid/icons-material/FolderOpen';
 import VideocamIcon from '@suid/icons-material/Videocam';
+import FlashOnIcon from '@suid/icons-material/FlashOn';
 import ApoxiIcon from '@/assets/apoxi.svg';
 import SgoldIcon from '@/assets/sgold.svg';
 import { useTheme } from '@suid/material/styles';
@@ -150,6 +152,11 @@ export const AppDrawer: Component<AppDrawerProps> = (props) => {
 					url: "/dumper/dwd",
 				}
 			]
+		},
+		{
+			icon: <MemoryIcon />,
+			title: "Flasher/Patcher",
+			url: "/flasher",
 		},
 		{
 			icon: <MailIcon />,

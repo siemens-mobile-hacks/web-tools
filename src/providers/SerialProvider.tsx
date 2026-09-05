@@ -9,6 +9,7 @@ import { CgsnService } from "@/workers/services/CgsnService.js";
 import { DwdService } from "@/workers/services/DwdService.js";
 import { ObexService } from "@/workers/services/ObexService.js";
 import { LogService } from "@/workers/services/LogService.js";
+import { FlasherService } from "@/workers/services/FlasherService.js";
 import { SerialService } from "@/workers/services/SerialService";
 import { useApp } from "@/providers/AppProvider";
 
@@ -17,6 +18,7 @@ interface SerialContext {
 	cgsn: Comlink.Remote<CgsnService>;
 	dwd: Comlink.Remote<DwdService>;
 	obex: Comlink.Remote<ObexService>;
+	flasher: Comlink.Remote<FlasherService>;
 	logs: Comlink.Remote<LogService>;
 	ports: Accessor<WebSerialPortInfo[]>;
 	readyState: Accessor<SerialReadyState>;
@@ -26,7 +28,7 @@ interface SerialContext {
 	getAdapter(type: string): typeof SerialService<any>;
 	getLastUsedPort(type: string): string | undefined;
 	isPortExists(path: string): boolean;
-	connect(protocol: SerialProtocol, prevPortPath?: string, limitBaudrate?: number, debug?: string): Promise<void>;
+	connect(protocol: SerialProtocol, prevPortPath?: string, limitBaudrate?: number, debug?: string, data?: any): Promise<void>;
 	disconnect(): Promise<void>;
 	resetError(): void;
 }
@@ -52,10 +54,10 @@ export const SerialProvider: ParentComponent = (props) => {
 		WebSerialBinding.list().then(setPorts);
 	};
 
-	const connect = async (protocol: SerialProtocol, prevPortPath?: string, limitBaudrate?: number, debug?: string): Promise<void> => {
+	const connect = async (protocol: SerialProtocol, prevPortPath?: string, limitBaudrate?: number, debug?: string, data?: any): Promise<void> => {
 		try {
 			setConnectError(undefined);
-			await serialWorker.connect(protocol, prevPortPath, limitBaudrate, debug);
+			await serialWorker.connect(protocol, prevPortPath, limitBaudrate, debug, data);
 		} catch (e) {
 			setConnectError(e as Error);
 			monitorNewPorts();
@@ -125,6 +127,7 @@ export const SerialProvider: ParentComponent = (props) => {
 			cgsn: serialWorker.getService("CGSN"),
 			dwd: serialWorker.getService("DWD"),
 			obex: serialWorker.getService("OBEX"),
+			flasher: serialWorker.getService("FLSH"),
 			logs: serialWorker.getService("LOG"),
 			getAdapter(type: string) {
 				switch (type) {
@@ -136,6 +139,8 @@ export const SerialProvider: ParentComponent = (props) => {
 						return DwdService;
 					case "OBEX":
 						return ObexService;
+					case "FLSH":
+						return FlasherService;
 				}
 				throw new Error("Unknown protocol: " + currentProtocol());
 			},

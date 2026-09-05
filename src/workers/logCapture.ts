@@ -9,8 +9,9 @@ const MAX_LINES = 1000;
 const lines: string[] = [];
 let listener: ((line: string) => void) | undefined;
 
-// Namespaces that are always logged, they contain every AT command and OBEX operation
-const DEFAULT_NAMESPACES = "atc,obex,bfc";
+// Namespaces that are always logged, they contain every AT command, OBEX
+// operation and flasher protocol traffic
+const DEFAULT_NAMESPACES = "atc,obex,bfc,flasher,flasher:trx";
 
 function pad(value: number, length: number = 2): string {
 	return String(value).padStart(length, "0");
@@ -39,16 +40,22 @@ function formatLogArgs(args: any[]): string {
 	const format = String(args[0] ?? "");
 	const rest = args.slice(1);
 	let index = 0;
-	const resolved = format.replace(/%[sdjifoOc%]/g, (match) => {
-		if (match == "%%")
+	const resolved = format.replace(/%(?:(0)?(\d+))?([sdjifoOcxX%])/g, (match, zeroPad: string | undefined, width: string | undefined, conv: string) => {
+		if (conv == "%")
 			return "%";
-		if (match == "%c")
+		if (conv == "c")
 			return "";
 		const value = rest[index++];
-		if (match == "%d" || match == "%i")
+		if (conv == "d" || conv == "i")
 			return String(Math.round(Number(value)));
-		if (match == "%f")
+		if (conv == "f")
 			return String(Number(value));
+		if (conv == "x" || conv == "X") {
+			// Hex with optional zero padding, e.g. %08X for memory addresses
+			const hex = (Number(value) >>> 0).toString(16);
+			const padded = width ? hex.padStart(Number(width), zeroPad ? "0" : " ") : hex;
+			return conv == "X" ? padded.toUpperCase() : padded;
+		}
 		return formatArg(value);
 	});
 	return [resolved, ...rest.slice(index).map(formatArg)].join(" ");
@@ -57,6 +64,18 @@ function formatLogArgs(args: any[]): string {
 if (typeof window == "undefined") {
 	const debugAny = debug as any;
 	debugAny.useColors = () => false;
+	// The flasher log window is flasher-only: its namespace prefix is
+	// dropped entirely, at the source. Other namespaces (atc, obex, bfc,
+	// ... in the File Explorer log) keep the prefix. The "+Nms" diff
+	// suffix is kept for all lines; the timestamp is added locally.
+	debugAny.formatArgs = function (this: any, args: any[]): void {
+		const diff = ` +${debugAny.humanize(this.diff)}`;
+		const ns = String(this.namespace ?? "");
+		if (ns.startsWith("flasher"))
+			args[0] = `${args[0]}${diff}`;
+		else
+			args[0] = `${ns} ${args[0]}${diff}`;
+	};
 	debugAny.log = (...args: any[]) => {
 		const line = `${timestamp()} ${formatLogArgs(args)}`;
 		lines.push(line);

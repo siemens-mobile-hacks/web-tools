@@ -15,6 +15,7 @@ const ROUTES = [
 	`/apoxi/unlock-boot`,
 	`/video-converter`,
 	`/file-explorer`,
+	`/flasher`,
 ];
 
 function postBuildPlugin(): Plugin {
