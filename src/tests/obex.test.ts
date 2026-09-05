@@ -10,6 +10,7 @@ import assert from "node:assert/strict";
 import { before } from "node:test";
 import { Obex, ObexOpcode, ObexHeaderId, OBEX_TARGET_FLEXMEM, detectPhonePlatform, ObexPacketWriter, OBEX_DELAYS } from "../utils/obex.js";
 import { C60_TRACE_SESSION } from "./c60-trace.js";
+import { SGOLD_BFC_TRACE_SESSION, NEW_SGOLD_BFC_TRACE_SESSION } from "./bfc-traces.js";
 
 // The mock phone answers instantly, the protocol delays just slow the suite down
 before(() => {
@@ -71,6 +72,8 @@ class MockPhone {
 	wireMode: WireMode;
 	connectSendsConnectionId: boolean;
 	enforceConnectionId: boolean;
+	// Max packet size the phone answers in the OBEX CONNECT response, overridable per test
+	connectMaxPacket = 0x0806;
 	connectionId = 0x100;
 	emitter = new EventEmitter();
 	rxBuffer = Buffer.alloc(0);
@@ -89,11 +92,13 @@ class MockPhone {
 		wireMode?: WireMode;
 		connectSendsConnectionId?: boolean;
 		enforceConnectionId?: boolean;
+		connectMaxPacket?: number;
 	} = {}) {
 		this.model = opts.model ?? "S65";
 		this.wireMode = opts.wireMode ?? "at";
 		this.connectSendsConnectionId = opts.connectSendsConnectionId ?? true;
 		this.enforceConnectionId = opts.enforceConnectionId ?? true;
+		this.connectMaxPacket = opts.connectMaxPacket ?? 0x0806;
 		const self = this;
 		this.port = {
 			baudRate: 115200,
@@ -255,9 +260,13 @@ class MockPhone {
 		}
 
 		switch (opcode) {
-			case ObexOpcode.CONNECT:
-				this.push(this.connectSendsConnectionId ? FLEXMEM_CONNECT_WITH_ID : FLEXMEM_CONNECT_NO_ID);
+			case ObexOpcode.CONNECT: {
+				// The canned answers advertise 0x0806; patch in the phone's own limit
+				const resp = Buffer.from(this.connectSendsConnectionId ? FLEXMEM_CONNECT_WITH_ID : FLEXMEM_CONNECT_NO_ID);
+				resp.writeUInt16BE(this.connectMaxPacket, 5);
+				this.push(resp);
 				break;
+			}
 			case ObexOpcode.SETPATH:
 				this.push(Buffer.from([0xA0, 0x00, 0x03]));
 				break;
@@ -296,7 +305,7 @@ test("detects NewSGOLD models", () => {
 
 test("detects legacy and unknown models", () => {
 	for (const model of ["C60", "S55", "SL45", "MC60", "C65v"])
-		assert.equal(detectPhonePlatform(model), "legacy", model);
+		assert.equal(detectPhonePlatform(model), "EGOLD", model);
 	assert.equal(detectPhonePlatform(undefined), "unknown");
 });
 
@@ -304,14 +313,14 @@ test("detects legacy and unknown models", () => {
 // Packet encoding
 // ---------------------------------------------------------------------------
 
-test("CONNECT packet matches the siefs layout", () => {
+test("CONNECT packet advertises SiMoCo's max packet size", () => {
 	const p = new ObexPacketWriter(ObexOpcode.CONNECT);
 	p.appendByte(0x10);
 	p.appendByte(0x00);
-	p.appendUint16(2054);
+	p.appendUint16(0x4006);
 	p.appendHeader(ObexHeaderId.TARGET, OBEX_TARGET_FLEXMEM);
 	assert.equal(p.toBuffer().toString("hex"),
-		"80001a10000806" + "460013" + "6b01cb31410611d49a770050da3f471f");
+		"80001a10004006" + "460013" + "6b01cb31410611d49a770050da3f471f");
 });
 
 test("SETPATH root/up/down packets match the siefs layout", () => {
@@ -337,7 +346,8 @@ test("SETPATH root/up/down packets match the siefs layout", () => {
 });
 
 test("PUT body chunks fit the negotiated packet size with a connection id", () => {
-	const maxPacketSize = 2054;
+	// 0x4006 negotiated in full, also exercises the writer's buffer growth
+	const maxPacketSize = 0x4006;
 	const maxBody = maxPacketSize - 6 - 5;
 	const p = new ObexPacketWriter(ObexOpcode.PUT);
 	p.appendHeader(ObexHeaderId.BODY, Buffer.alloc(maxBody));
@@ -424,6 +434,24 @@ test("AT transport: NewSGOLD phone with connection id", async () => {
 	assert.equal(entries.length, 2);
 	assert.ok(phone.cbValidated >= 2);
 	assert.equal(phone.cbRejected, 0);
+});
+
+test("CONNECT offers SiMoCo's 0x4006 and keeps it when the phone agrees", async () => {
+	const phone = new MockPhone({ wireMode: "at", model: "S65", connectMaxPacket: 0x4006 });
+	const obex = new Obex(phone.port);
+	await obex.connect(115200);
+	const connectPkt = phone.obexPacketsIn.find((p) => p[0] == ObexOpcode.CONNECT);
+	assert.equal(connectPkt?.readUInt16BE(5), 0x4006, "local offer must be 0x4006");
+	assert.equal(obex.getMaxPacketSize(), 0x4006);
+	await obex.disconnect();
+});
+
+test("CONNECT negotiation keeps the phone's smaller limit (C60 answers 474)", async () => {
+	const phone = new MockPhone({ wireMode: "at", model: "S65", connectMaxPacket: 474 });
+	const obex = new Obex(phone.port);
+	await obex.connect(115200);
+	assert.equal(obex.getMaxPacketSize(), 474);
+	await obex.disconnect();
 });
 
 // ---------------------------------------------------------------------------
@@ -581,4 +609,263 @@ test("replay: full C60 session from a real DCA-510 capture", async () => {
 	// every client request matched the recorded session byte-for-byte
 	assert.deepEqual(phone.mismatches, []);
 	await obex.disconnect();
+});
+
+// ---------------------------------------------------------------------------
+// Real-device replays: x65/x75 phones that boot in BFC mode (service cable)
+// ---------------------------------------------------------------------------
+
+// The 408-byte JAD uploaded and downloaded back in both captures
+const SPLINTER_CELL_JAD = Buffer.from(
+	"MIDlet-Jar-Size: 65933\r\n" +
+	"MIDlet-Jar-URL: TomClancySSplinterCell.jar\r\n" +
+	"Manifest-Version: 1.0\r\n" +
+	"MicroEdition-Configuration: CLDC-1.0\r\n" +
+	"MIDlet-Name: Splinter Cell\r\n" +
+	"Created-By: 1.4.1 (Sun Microsystems Inc.)\r\n" +
+	"MIDlet-Icon: icon.png\r\n" +
+	"MIDlet-Vendor: Gameloft SA\r\n" +
+	"MIDlet-1: Splinter Cell, icon.png, cMIDlet\r\n" +
+	"MIDlet-Version: 2.0.6\r\n" +
+	"MicroEdition-Profile: MIDP-1.0\r\n" +
+	"MIDlet-Description: Mobile Stealth Action at its best!\r\n" +
+	"\r\n", "latin1");
+
+// Mock phone that boots in BFC mode like an x65/x75 on a service cable: raw AT
+// probes stay unanswered, the BFC probe gets its auth status reply, the SQWE
+// mode switch is tunneled through BFC channel 0x17, and once the wire switches
+// every OBEX write must match the recorded session byte-for-byte.
+class BfcReplayPhone {
+	trace: [string, string][];
+	pos = 0;
+	model: string;
+	swVersion: string;
+	wireMode: "bfc" | "obex" = "bfc";
+	emitter = new EventEmitter();
+	rxBuffer = Buffer.alloc(0);
+	private bfcBuffer = Buffer.alloc(0);
+
+	port: any;
+
+	constructor(trace: [string, string][], opts: { model: string; swVersion: string }) {
+		this.trace = trace;
+		this.model = opts.model;
+		this.swVersion = opts.swVersion;
+		const self = this;
+		this.port = {
+			baudRate: 115200,
+			isOpen: true,
+			on(event: string, cb: (...args: any[]) => void) { self.emitter.on(event, cb); return self.port; },
+			off(event: string, cb: (...args: any[]) => void) { self.emitter.off(event, cb); return self.port; },
+			async update() {},
+			async write(data: any) { self.handleWrite(Buffer.from(data)); },
+			async read(size: number, timeout?: number) { return self.take(size, timeout); },
+			async readByte(timeout?: number) {
+				const chunk = await self.take(1, timeout);
+				return chunk.length ? chunk[0] : -1;
+			},
+		};
+	}
+
+	private async take(size: number, timeout = 100): Promise<Buffer> {
+		const deadline = Date.now() + (timeout || 100);
+		while (this.rxBuffer.length < size) {
+			if (Date.now() >= deadline)
+				return Buffer.alloc(0);
+			await new Promise((resolve) => setTimeout(resolve, 5));
+		}
+		const out = this.rxBuffer.subarray(0, size);
+		this.rxBuffer = this.rxBuffer.subarray(size);
+		return out;
+	}
+
+	private push(data: Buffer): void {
+		this.rxBuffer = Buffer.concat([this.rxBuffer, data]);
+	}
+
+	private nextTraceResponse(request: Buffer): Buffer | undefined {
+		while (this.pos < this.trace.length) {
+			const [dir, hex] = this.trace[this.pos];
+			if (dir == "TX") {
+				const expected = Buffer.from(hex, "hex");
+				if (!expected.equals(request))
+					throw new Error(`replay desync at trace pos ${this.pos}: expected ${expected.toString("hex")}, got ${request.toString("hex")}`);
+				this.pos++;
+				continue;
+			}
+			this.pos++;
+			return Buffer.from(hex, "hex");
+		}
+		throw new Error("replay desync: trace exhausted");
+	}
+
+	private handleWrite(data: Buffer): void {
+		if (this.wireMode == "bfc")
+			return this.handleBfc(data);
+		const response = this.nextTraceResponse(data);
+		if (response)
+			this.push(response);
+	}
+
+	// Scripted BFC phase, the same answers MockPhone gives
+	private handleBfc(data: Buffer): void {
+		this.bfcBuffer = Buffer.concat([this.bfcBuffer, data]);
+		while (true) {
+			if (this.bfcBuffer.length < 6)
+				return;
+			let start = -1;
+			for (let i = 0; i + 6 <= this.bfcBuffer.length; i++) {
+				const chk = this.bfcBuffer[i] ^ this.bfcBuffer[i + 1] ^ this.bfcBuffer[i + 2] ^ this.bfcBuffer[i + 3] ^ this.bfcBuffer[i + 4];
+				if (chk == this.bfcBuffer[i + 5]) { start = i; break; }
+			}
+			if (start < 0) {
+				this.bfcBuffer = Buffer.alloc(0);
+				return;
+			}
+			if (start > 0)
+				this.bfcBuffer = this.bfcBuffer.subarray(start);
+			const payloadLen = this.bfcBuffer.readUInt16BE(2);
+			const frameLen = 6 + payloadLen + ((this.bfcBuffer[4] & 0x20) ? 2 : 0); // CRC flag adds 2 bytes
+			if (this.bfcBuffer.length < frameLen)
+				return;
+			const frame = this.bfcBuffer.subarray(0, frameLen);
+			this.bfcBuffer = this.bfcBuffer.subarray(frameLen);
+			this.handleBfcFrame(frame);
+		}
+	}
+
+	private handleBfcFrame(frame: Buffer): void {
+		const dst = frame[0];
+		const src = frame[1];
+		const type = frame[4] & 0x0F;
+		const payload = frame.subarray(6, 6 + frame.readUInt16BE(2));
+
+		// Auth requests on any channel: [0x80, 0x11] -> [0x43, 0x11]
+		if (type == BFC_STATUS && payload.length == 2 && payload[0] == 0x80 && payload[1] == 0x11) {
+			this.emitter.emit("data", bfcFrame(dst, src, BFC_STATUS, Buffer.from([0x43, 0x11])));
+			return;
+		}
+
+		// Software info channel 0x11, reply [status][cstring]
+		if (dst == 0x11 && type == BFC_SINGLE) {
+			const swInfo = (cmd: number, value: string) => Buffer.concat([Buffer.from([cmd]), Buffer.from(value + "\0", "latin1")]);
+			const replies: Record<number, Buffer> = {
+				0x0B: swInfo(0x0B, this.swVersion), // sw version
+				0x0C: swInfo(0x0C, "SIEMENS"),     // vendor
+				0x0D: swInfo(0x0D, this.model),    // product
+			};
+			const reply = replies[payload[0]];
+			if (reply)
+				this.emitter.emit("data", bfcFrame(dst, src, BFC_SINGLE, reply));
+			return;
+		}
+
+		// AT tunnel channel 0x17
+		if (dst == 0x17 && type == BFC_SINGLE) {
+			if (payload.toString().includes("SQWE=3"))
+				this.wireMode = "obex";
+			this.emitter.emit("data", bfcFrame(dst, src, BFC_SINGLE, Buffer.from("\r\nOK\r\n")));
+			return;
+		}
+	}
+}
+
+test("replay: SGOLD phone already in BFC mode (x65 service cable capture)", async () => {
+	const phone = new BfcReplayPhone(SGOLD_BFC_TRACE_SESSION, { model: "S65", swVersion: "50" });
+	const obex = new Obex(phone.port);
+	// the cable is fixed at 115200, so the AT probe runs at that speed only
+	await obex.connect(115200);
+
+	assert.equal(obex.getPlatform(), "SGOLD");
+	assert.equal(obex.getDeviceName(), "SIEMENS S65 v50");
+	// the phone answers 0x0406, keeping SiMoCo's 0x4006 offer in check
+	assert.equal(obex.getMaxPacketSize(), 1030);
+
+	// deep navigation: three SETPATHs down, listing split over three CONTINUEs
+	const ems = await obex.readDir("/Data/Pictures/EMS");
+	assert.equal(ems.length, 19);
+	assert.equal(ems[0].name, "Aircraft.bmp");
+	assert.equal(ems[0].size, 190);
+	assert.equal(ems.every((e) => e.name.endsWith(".bmp")), true);
+
+	assert.equal(await obex.getCapacity(), 0xa52eb0);
+	assert.equal(await obex.getAvailable(), 0x5d87d9);
+
+	// one level up is a single SETPATH, the listing needs two packets here
+	const pictures = await obex.readDir("/Data/Pictures");
+	assert.equal(pictures.length, 19);
+
+	// mkdir on the current directory sends nothing
+	await obex.mkdir("/Data/Pictures");
+
+	await obex.putFile("/Data/Pictures/TomClancySSplinterCell.jad", SPLINTER_CELL_JAD);
+
+	const picturesAfter = await obex.readDir("/Data/Pictures");
+	assert.equal(picturesAfter.length, 20);
+	const jad = picturesAfter.find((e) => e.name == "TomClancySSplinterCell.jad");
+	assert.equal(jad?.isDir, false);
+	assert.equal(jad?.size, 408);
+
+	// the phone's free space dropped by the file and its metadata
+	assert.equal(await obex.getCapacity(), 0xa52eb0);
+	assert.equal(await obex.getAvailable(), 0x5d85f6);
+
+	const data = await obex.getFile("/Data/Pictures/TomClancySSplinterCell.jad");
+	assert.deepEqual(data, SPLINTER_CELL_JAD);
+
+	await obex.disconnect();
+	// the whole recorded session was consumed, request for request
+	assert.equal(phone.pos, phone.trace.length);
+});
+
+test("replay: NewSGOLD phone in BFC mode with 8KB packets (x75 service cable capture)", async () => {
+	const phone = new BfcReplayPhone(NEW_SGOLD_BFC_TRACE_SESSION, { model: "S75", swVersion: "25" });
+	const obex = new Obex(phone.port);
+	await obex.connect(115200);
+
+	assert.equal(obex.getPlatform(), "NewSGOLD");
+	assert.equal(obex.getDeviceName(), "SIEMENS S75 v25");
+	// the x75 accepts more than SiMoCo offers, so the offer caps the packet size
+	assert.equal(obex.getMaxPacketSize(), 8208);
+
+	const pictures = await obex.readDir("/Data/Pictures");
+	assert.equal(pictures.length, 29);
+	const byName = Object.fromEntries(pictures.map((e) => [e.name, e]));
+	// read-only media files are reported as such
+	assert.equal(byName["Siemens on.gif"].writable, false);
+	assert.equal(byName["Siemens on.gif"].readable, true);
+	assert.equal(byName["imagememos"].isDir, true);
+
+	assert.equal(await obex.getCapacity(), 0x19d49ef);
+	assert.equal(await obex.getAvailable(), 0x624d81);
+
+	const dataDir = await obex.readDir("/Data");
+	assert.equal(dataDir.length, 14);
+	const dataByName = Object.fromEntries(dataDir.map((e) => [e.name, e]));
+	// ActiveTheme has no read permission, the phone's system areas are hidden
+	assert.equal(dataByName["ActiveTheme"].hidden, true);
+	assert.equal(dataByName["Misc"].hidden, false);
+
+	// a whole 3222-byte BMP in a single SUCCESS response
+	const bmp = await obex.getFile("/Data/pallet.bmp");
+	assert.equal(bmp.length, 3222);
+	assert.equal(bmp.subarray(0, 2).toString(), "BM");
+	assert.equal(bmp.readUInt32LE(10), 54);   // pixel data offset
+	assert.equal(bmp.readUInt32LE(18), 132);  // width
+	assert.equal(bmp.readInt32LE(22), 8);     // height
+	assert.equal(bmp.readUInt16LE(28), 24);   // bits per pixel
+
+	await obex.mkdir("/Data");
+	await obex.putFile("/Data/TomClancySSplinterCell.jad", SPLINTER_CELL_JAD);
+
+	const dataAfter = await obex.readDir("/Data");
+	assert.equal(dataAfter.length, 15);
+	assert.equal(await obex.getCapacity(), 0x19d49ef);
+	assert.equal(await obex.getAvailable(), 0x624b79);
+
+	const jad = await obex.getFile("/Data/TomClancySSplinterCell.jad");
+	assert.deepEqual(jad, SPLINTER_CELL_JAD);
+
+	await obex.disconnect();
+	assert.equal(phone.pos, phone.trace.length);
 });

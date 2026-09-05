@@ -9,6 +9,7 @@ const SMSReaderPage = lazy(() => import("@/pages/SMSReader/SMSReaderPage"));
 const UnlockBootloaderPage = lazy(() => import("@/pages/Apoxi/UnlockBootloaderPage"));
 const FFSExplorerPage = lazy(() => import("@/pages/FFSExplorerPage/FFSExplorerPage"));
 const FileExplorerPage = lazy(() => import("@/pages/FileExplorer/FileExplorerPage"));
+const FlasherPage = lazy(() => import("@/pages/Flasher/FlasherPage"));
 import VideoConverter from "@/pages/VideoConverter/VideoConverterPage";
 
 export const Root: Component = () => {
@@ -29,6 +30,7 @@ export const Root: Component = () => {
 				<Route path="/apoxi/unlock-boot" component={UnlockBootloaderPage} />
 				<Route path="/video-converter" component={VideoConverter} />
 				<Route path="/file-explorer" component={FileExplorerPage} />
+				<Route path="/flasher" component={FlasherPage} />
 				<Route path="*" component={() => <Navigate href="/" />} />
 			</Router>
 		</ErrorBoundary>

@@ -3,22 +3,65 @@
 // Compiles the needed sources into .test-build/ first, since the project
 // has no test bundler installed.
 import { execSync } from "node:child_process";
-import { rmSync, cpSync, mkdirSync, existsSync } from "node:fs";
+import { rmSync, cpSync, mkdirSync, existsSync, symlinkSync } from "node:fs";
 import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "..");
 const buildDir = path.join(root, ".test-build");
 
+const testSuites = [
+	{
+		sources: ["src/utils/obex.ts", "src/tests/obex.test.ts"],
+		run: [".test-build/tests/obex.test.js"],
+	},
+	{
+		sources: [
+			"src/flasher/core/index.ts",
+			"src/tests/flasher.test.ts",
+		],
+		run: [".test-build/tests/flasher.test.js"],
+	},
+	{
+		sources: [
+			"src/pages/Flasher/history.ts",
+			"src/tests/patch-history.test.ts",
+		],
+		run: [".test-build/tests/patch-history.test.js"],
+	},
+	{
+		sources: [
+			"src/pages/Flasher/vkpHighlight.ts",
+			"src/tests/vkp-highlight.test.ts",
+		],
+		run: [".test-build/tests/vkp-highlight.test.js"],
+	},
+];
+
 rmSync(buildDir, { recursive: true, force: true });
 mkdirSync(buildDir);
 
-const sources = ["src/utils/obex.ts", "src/tests/obex.test.ts"];
-execSync(`npx tsc ${sources.join(" ")} --outDir ${buildDir} ` +
-	"--module esnext --target esnext --moduleResolution bundler --skipLibCheck --esModuleInterop --strict",
-	{ stdio: "inherit", cwd: root });
+for (const suite of testSuites) {
+	execSync(`npx tsc ${suite.sources.join(" ")} --outDir ${buildDir} ` +
+		"--module esnext --target esnext --moduleResolution bundler --skipLibCheck --esModuleInterop --strict",
+		{ stdio: "inherit", cwd: root });
+}
 
-// tsc emits obex.js / obex.test.js next to each other; run node's test runner
-execSync("node --test --test-reporter spec .test-build/tests/obex.test.js", { stdio: "inherit", cwd: root });
+// node_modules for the compiled tests (symlink: fast).
+const nodeModulesLink = path.join(buildDir, "node_modules");
+if (!existsSync(nodeModulesLink))
+	symlinkSync(path.join(root, "node_modules"), nodeModulesLink, "dir");
+
+let failed = false;
+for (const testPath of testSuites.flatMap((s) => s.run)) {
+	try {
+		execSync(`node --test --test-reporter spec ${testPath}`, { stdio: "inherit", cwd: root });
+	} catch (e) {
+		failed = true;
+	}
+}
+
+if (failed)
+	process.exit(1);
 
 if (!existsSync(path.join(buildDir, "keep")))
 	rmSync(buildDir, { recursive: true, force: true });

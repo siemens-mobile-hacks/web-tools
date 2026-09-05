@@ -41,7 +41,7 @@ import { SerialReadyState, serialWorker } from '@/workers/endpoints/serial';
 import { PageTitle } from '@/components/Layout/PageTitle';
 import { downloadBlob, formatSize } from '@/utils';
 import { createFilePreviewUrl, prepareFilePreview } from '@/utils/filePreview';
-import { ZipWriter } from '@/utils/zip';
+import JSZip from 'jszip';
 import type { ObexDirEntry, ObexProgress } from '@/utils/obex';
 import { useTheme } from '@suid/material/styles';
 import { useApp } from '@/providers/AppProvider';
@@ -284,6 +284,7 @@ export const FileExplorerPage: Component = () => {
 			list.sort((a, b) => Number(b.isDir) - Number(a.isDir) || a.name.localeCompare(b.name));
 			setEntries(list);
 			setSelected(new Set<string>());
+			selectionAnchor = undefined;
 			setDisplayedDir(targetPath);
 		} finally {
 			setIsLoading(false);
@@ -343,7 +344,44 @@ export const FileExplorerPage: Component = () => {
 	const selectedEntries = createMemo<ObexDirEntry[]>(() => entries().filter(isSelected));
 	const isAllSelected = createMemo(() => entries().length > 0 && selected().size == entries().length);
 
-	const toggleSelected = (entry: ObexDirEntry): void => {
+	// Last entry clicked without shift and the state that click gave it. Shift-clicks
+	// extend the selection from this anchor, in the order the list is displayed in
+	let selectionAnchor: { name: string; select: boolean } | undefined;
+
+	const selectOnly = (entry: ObexDirEntry): void => {
+		selectionAnchor = { name: entry.name, select: true };
+		setSelected(new Set([entry.name]));
+	};
+
+	// Applies the anchor's selection state to every entry between the anchor and
+	// the clicked one (in display order), like desktop file managers do
+	const selectRange = (entry: ObexDirEntry): void => {
+		const anchor = selectionAnchor;
+		if (!anchor)
+			return selectOnly(entry);
+		const list = sortedEntries();
+		const from = list.findIndex((e) => e.name == anchor.name);
+		const to = list.findIndex((e) => e.name == entry.name);
+		if (from < 0 || to < 0)
+			return selectOnly(entry);
+		const [start, end] = from < to ? [from, to] : [to, from];
+		setSelected((prev) => {
+			const next = new Set(prev);
+			for (let i = start; i <= end; i++) {
+				if (anchor.select)
+					next.add(list[i].name);
+				else
+					next.delete(list[i].name);
+			}
+			return next;
+		});
+	};
+
+	const toggleSelected = (entry: ObexDirEntry, shiftKey = false): void => {
+		if (shiftKey)
+			return selectRange(entry);
+		const select = !selected().has(entry.name);
+		selectionAnchor = { name: entry.name, select };
 		setSelected((prev) => {
 			const next = new Set(prev);
 			if (next.has(entry.name))
@@ -354,7 +392,28 @@ export const FileExplorerPage: Component = () => {
 		});
 	};
 
+	// Row clicks select like in a desktop file manager: a plain click selects a
+	// single entry, ctrl toggles one, shift extends from the anchor. Clicks on
+	// interactive elements (file links, buttons, the checkbox) are left alone.
+	const onRowClick = (entry: ObexDirEntry, e: MouseEvent): void => {
+		if (isBusy())
+			return;
+		if (e.target instanceof Element && e.target.closest('button, a, input, label'))
+			return;
+		if (e.shiftKey)
+			selectRange(entry);
+		else if (e.ctrlKey || e.metaKey)
+			toggleSelected(entry);
+		else
+			selectOnly(entry);
+	};
+
+	// SUID delivers the checkbox change as a plain Event, but at runtime it is the
+	// input's click event, which carries the mouse modifier keys
+	const isShiftClick = (e: Event): boolean => (e as MouseEvent).shiftKey ?? false;
+
 	const toggleSelectAll = (): void => {
+		selectionAnchor = undefined;
 		setSelected((prev) => prev.size == entries().length ? new Set<string>() : new Set<string>(entries().map((e) => e.name)));
 	};
 
@@ -428,27 +487,21 @@ export const FileExplorerPage: Component = () => {
 		}
 	});
 
-	// Recursively adds an entry (file or directory) to the zip
-	const addEntryToZip = async (zip: ZipWriter, root: string, entry: ObexDirEntry, counters: { bytes: number }): Promise<void> => {
+	// Recursively adds an entry (file or directory) to the zip. remoteRoot is the
+	// absolute phone path of the directory containing the entry, zipRoot the matching
+	// path inside the archive.
+	const addEntryToZip = async (zip: JSZip, remoteRoot: string, zipRoot: string, entry: ObexDirEntry, onProgress: (e: ObexProgress) => void, counters: { bytes: number }): Promise<void> => {
 		if (entry.isDir) {
-			zip.addDir(`${root}/${entry.name}`, entry.mtime);
-			const children = await serial.obex.readDir(`${root}/${entry.name}`);
+			zip.file(`${zipRoot}${entry.name}/`, null, { dir: true, date: entry.mtime });
+			const children = await serial.obex.readDir(`${remoteRoot}/${entry.name}`);
 			children.sort((a, b) => a.name.localeCompare(b.name));
 			for (const child of children)
-				await addEntryToZip(zip, `${root}/${entry.name}`, child, counters);
+				await addEntryToZip(zip, `${remoteRoot}/${entry.name}`, `${zipRoot}${entry.name}/`, child, onProgress, counters);
 			return;
 		}
 
-		const onProgress = Comlink.proxy((e: ObexProgress) => {
-			setTransfer((prev) => prev && {
-				...prev,
-				cursor: counters.bytes + e.cursor,
-				percent: prev.total > 0 ? Math.min(100, ((counters.bytes + e.cursor) / prev.total) * 100) : -1,
-				speed: e.speed,
-			});
-		});
-		const data = await serial.obex.getFile(`${root}/${entry.name}`, onProgress);
-		zip.addFile(`${root}/${entry.name}`, data, entry.mtime);
+		const data = await serial.obex.getFile(`${remoteRoot}/${entry.name}`, onProgress);
+		zip.file(`${zipRoot}${entry.name}`, data, { date: entry.mtime });
 		counters.bytes += data.length;
 	};
 
@@ -467,11 +520,22 @@ export const FileExplorerPage: Component = () => {
 			: `${path().length ? path()[path().length - 1] : 'Phone'}.zip`;
 		setTransfer({ kind: 'download', name: zipName, percent: -1, cursor: 0, total: 0, speed: 0 });
 		const counters = { bytes: 0 };
+		// One proxy for the whole archive, reading counters at call time, instead of
+		// leaking a new Comlink endpoint per transferred file
+		const onProgress = Comlink.proxy((e: ObexProgress) => {
+			setTransfer((prev) => prev && {
+				...prev,
+				cursor: counters.bytes + e.cursor,
+				percent: prev.total > 0 ? Math.min(100, ((counters.bytes + e.cursor) / prev.total) * 100) : -1,
+				speed: e.speed,
+			});
+		});
+		const remoteRoot = path().length ? "/" + path().join("/") : "";
 		try {
-			const zip = new ZipWriter();
+			const zip = new JSZip();
 			for (const entry of list)
-				await addEntryToZip(zip, "", entry, counters);
-			downloadBlob(new Blob([new Uint8Array(zip.build())]), zipName);
+				await addEntryToZip(zip, remoteRoot, "", entry, onProgress, counters);
+			downloadBlob(new Blob([new Uint8Array(await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' }))]), zipName);
 		} finally {
 			setTransfer(undefined);
 		}
@@ -642,7 +706,7 @@ export const FileExplorerPage: Component = () => {
 		if (baudrate())
 			parts.push(`${baudrate()} baud`);
 		if (s)
-			parts.push(`${formatSize(s.available)} free`);
+			parts.push(`${formatSize(s.available)}/${formatSize(s.capacity)} free`);
 		app.setStatus(parts.join(' · '));
 	});
 
@@ -841,15 +905,7 @@ export const FileExplorerPage: Component = () => {
 						</IconButton>
 					</Stack>
 
-					{/* Actions: kept on their own row so long paths don't wrap them */}
 					<Stack direction="row" alignItems="center" gap={1} flexWrap="wrap">
-						<IconButton
-							title="New folder"
-							disabled={isBusy()}
-							onClick={() => void createDirectory()}
-						>
-							<CreateNewFolderIcon />
-						</IconButton>
 
 						<Button
 							variant="outlined"
@@ -869,6 +925,14 @@ export const FileExplorerPage: Component = () => {
 						>
 							Delete selected{selectedEntries().length > 1 ? ` (${selectedEntries().length})` : ''}
 						</Button>
+						
+						<IconButton
+							title="New folder"
+							disabled={isBusy()}
+							onClick={() => void createDirectory()}
+						>
+							<CreateNewFolderIcon />
+						</IconButton>
 
 						<Button
 							variant="contained"
@@ -957,13 +1021,13 @@ export const FileExplorerPage: Component = () => {
 									</TableRow>
 								</Show>
 								<For each={sortedEntries()}>{(entry) =>
-									<TableRow hover selected={isSelected(entry)} sx={entry.hidden ? { opacity: 0.55 } : undefined}>
+									<TableRow hover selected={isSelected(entry)} sx={entry.hidden ? { opacity: 0.55 } : undefined} onClick={(e: MouseEvent) => onRowClick(entry, e)}>
 										<TableCell padding="checkbox">
 											<Checkbox
 												size="small"
 												checked={isSelected(entry)}
 												disabled={isBusy()}
-												onChange={() => toggleSelected(entry)}
+												onChange={(e) => toggleSelected(entry, isShiftClick(e))}
 											/>
 										</TableCell>
 										<TableCell>
@@ -979,8 +1043,12 @@ export const FileExplorerPage: Component = () => {
 															title="Open in new tab"
 															sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}
 															onClick={() => void openFile(entry)}
-															onAuxClick={(e: MouseEvent) => {
-																// Middle click opens the file as well
+															onMouseDown={(e: MouseEvent) => {
+																// Middle click opens the file as well. Handled on mousedown instead of
+																// auxclick: the press gesture is accepted by popup blockers in every
+																// browser (auxclick is not everywhere), and preventDefault() here stops
+																// the browser from starting autoscroll, which can otherwise swallow the
+																// click on scrollable pages
 																if (e.button == 1) {
 																	e.preventDefault();
 																	void openFile(entry);

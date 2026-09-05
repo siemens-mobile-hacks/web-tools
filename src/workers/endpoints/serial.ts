@@ -7,6 +7,7 @@ import { SerialService } from "../services/SerialService";
 import { DwdService } from "../services/DwdService";
 import { ObexService } from "../services/ObexService";
 import { LogService } from "../services/LogService";
+import { FlasherService } from "@/workers/services/FlasherService";
 import { commonWorker } from "@/workers/endpoints/common";
 
 export enum SerialReadyState {
@@ -16,7 +17,7 @@ export enum SerialReadyState {
 	DISCONNECTING
 }
 
-export type SerialProtocol = 'none' | 'BFC' | 'CGSN' | 'DWD' | 'OBEX';
+export type SerialProtocol = 'none' | 'BFC' | 'CGSN' | 'DWD' | 'OBEX' | 'FLSH';
 
 type SerialWorkerEvents = {
 	protocolChange: [SerialProtocol];
@@ -30,6 +31,7 @@ type SerialWorkerServices = {
 	BFC: Comlink.Remote<BfcService>;
 	DWD: Comlink.Remote<DwdService>;
 	OBEX: Comlink.Remote<ObexService>;
+	FLSH: Comlink.Remote<FlasherService>;
 	LOG: Comlink.Remote<LogService>;
 };
 const SERVICES: SerialWorkerServices = {
@@ -37,6 +39,7 @@ const SERVICES: SerialWorkerServices = {
 	CGSN: await commonWorker.getService('CGSN'),
 	DWD: await commonWorker.getService('DWD'),
 	OBEX: await commonWorker.getService('OBEX'),
+	FLSH: await commonWorker.getService('FLSH'),
 	LOG: await commonWorker.getService('LOG'),
 };
 
@@ -50,10 +53,10 @@ export class Serial extends EventEmitter<SerialWorkerEvents> {
 		// LOG is not a connectable protocol service, it lives in SERVICES only for getService()
 		if (this.protocol == 'none')
 			throw new Error(`Can't get service for protocol ${this.protocol}.`);
-		return SERVICES[this.protocol as 'BFC' | 'CGSN' | 'DWD' | 'OBEX'] as unknown as Comlink.Remote<SerialService>;
+		return SERVICES[this.protocol as 'BFC' | 'CGSN' | 'DWD' | 'OBEX' | 'FLSH'] as unknown as Comlink.Remote<SerialService>;
 	}
 
-	async connect(protocol: SerialProtocol, prevPortPath?: string, limitBaudrate?: number, debug?: string): Promise<void> {
+	async connect(protocol: SerialProtocol, prevPortPath?: string, limitBaudrate?: number, debug?: string, data?: any): Promise<void> {
 		if (this.readyState == SerialReadyState.CONNECTING || this.readyState == SerialReadyState.CONNECTED)
 			throw new Error(`Can't connect, already connected to ${this.protocol}.`);
 
@@ -64,7 +67,7 @@ export class Serial extends EventEmitter<SerialWorkerEvents> {
 			this.setLastPortPath(portPath);
 			if (debug)
 				await this.service.setDebug(debug);
-			await this.service.connect(portIndex, limitBaudrate);
+			await this.service.connect(portIndex, limitBaudrate, data);
 			this.setDevice(await this.service.getDeviceName() ?? "Unknown device");
 			this.setReadyState(SerialReadyState.CONNECTED);
 		} catch (e) {
