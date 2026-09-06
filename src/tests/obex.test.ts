@@ -8,7 +8,7 @@ import { EventEmitter } from "node:events";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { before } from "node:test";
-import { Obex, ObexOpcode, ObexHeaderId, OBEX_TARGET_FLEXMEM, detectPhonePlatform, ObexPacketWriter, OBEX_DELAYS } from "../utils/obex.js";
+import { Obex, ObexOpcode, ObexHeaderId, OBEX_TARGET_FLEXMEM, detectPhonePlatform, ObexPacketWriter, OBEX_DELAYS, parseObexHeaders } from "../utils/obex.js";
 import { C60_TRACE_SESSION } from "./c60-trace.js";
 import { SGOLD_BFC_TRACE_SESSION, NEW_SGOLD_BFC_TRACE_SESSION } from "./bfc-traces.js";
 
@@ -54,6 +54,14 @@ const FOLDER_LISTING_HIDDEN_ATTR = Buffer.from(
 const BFC_STATUS = 4;
 const BFC_SINGLE = 0;
 
+// UCS2-BE with the trailing zero the phone's NAME headers carry
+function decodeObexName(buf: Buffer): string {
+	let out = "";
+	for (let i = 0; i + 1 < buf.length; i += 2)
+		out += String.fromCharCode((buf[i] << 8) | buf[i + 1]);
+	return out.replace(/\0+$/, "");
+}
+
 function bfcFrame(src: number, dst: number, type: number, payload: Buffer): Buffer {
 	const frame = Buffer.alloc(6 + payload.length);
 	frame.writeUInt8(dst, 0);
@@ -79,8 +87,15 @@ class MockPhone {
 	rxBuffer = Buffer.alloc(0);
 	bfcFramesIn: Buffer[] = [];
 	obexPacketsIn: Buffer[] = [];
+	// AT commands received after the initial connect - non-empty means a rehandshake
+	atCommands: string[] = [];
+	private connectedOnce = false;
 	// Folder listing returned for GET requests, overridable per test
 	listing: Buffer = FOLDER_LISTING;
+	// Names deleted via OBEX delete requests (PUT-FINAL with a name, no body)
+	deletedNames: string[] = [];
+	// Response opcode for delete requests, e.g. 0xC4 = Not found (default: Success)
+	deleteResponse: number | undefined;
 	cbValidated = 0;
 	cbRejected = 0;
 	private bfcBuffer = Buffer.alloc(0);
@@ -147,12 +162,16 @@ class MockPhone {
 	// ---------------------------------------------------------------- AT mode
 	private handleAt(data: Buffer): void {
 		const cmd = data.toString().trim();
+		if (this.connectedOnce)
+			this.atCommands.push(cmd);
 		let reply = "\r\nOK\r\n";
 		if (cmd == "AT+CGMI") reply = "\r\nSIEMENS\r\nOK\r\n";
 		if (cmd == "AT+CGMM") reply = `\r\n${this.model}\r\nOK\r\n`;
 		if (cmd == "AT+CGMR") reply = "\r\n43\r\nOK\r\n";
-		if (cmd.includes("SQWE=3"))
+		if (cmd.includes("SQWE=3")) {
+			this.connectedOnce = true;
 			this.wireMode = "obex";
+		}
 		this.emitter.emit("data", Buffer.from(reply));
 	}
 
@@ -280,9 +299,21 @@ class MockPhone {
 				this.push(Buffer.concat([p1, p2]));
 				break;
 			}
-			case ObexOpcode.PUT_FINAL:
+			case ObexOpcode.PUT:
+				// the initial PUT of an upload asks for permission to send the body
+				this.push(Buffer.from([0x90, 0x00, 0x03]));
+				break;
+			case ObexOpcode.PUT_FINAL: {
+				const headers = parseObexHeaders(pkt);
+				// PUT-FINAL carrying only a name is a delete
+				if (headers.has(ObexHeaderId.NAME) && !headers.has(ObexHeaderId.END_OF_BODY)) {
+					this.deletedNames.push(decodeObexName(headers.get(ObexHeaderId.NAME)!));
+					this.push(Buffer.from([this.deleteResponse ?? 0xA0, 0x00, 0x03]));
+					break;
+				}
 				this.push(Buffer.from([0xA0, 0x00, 0x03]));
 				break;
+			}
 			default:
 				this.push(Buffer.from([0xA0, 0x00, 0x03]));
 		}
@@ -798,7 +829,9 @@ test("replay: SGOLD phone already in BFC mode (x65 service cable capture)", asyn
 	// mkdir on the current directory sends nothing
 	await obex.mkdir("/Data/Pictures");
 
-	await obex.putFile("/Data/Pictures/TomClancySSplinterCell.jad", SPLINTER_CELL_JAD);
+	// the capture uploads a new file: overwrite handling would add a delete the
+	// recorded session doesn't contain
+	await obex.putFile("/Data/Pictures/TomClancySSplinterCell.jad", SPLINTER_CELL_JAD, undefined, { overwrite: false });
 
 	const picturesAfter = await obex.readDir("/Data/Pictures");
 	assert.equal(picturesAfter.length, 20);
@@ -856,7 +889,7 @@ test("replay: NewSGOLD phone in BFC mode with 8KB packets (x75 service cable cap
 	assert.equal(bmp.readUInt16LE(28), 24);   // bits per pixel
 
 	await obex.mkdir("/Data");
-	await obex.putFile("/Data/TomClancySSplinterCell.jad", SPLINTER_CELL_JAD);
+	await obex.putFile("/Data/TomClancySSplinterCell.jad", SPLINTER_CELL_JAD, undefined, { overwrite: false });
 
 	const dataAfter = await obex.readDir("/Data");
 	assert.equal(dataAfter.length, 15);
@@ -868,4 +901,94 @@ test("replay: NewSGOLD phone in BFC mode with 8KB packets (x75 service cable cap
 
 	await obex.disconnect();
 	assert.equal(phone.pos, phone.trace.length);
+});
+
+// ---------------------------------------------------------------------------
+// putFile overwrite handling (Siemens phones append to existing files)
+// ---------------------------------------------------------------------------
+
+test("putFile overwrite deletes the existing file before uploading", async () => {
+	const phone = new MockPhone({ wireMode: "at", model: "S65" });
+	const obex = new Obex(phone.port);
+	await obex.connect(115200);
+
+	await obex.putFile("/notes.txt", Buffer.from("new content"));
+
+	// the old file was deleted, and before any body was sent
+	assert.deepEqual(phone.deletedNames, ["notes.txt"]);
+	const isDelete = (p: Buffer) => p[0] == ObexOpcode.PUT_FINAL && parseObexHeaders(p).has(ObexHeaderId.NAME) && !parseObexHeaders(p).has(ObexHeaderId.END_OF_BODY);
+	const isBody = (p: Buffer) => p[0] == ObexOpcode.PUT || parseObexHeaders(p).has(ObexHeaderId.END_OF_BODY);
+	const deleteAt = phone.obexPacketsIn.findIndex(isDelete);
+	const bodyAt = phone.obexPacketsIn.findIndex(isBody);
+	assert.ok(deleteAt >= 0, "a delete request was sent");
+	assert.ok(deleteAt < bodyAt, "the delete precedes the upload");
+	await obex.disconnect();
+});
+
+test("putFile overwrite accepts Not found for new files", async () => {
+	const phone = new MockPhone({ wireMode: "at", model: "S65" });
+	// the phone has no such file yet
+	phone.deleteResponse = 0xC4;
+	const obex = new Obex(phone.port);
+	await obex.connect(115200);
+
+	await obex.putFile("/brand new.txt", Buffer.from("data"));
+
+	assert.deepEqual(phone.deletedNames, ["brand new.txt"]);
+	await obex.disconnect();
+});
+
+test("putFile overwrite surfaces delete failures instead of appending", async () => {
+	const phone = new MockPhone({ wireMode: "at", model: "S65" });
+	// e.g. a read-only file cannot be deleted, uploading would append to it
+	phone.deleteResponse = 0xC3;
+	const obex = new Obex(phone.port);
+	await obex.connect(115200);
+
+	// notes.txt is in the phone's listing, so the refused delete is fatal
+	await assert.rejects(() => obex.putFile("/notes.txt", Buffer.from("data")), /delete of existing/);
+	// no upload body was sent after the failed delete
+	assert.ok(!phone.obexPacketsIn.some((p) => parseObexHeaders(p).has(ObexHeaderId.END_OF_BODY)));
+	await obex.disconnect();
+});
+
+test("putFile overwrite: refused delete of a name that is not in the directory still uploads (protected folders)", async () => {
+	const phone = new MockPhone({ wireMode: "at", model: "S65" });
+	// /Java forbids deletes but allows uploads: the phone refuses with Forbidden
+	phone.deleteResponse = 0xC3;
+	const obex = new Obex(phone.port);
+	await obex.connect(115200);
+
+	// the repair patch from the bug report: not in the listing, its name contains
+	// "timeout" which used to look like a dead session in error messages
+	const name = "Change_timeout_of_IDLE_timer3_REPAIR.vkp";
+	await obex.putFile(`/Java/Jam/api/${name}`, Buffer.from("patch"));
+
+	// the fallback consulted the directory listing before deciding
+	assert.ok(phone.obexPacketsIn.some((p) => p.includes(Buffer.from("x-obex/folder-listing"))), "a folder listing was requested");
+	// no bogus rehandshake: no AT traffic after the initial connection
+	assert.deepEqual(phone.atCommands, []);
+	assert.ok(phone.obexPacketsIn.some((p) => parseObexHeaders(p).has(ObexHeaderId.END_OF_BODY)), "the upload body was sent");
+	await obex.disconnect();
+});
+
+test("a file name containing a link-dead keyword does not trigger a rehandshake", async () => {
+	const phone = new MockPhone({ wireMode: "at", model: "S65" });
+	// deletes fail with Forbidden, the file exists in the listing (notes.txt is
+	// renamed to carry "timeout" in its name inside the error message)
+	phone.deleteResponse = 0xC3;
+	phone.listing = Buffer.from(
+		'<?xml version="1.0"?><folder-listing>' +
+		'<file name="Change_timeout_of_IDLE_timer3_REPAIR.vkp" size="1" user-perm="R"/>' +
+		'</folder-listing>');
+	const obex = new Obex(phone.port);
+	await obex.connect(115200);
+
+	await assert.rejects(
+		() => obex.putFile("/Java/Change_timeout_of_IDLE_timer3_REPAIR.vkp", Buffer.from("data")),
+		/delete of existing/,
+	);
+	// the quoted name must not have matched the transport error patterns
+	assert.deepEqual(phone.atCommands, [], "no rehandshake must happen");
+	await obex.disconnect();
 });

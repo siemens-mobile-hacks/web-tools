@@ -541,12 +541,49 @@ export const FileExplorerPage: Component = () => {
 		}
 	});
 
+	// Asks for confirmation when an upload would replace entries that already exist
+	// on the phone. Names in the current directory come from the loaded listing, for
+	// other target directories (folder uploads) a listing is fetched per directory.
+	// Directories that don't exist yet are created by the upload itself.
+	const confirmOverwrites = async (targets: { dirParts: string[]; fileName: string }[]): Promise<boolean> => {
+		const dirPath = (dirParts: string[]): string => "/" + dirParts.join("/");
+		const namesByDir = new Map<string, Set<string>>();
+		for (const dir of new Set(targets.map((t) => dirPath(t.dirParts)))) {
+			try {
+				const names = dir == dirPath(path())
+					? entries().map((e) => e.name)
+					: (await serial.obex.readDir(dir)).map((e) => e.name);
+				namesByDir.set(dir, new Set(names));
+			} catch {
+				// Directory not found: the upload creates it, nothing to overwrite
+			}
+		}
+		const overwrites = targets.filter((t) => namesByDir.get(dirPath(t.dirParts))?.has(t.fileName));
+		if (!overwrites.length)
+			return true;
+		const shown = overwrites.slice(0, 5).map((t) => `"${t.fileName}"`).join(', ');
+		const suffix = overwrites.length > 5 ? ` and ${overwrites.length - 5} more` : '';
+		return confirm(`Overwrite ${shown}${suffix}?`);
+	};
+
 	const uploadFile = errorWrap(async (file: File): Promise<void> => {
 		await uploadFiles([file]);
 	});
 
 	const uploadFiles = errorWrap(async (files: File[]): Promise<void> => {
 		if (!files.length)
+			return;
+
+		// webkitRelativePath is set for directory uploads, e.g. "Sounds/midi/theme.mid"
+		const targets = files.map((file) => {
+			const relPathParts = (file.webkitRelativePath || file.name).split('/').filter(Boolean);
+			const fileName = relPathParts.pop()!;
+			return { fileName, dirParts: [...path(), ...relPathParts] };
+		});
+
+		// The phone's FlexMem server appends to existing files, so an upload of a
+		// known name replaces it and needs the user's consent first
+		if (!(await confirmOverwrites(targets)))
 			return;
 
 		const totalSize = files.reduce((sum, file) => sum + file.size, 0);
@@ -572,10 +609,7 @@ export const FileExplorerPage: Component = () => {
 
 		try {
 			for (const [index, file] of files.entries()) {
-				// webkitRelativePath is set for directory uploads, e.g. "Sounds/midi/theme.mid"
-				const relPathParts = (file.webkitRelativePath || file.name).split('/').filter(Boolean);
-				const fileName = relPathParts.pop()!;
-				const dirParts = [...path(), ...relPathParts];
+				const { fileName, dirParts } = targets[index];
 
 				const dirPath = "/" + dirParts.join("/");
 				if (dirParts.length && !createdDirs.has(dirPath)) {
@@ -596,7 +630,7 @@ export const FileExplorerPage: Component = () => {
 					});
 				});
 
-				await serial.obex.putFile(`/${[...dirParts, fileName].join("/")}`, data, onProgress);
+				await serial.obex.putFile(`/${[...dirParts, fileName].join("/")}`, data, onProgress, true);
 				uploadedSize += file.size;
 				setTransfer((prev) => prev && { ...prev, filesDone: index + 1 });
 			}

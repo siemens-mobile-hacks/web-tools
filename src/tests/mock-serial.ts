@@ -57,6 +57,18 @@ const FILES: Record<string, ObexDirEntry[]> = {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+const dirname = (path: string): string => {
+	const parts = path.split("/").filter(Boolean);
+	parts.pop();
+	return "/" + parts.join("/");
+};
+const basename = (path: string): string => path.split("/").filter(Boolean).pop() ?? "";
+
+// File contents of the fake phone, so uploads become visible in the listings
+const CONTENT: Record<string, Uint8Array> = {
+	"/logo.png": PNG,
+};
+
 const obexService = {
 	async getBaudrate() { return 115200; },
 	async getCapacity() { return 8 * 1024 * 1024; },
@@ -78,7 +90,26 @@ const obexService = {
 		await sleep(120);
 		return data;
 	},
-	async putFile() {},
+	// Siemens phones append to an existing file instead of replacing it, so the
+	// mock reproduces the same quirk when overwrite is not requested
+	async putFile(path: string, data: Uint8Array, onProgress?: (e: ObexProgress) => void, overwrite = true) {
+		await sleep(150);
+		const name = basename(path);
+		const dir = dirname(path);
+		FILES[dir] ??= [];
+		const entry = FILES[dir].find((e) => e.name == name && !e.isDir);
+		if (entry && !overwrite) {
+			CONTENT[path] = new Uint8Array([...CONTENT[path] ?? [], ...data]);
+			entry.size = CONTENT[path].length;
+		} else {
+			CONTENT[path] = new Uint8Array(data);
+			if (entry)
+				entry.size = data.length;
+			else
+				FILES[dir].push(mk(name, false, data.length));
+		}
+		onProgress?.({ percent: 100, cursor: data.length, total: data.length, speed: 100000 });
+	},
 	async deleteFile() {},
 	async mkdir() {},
 	async move() {},

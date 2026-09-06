@@ -45,8 +45,8 @@ export class ObexService extends SerialService<Obex> {
 		return Comlink.transfer(data, [data.buffer]);
 	}
 
-	async putFile(path: string, data: Uint8Array, onProgress?: (e: ObexProgress) => void): Promise<void> {
-		await this.handle.putFile(path, data, onProgress);
+	async putFile(path: string, data: Uint8Array, onProgress?: (e: ObexProgress) => void, overwrite = true): Promise<void> {
+		await this.handle.putFile(path, data, onProgress, { overwrite });
 	}
 
 	async deleteFile(path: string): Promise<void> {
