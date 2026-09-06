@@ -1020,15 +1020,6 @@ const FileFlasher: Component = () => {
 			makeDumpFileName(fileName().replace(/\.bin$/i, '') || 'Mem', bufferAddr()));
 	};
 
-	const onMakeFubu = async () => {
-		// Fill the whole flash with 0xFF except bootcode areas: a simple "erased fullflash"
-		const buf = buffer();
-		if (!buf)
-			return;
-		buf.fill(0xFF);
-		setBuffer(Buffer.from(buf));
-	};
-
 	// The device description for the patch history: a dump file instead of a
 	// real phone; the model is guessed from the dump file name.
 	const patchLogContext = (): PatchLogContext => ({
@@ -1055,7 +1046,6 @@ const FileFlasher: Component = () => {
 						</Button>
 						<Show when={buffer()}>
 							<Button variant="outlined" startIcon={<SaveIcon />} onClick={onSaveFile}>Save</Button>
-							<Button variant="outlined" color="warning" onClick={() => void onMakeFubu()}>Erase all (fill 0xFF)</Button>
 						</Show>
 					</Stack>
 					<Show when={buffer()}>
