@@ -5,6 +5,11 @@
 // HEADFUL=1 runs in a real (Xvfb) display, VH=500 forces a scrollable page.
 import { createRequire } from 'node:module';
 import path from 'node:path';
+import fs from 'node:fs';
+
+fs.mkdirSync('/tmp/e2e-upload', { recursive: true });
+fs.writeFileSync('/tmp/e2e-upload/notes.txt', 'x'.repeat(40));
+fs.writeFileSync('/tmp/e2e-new.txt', 'y'.repeat(30));
 
 const require = createRequire(path.join(process.env.PUPPETEER_CORE ?? '/tmp/node_modules', '/'));
 const puppeteer = require('puppeteer-core');
@@ -187,6 +192,49 @@ if (tab1) await tab1.close();
 const tab2 = await middleClickFile('logo2.png');
 check('middle click works repeatedly', tab2 ? tab2.url().endsWith('logo2.png') : null, true);
 if (tab2) await tab2.close();
+
+// --- upload with overwrite confirmation ---
+
+console.log('\n== upload / overwrite ==');
+await page.evaluate(() => {
+	window.__confirms = [];
+	window.__confirmReply = true;
+	window.confirm = (msg) => {
+		window.__confirms.push(msg);
+		return window.__confirmReply;
+	};
+});
+
+// Size shown in the row of `name` (the size column)
+const rowSize = (name) => page.evaluate((n) => {
+	const cells = [...document.querySelectorAll('tr')].find((r) => r.textContent.includes(n))?.querySelectorAll('td');
+	return cells?.[2]?.textContent ?? null;
+}, name);
+
+const uploadInput = await page.$('input[type=file]:not([webkitdirectory])');
+
+// A new file is uploaded without any confirmation
+await uploadInput.uploadFile('/tmp/e2e-new.txt');
+await page.waitForFunction(() => [...document.querySelectorAll('tr')].some((r) => r.textContent.includes('e2e-new.txt')), { timeout: 10000 });
+check('new file upload asks no confirmation', (await page.evaluate(() => window.__confirms)), []);
+
+// An existing name is confirmed and then actually replaced, not appended to
+check('file exists before overwrite', await rowSize('notes.txt'), '0.01 kB');
+await uploadInput.uploadFile('/tmp/e2e-upload/notes.txt');
+await page.waitForFunction(() => window.__confirms.length > 0, { timeout: 10000 });
+check('existing name asks for confirmation', (await page.evaluate(() => window.__confirms[0])), 'Overwrite "notes.txt"?');
+await page.waitForFunction(() => {
+	const row = [...document.querySelectorAll('tr')].find((r) => r.textContent.includes('notes.txt'));
+	return row?.querySelectorAll('td')[2]?.textContent == '0.04 kB';
+}, { timeout: 10000 });
+check('confirmed upload replaces the file (40 B, not 12+40 B appended)', await rowSize('notes.txt'), '0.04 kB');
+
+// Declining keeps the file on the phone untouched
+await page.evaluate(() => { window.__confirms = []; window.__confirmReply = false; });
+await uploadInput.uploadFile('/tmp/e2e-upload/notes.txt');
+await page.waitForFunction(() => window.__confirms.length > 0, { timeout: 10000 });
+await sleep(500);
+check('declined upload keeps the old file', await rowSize('notes.txt'), '0.04 kB');
 
 console.log(`\n${failures == 0 ? 'ALL PASSED' : failures + ' FAILED'}`);
 await browser.close();

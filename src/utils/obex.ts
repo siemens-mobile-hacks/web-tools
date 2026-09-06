@@ -380,7 +380,10 @@ export class Obex {
 	}
 
 	private isLinkDeadError(e: unknown): boolean {
-		const msg = String((e as Error)?.message ?? e);
+		// File and directory names are quoted in error messages and must not match
+		// the transport patterns: a file named "...timeout....vkp" would otherwise
+		// look like a dead session and trigger a pointless rehandshake
+		const msg = String((e as Error)?.message ?? e).replace(/"[^"]*"/g, "");
 		return msg.includes("timeout")
 			|| msg.includes("garbage")
 			|| msg.includes("Serial port")
@@ -865,12 +868,33 @@ export class Obex {
 		});
 	}
 
-	// Upload a file by its absolute path, existing files are replaced
-	async putFile(path: string, data: Uint8Array, onProgress?: (e: ObexProgress) => void): Promise<void> {
+	// Upload a file by its absolute path. The FlexMem server appends to an existing
+	// file instead of replacing it, so by default the target is deleted first, the
+	// same workaround siefs uses for truncate. overwrite=false keeps the raw PUT
+	// behavior (an existing file grows), e.g. for trace replays of new-file uploads.
+	async putFile(path: string, data: Uint8Array, onProgress?: (e: ObexProgress) => void, { overwrite = true }: { overwrite?: boolean } = {}): Promise<void> {
 		return this.enqueueRecovering(async () => {
-			debug(`putFile(${path}, ${data.byteLength} bytes)`);
+			debug(`putFile(${path}, ${data.byteLength} bytes${overwrite ? ", overwrite" : ""})`);
 			const { dir, name } = splitPath(path);
 			await this.setPath(dir.join("/"));
+
+			if (overwrite) {
+				const packet = new ObexPacketWriter(ObexOpcode.PUT_FINAL);
+				packet.appendUnicodeStringHeader(ObexHeaderId.NAME, name);
+				const response = await this.request(packet);
+				if (response.code != ObexResponse.SUCCESS && (response.code & 0x7F) != 0x44) {
+					// The phone refused the delete with a regular response: system folders
+					// like /Java forbid deletes while still allowing uploads. The directory
+					// listing decides what to do - a name that isn't there is a new file and
+					// the PUT below just creates it, an existing one can't be replaced and
+					// uploading anyway would append to and corrupt it.
+					const exists = (await this.listCurrentDir()).some((e) => e.name == name);
+					if (exists)
+						throw new Error(`OBEX delete of existing "${name}" failed: ${obexResponseName(response.code)}.`);
+					debug(`Delete of "${name}" was refused (${obexResponseName(response.code)}), but it is not in the directory, uploading as a new file`);
+				}
+			}
+
 			const buffer = Buffer.from(data);
 			// packet overhead: opcode+len (3) + BODY header (3) + CONNECTION_ID header (5)
 			const maxBodySize = this.maxPacketSize - 6 - (this.connectionId !== undefined ? 5 : 0);
@@ -899,7 +923,7 @@ export class Obex {
 				if (isLast) {
 					if (chunkResponse.code != ObexResponse.SUCCESS)
 						throw new Error(`OBEX PUT failed: ${obexResponseName(chunkResponse.code)}.`);
-					debug(`putFile(${path}) done`);
+					debug(`putFile(${path}) done, ${buffer.length} bytes`);
 					return;
 				}
 				if (chunkResponse.code != ObexResponse.CONTINUE)
@@ -952,14 +976,20 @@ export class Obex {
 		});
 	}
 
+	// Folder listing of the directory setPath() currently points to. Used inside
+	// queued operations (readDir would deadlock on the operation queue)
+	private async listCurrentDir(): Promise<ObexDirEntry[]> {
+		const packet = new ObexPacketWriter(ObexOpcode.GET_FINAL);
+		packet.appendStringHeader(ObexHeaderId.TYPE, "x-obex/folder-listing");
+		const body = await this.getWithBody(packet);
+		return parseFolderListing(body.toString("utf8"));
+	}
+
 	async readDir(path: string): Promise<ObexDirEntry[]> {
 		return this.enqueueRecovering(async () => {
 			debug(`readDir(${path})`);
-			const packet = new ObexPacketWriter(ObexOpcode.GET_FINAL);
-			packet.appendStringHeader(ObexHeaderId.TYPE, "x-obex/folder-listing");
 			await this.setPath(path);
-			const body = await this.getWithBody(packet);
-			const result = parseFolderListing(body.toString("utf8"));
+			const result = await this.listCurrentDir();
 			debug(`readDir(${path}) done, ${result.length} entries`);
 			return result;
 		});
