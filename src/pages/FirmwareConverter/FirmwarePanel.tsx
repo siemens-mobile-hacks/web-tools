@@ -1,5 +1,5 @@
 import { type Component, createSignal, For, Show } from 'solid-js';
-import { Alert, Box, Button, LinearProgress, Stack, Typography } from '@suid/material';
+import { Alert, Box, Button, Chip, LinearProgress, Stack, Typography } from '@suid/material';
 import { FirmwareOutputCard } from './FirmwareOutputCard';
 import { FirmwareInfoDialog } from './FirmwareInfoDialog';
 import { formatSize } from '@/utils';
@@ -107,10 +107,24 @@ export const FirmwarePanel: Component<FirmwarePanelProps> = (props) => {
 					{config().selectLabel}
 				</Button>
 				<Show when={file()}>{(selectedFile) =>
-					<Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
-						{selectedFile().name} · {formatSize(selectedFile().size)}
-						<Show when={result()}>{(result) => ` · ${result().type}`}</Show>
-					</Typography>
+					<Stack
+						direction="row"
+						alignItems="center"
+						flexWrap="wrap"
+						gap={1}
+						minWidth={0}
+					>
+						<Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>
+							{selectedFile().name} · {formatSize(selectedFile().size)}
+						</Typography>
+						<Show when={result()}>{(result) =>
+							<Chip
+								label={result().type}
+								size="small"
+								variant="outlined"
+							/>
+						}</Show>
+					</Stack>
 				}</Show>
 				<Show when={busy()}>
 					<Button onClick={cancel}>Cancel</Button>

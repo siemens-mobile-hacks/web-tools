@@ -1,5 +1,6 @@
 import { type Component, createSignal, onCleanup } from 'solid-js';
-import { Box } from '@suid/material';
+import { Box, Stack } from '@suid/material';
+import ArrowForwardIcon from '@suid/icons-material/ArrowForward';
 import { PageTitle } from '@/components/Layout/PageTitle';
 import { FirmwareTabs } from './FirmwareTabs';
 import { FirmwarePanel } from './FirmwarePanel';
@@ -55,7 +56,21 @@ const FirmwareConverterPage: Component = () => {
 				onChange={setTab}
 				tabs={[
 					{ value: 'unpack', label: 'Unpack EXE' },
-					{ value: 'convert', label: 'EXE / XBI → BIN' },
+					{
+						value: 'convert',
+						label: (
+							<Stack
+								component="span"
+								direction="row"
+								alignItems="center"
+								gap={0.5}
+							>
+								<span>EXE / XBI</span>
+								<ArrowForwardIcon fontSize="inherit" />
+								<span>BIN</span>
+							</Stack>
+						),
+					},
 				]}
 				disabled={!!activeMode()}
 			/>

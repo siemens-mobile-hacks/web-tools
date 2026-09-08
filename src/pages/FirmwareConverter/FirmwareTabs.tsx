@@ -1,10 +1,10 @@
-import { For } from 'solid-js';
+import { type JSX, For } from 'solid-js';
 import { Button, Stack } from '@suid/material';
 
 interface FirmwareTabsProps<T extends string> {
 	id: string;
 	label: string;
-	tabs: readonly { value: T; label: string }[];
+	tabs: readonly { value: T; label: JSX.Element }[];
 	value: T;
 	onChange: (value: T) => void;
 	disabled?: boolean;
