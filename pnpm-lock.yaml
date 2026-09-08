@@ -29,6 +29,9 @@ importers:
       '@sie-js/apoxi-tool':
         specifier: ^1.0.10
         version: 1.0.10(@sie-js/serial@1.1.17(@serialport/stream@13.0.0)(debug@4.4.3))(@types/node@25.4.0)
+      '@sie-js/fw':
+        specifier: ^1.3.0
+        version: 1.3.0
       '@sie-js/libffshit':
         specifier: ^0.0.9
         version: 0.0.9
@@ -86,6 +89,9 @@ importers:
       sprintf-js:
         specifier: ^1.1.3
         version: 1.1.3
+      virtua:
+        specifier: ^0.51.1
+        version: 0.51.1(solid-js@1.9.11)
       vite-plugin-solid-svg:
         specifier: ^0.8.1
         version: 0.8.1(solid-js@1.9.11)(vite@6.4.1(@types/node@25.4.0)(sass@1.97.3)(terser@5.46.0))
@@ -881,6 +887,9 @@ packages:
   '@sie-js/creampie@1.0.3':
     resolution: {integrity: sha512-NwJzIvCVXxbGuBlnNIqq3PVzmCznaow8LSWFDDfMnW9L8UhfSiNeZY7HBapc3PZzu8sD3aBDzwHCLwD+Mg7Tmg==}
 
+  '@sie-js/fw@1.3.0':
+    resolution: {integrity: sha512-X+sqctTAS9NhqKpp0Rh6kt4MMUoURe67mGrk/X1jA1zIqg6iCTLvwtLnjq8/0sWGySozb5UkvMI2CXaFT03+gA==}
+
   '@sie-js/libffshit@0.0.9':
     resolution: {integrity: sha512-xO1XqV7DIlBzTw0ca/lZ5368+ncYKag06QTurwhI7ajiKExoskSY1SxavJR7yQWXeDkNqiELTDNyajwGmuF0JQ==}
 
@@ -1099,6 +1108,10 @@ packages:
     resolution: {integrity: sha512-lIyg0szRfYbiy67j9KN8IyeD7q7hcmqnJ1ddWmNt19ItGpNN64mnllmxUNFIOdOm6by97jlL6wfpTTJrmnjWAA==}
     engines: {node: '>=6.0.0'}
     hasBin: true
+
+  binary-parser@2.3.0:
+    resolution: {integrity: sha512-TXOlPrhvi+kZUv3vA1qZ+MBdqZdihF8gWw7j/MRINiJqXH652GtLSqFTHNPjG8kHbiMQSCATG9oat9ao6aA8dA==}
+    engines: {node: '>=14'}
 
   bn.js@4.12.3:
     resolution: {integrity: sha512-fGTi3gxV/23FTYdAoUtLYp6qySe2KE3teyZitipKNRuVYcBkoP/bB3guXN/XVKUe9mxCHXnc9C4ocyz8OmgN0g==}
@@ -1626,6 +1639,10 @@ packages:
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
 
+  luxon@3.7.2:
+    resolution: {integrity: sha512-vtEhXh/gNjI9Yg1u4jX/0YVPMvxzHuGgCm6tC5kZyb08yjGWGnqAjGJvcXbqQR2P3MyMEFnRbpcdFS6PBcLqew==}
+    engines: {node: '>=12'}
+
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
 
@@ -2029,6 +2046,7 @@ packages:
   tsconfck@3.1.6:
     resolution: {integrity: sha512-ks6Vjr/jEw0P1gmOVwutM3B7fWxoWBL2KRDb1JfqGVawBmO5UsvmWOQFGHBPl5yxYz4eERr19E6L7NMv+Fej4w==}
     engines: {node: ^18 || >=20}
+    deprecated: unmaintained
     hasBin: true
     peerDependencies:
       typescript: ^5.0.0
@@ -2069,6 +2087,32 @@ packages:
 
   util@0.12.5:
     resolution: {integrity: sha512-kZf/K6hEIrWHI6XqOFUiiMa+79wE/D8Q+NCNAWclkyg3b4d2k7s0QGepNjiABc+aR3N1PAyHL7p6UcLY6LmrnA==}
+
+  virtua@0.51.1:
+    resolution: {integrity: sha512-LYgI2L4eTq44uG9LYTfss0e5bncHX0M9e1yla41JzzN/jIKtY9J6r/+39VcOQ6psKrCyPzjhH+mOGoH+YVVDvQ==}
+    peerDependencies:
+      '@angular/common': '>=20.0.0'
+      '@angular/core': '>=20.0.0'
+      react: '>=16.14.0'
+      react-dom: '>=16.14.0'
+      solid-js: '>=1.0'
+      svelte: '>=5.0'
+      vue: '>=3.2'
+    peerDependenciesMeta:
+      '@angular/common':
+        optional: true
+      '@angular/core':
+        optional: true
+      react:
+        optional: true
+      react-dom:
+        optional: true
+      solid-js:
+        optional: true
+      svelte:
+        optional: true
+      vue:
+        optional: true
 
   vite-bundle-visualizer@1.2.1:
     resolution: {integrity: sha512-cwz/Pg6+95YbgIDp+RPwEToc4TKxfsFWSG/tsl2DSZd9YZicUag1tQXjJ5xcL7ydvEoaC2FOZeaXOU60t9BRXw==}
@@ -2825,6 +2869,17 @@ snapshots:
 
   '@sie-js/creampie@1.0.3': {}
 
+  '@sie-js/fw@1.3.0':
+    dependencies:
+      binary-parser: 2.3.0
+      debug: 4.4.3
+      iconv-lite: 0.6.3
+      luxon: 3.7.2
+      moo: 0.5.3
+      sprintf-js: 1.1.3
+    transitivePeerDependencies:
+      - supports-color
+
   '@sie-js/libffshit@0.0.9': {}
 
   '@sie-js/serial@1.1.17(@serialport/stream@13.0.0)(debug@4.4.3)':
@@ -3075,6 +3130,8 @@ snapshots:
   base64-js@1.5.1: {}
 
   baseline-browser-mapping@2.10.0: {}
+
+  binary-parser@2.3.0: {}
 
   bn.js@4.12.3: {}
 
@@ -3648,6 +3705,8 @@ snapshots:
     dependencies:
       yallist: 3.1.1
 
+  luxon@3.7.2: {}
+
   magic-string@0.30.21:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
@@ -4185,6 +4244,10 @@ snapshots:
       is-generator-function: 1.1.2
       is-typed-array: 1.1.15
       which-typed-array: 1.1.20
+
+  virtua@0.51.1(solid-js@1.9.11):
+    optionalDependencies:
+      solid-js: 1.9.11
 
   vite-bundle-visualizer@1.2.1(rollup@4.59.0):
     dependencies:

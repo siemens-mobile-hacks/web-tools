@@ -1,6 +1,7 @@
 /* @refresh reload */
 import { createEffect, createMemo, createSignal, on, ParentComponent } from "solid-js";
 import { Box, CssBaseline, Toolbar, useMediaQuery } from '@suid/material';
+import { grey } from '@suid/material/colors';
 import { createPalette, createTheme, ThemeProvider } from '@suid/material/styles';
 import { AppHeader } from '@/components/App/Header.js';
 import { AppDrawer } from '@/components/App/Drawer.js';
@@ -27,6 +28,7 @@ export const App: ParentComponent = (props) => {
 	const palette = createMemo(() => {
 		return createPalette({
 			mode: effectiveTheme() === 'dark' ? 'dark' : 'light',
+			tableHeader: effectiveTheme() === 'dark' ? grey[900] : grey[100],
 			primary: {
 				main: effectiveTheme() === 'dark' ? '#bb86fc' : '#673ab7',
 			},

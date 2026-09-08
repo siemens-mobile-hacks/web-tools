@@ -16,6 +16,7 @@ const ROUTES = [
 	`/video-converter`,
 	`/file-explorer`,
 	`/flasher`,
+	`/firmware-converter`,
 ];
 
 function postBuildPlugin(): Plugin {
@@ -78,6 +79,7 @@ export default defineConfig({
 		 }),
 	],
 	optimizeDeps: {
+		include: ['@sie-js/fw'],
 		exclude: [
 			'siemens-sms-parser',
 			'@sie-js/creampie',

@@ -11,6 +11,10 @@ const buildDir = path.join(root, ".test-build");
 
 const testSuites = [
 	{
+		sources: ["src/tests/firmware.test.ts"],
+		run: [".test-build/tests/firmware.test.js"],
+	},
+	{
 		sources: ["src/utils/obex.ts", "src/tests/obex.test.ts"],
 		run: [".test-build/tests/obex.test.js"],
 	},
@@ -41,7 +45,7 @@ rmSync(buildDir, { recursive: true, force: true });
 mkdirSync(buildDir);
 
 for (const suite of testSuites) {
-	execSync(`npx tsc ${suite.sources.join(" ")} --outDir ${buildDir} ` +
+	execSync(`pnpm exec tsc ${suite.sources.join(" ")} --outDir ${buildDir} ` +
 		"--module esnext --target esnext --moduleResolution bundler --skipLibCheck --esModuleInterop --strict",
 		{ stdio: "inherit", cwd: root });
 }

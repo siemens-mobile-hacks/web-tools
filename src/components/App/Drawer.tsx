@@ -12,6 +12,7 @@ import PhonelinkLockIcon from '@suid/icons-material/PhonelinkLock';
 import FolderOpenIcon from '@suid/icons-material/FolderOpen';
 import VideocamIcon from '@suid/icons-material/Videocam';
 import FlashOnIcon from '@suid/icons-material/FlashOn';
+import TransformIcon from '@suid/icons-material/Transform';
 import ApoxiIcon from '@/assets/apoxi.svg';
 import SgoldIcon from '@/assets/sgold.svg';
 import { useTheme } from '@suid/material/styles';
@@ -157,6 +158,11 @@ export const AppDrawer: Component<AppDrawerProps> = (props) => {
 			icon: <MemoryIcon />,
 			title: "Flasher/Patcher",
 			url: "/flasher",
+		},
+		{
+			icon: <TransformIcon />,
+			title: "Firmware Converter",
+			url: "/firmware-converter",
 		},
 		{
 			icon: <MailIcon />,
