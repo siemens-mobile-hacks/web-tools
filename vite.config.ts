@@ -91,6 +91,22 @@ export default defineConfig({
 	},
 	server: {
 		port: 3000,
+		fs: {
+			// This project's root (the default) plus the sibling sieflasher
+			// checkout, for when the gitignored pnpm-workspace.yaml override
+			// links @sie-js/flasher and vklay-loaders from there.
+			allow: ['.', '../sieflasher'],
+		},
+	},
+	resolve: {
+		// vite-plugin-node-polyfills injects imports of its shims
+		// (vite-plugin-node-polyfills/shims/*) into every module that
+		// references the Buffer/process/global identifiers, and rollup
+		// resolves them relative to the importing file. When @sie-js/flasher
+		// is linked from the sibling sieflasher checkout, that resolution
+		// cannot walk up to this project's node_modules, so resolve the
+		// package from the root instead.
+		dedupe: ['vite-plugin-node-polyfills'],
 	},
 	build: {
 		target: 'esnext'

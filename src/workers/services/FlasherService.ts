@@ -2,8 +2,8 @@ import { SerialService } from "./SerialService";
 import { openSerialPort } from "@/utils/serial.js";
 import * as Comlink from "comlink";
 import { Buffer } from "buffer";
-import { AsyncSerialPortTransport } from "@/flasher/web/transport";
-import { PhoneDevice, PhoneInfo, parseVkd } from "@/flasher/core";
+import { AsyncSerialPortTransport } from "@sie-js/flasher/web";
+import { PhoneDevice, PhoneInfo, parseVkd } from "@sie-js/flasher";
 
 export interface FlasherConnectData {
 	vkdText: string;

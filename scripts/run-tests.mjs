@@ -11,19 +11,8 @@ const buildDir = path.join(root, ".test-build");
 
 const testSuites = [
 	{
-		sources: ["src/tests/firmware.test.ts"],
-		run: [".test-build/tests/firmware.test.js"],
-	},
-	{
 		sources: ["src/utils/obex.ts", "src/tests/obex.test.ts"],
 		run: [".test-build/tests/obex.test.js"],
-	},
-	{
-		sources: [
-			"src/flasher/core/index.ts",
-			"src/tests/flasher.test.ts",
-		],
-		run: [".test-build/tests/flasher.test.js"],
 	},
 	{
 		sources: [
