@@ -448,7 +448,7 @@ test("AT transport: legacy phone ignores the connection id even when the phone s
 	// but requests must not echo it
 	const phone = new MockPhone({ wireMode: "at", model: "C60", connectSendsConnectionId: true, enforceConnectionId: false });
 	const { obex, entries } = await connectAndReadDir(phone);
-	assert.equal(obex.getPlatform(), "legacy");
+	assert.equal(obex.getPlatform(), "EGOLD");
 	assert.equal(entries.length, 2);
 	// Only request packets must not echo the id; the final DISCONNECT keeps the
 	// siefs-style hardcoded CB 00000001 on legacy phones
@@ -612,7 +612,7 @@ test("replay: full C60 session from a real DCA-510 capture", async () => {
 	const obex = new Obex(phone.port);
 	await obex.connect(115200);
 
-	assert.equal(obex.getPlatform(), "legacy");
+	assert.equal(obex.getPlatform(), "EGOLD");
 	assert.equal(obex.getDeviceName(), "SIEMENS C60 v26");
 	assert.equal(obex.getMaxPacketSize(), 474);
 

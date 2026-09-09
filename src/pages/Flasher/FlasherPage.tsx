@@ -25,15 +25,23 @@ import { LogWindow } from '@/components/UI/LogWindow';
 import { Buffer } from 'buffer';
 import { downloadBlob, formatSize, validateHex } from '@/utils.js';
 import { getAddrFromFileName, makeDumpFileName, parseVkd, phoneDisplayName, PhoneInfo, VkdFile,
-	diffBuffers, diffEraseStats, diffRegionPreviews, DiffRegionPreview } from '@/flasher/core';
+	diffBuffers, diffEraseStats, diffRegionPreviews, DiffRegionPreview } from '@sie-js/flasher';
 import { vkpCanonicalize, vkpNormalize, vkpParse, VkpParseResult } from '@sie-js/vkp';
-import { applyVkpToDevice, hexPreview, VkpApplyResult, VkpMismatchInfo } from '@/flasher/core/vkp';
-import { FullFlashDevice } from '@/flasher/core/fullflash';
+import { applyVkpToDevice, hexPreview, VkpApplyResult, VkpMismatchInfo } from '@sie-js/flasher';
+import { FullFlashDevice } from '@sie-js/flasher';
 import { VkpEditor } from '@/pages/Flasher/VkpEditor';
 import { PatchHistory } from '@/pages/Flasher/PatchHistory';
 import {
 	PatchLogContext, addPatchHistoryEntry, dumpModelFromFileName, newPatchHistoryId, vkpPatchTitle,
 } from '@/pages/Flasher/history';
+import builtinManifest from 'vklay-loaders/manifest.json';
+
+// Built-in V_KLay drivers (.vkd text files) from the vklay-loaders package,
+// each as its own lazily-imported chunk.
+const builtinVkdLoaders: Record<string, () => Promise<string>> = Object.fromEntries(
+	Object.entries(import.meta.glob('/node_modules/vklay-loaders/*.vkd', { query: '?raw', import: 'default' }))
+		.map(([path, load]) => [path.split('/').pop()!, load as () => Promise<string>]),
+);
 
 interface LoaderEntry {
 	file: string;
@@ -204,14 +212,9 @@ const PhoneFlasher: Component = () => {
 	const connecting = createMemo(() =>
 		serial.readyState() === SerialReadyState.CONNECTING && serial.protocol() === protocol);
 
-	// Load the built-in loaders manifest
-	createEffect(async () => {
-		try {
-			const manifest = await fetch(import.meta.env.BASE_URL + 'flasher/loaders/manifest.json');
-			setLoaders(await manifest.json());
-		} catch (e) {
-			console.error(e);
-		}
+	// Built-in loaders list
+	createEffect(() => {
+		setLoaders(builtinManifest as LoaderEntry[]);
 	});
 
 	// Restore the last used driver (built-in or custom) after a page reload.
@@ -257,8 +260,10 @@ const PhoneFlasher: Component = () => {
 
 	const loadBuiltinLoader = async (entry: LoaderEntry) => {
 		try {
-			const response = await fetch(import.meta.env.BASE_URL + 'flasher/loaders/' + encodeURIComponent(entry.file));
-			activateVkdText(entry.file, await response.text());
+			const load = builtinVkdLoaders[entry.file];
+			if (!load)
+				throw new Error('not found');
+			activateVkdText(entry.file, await load());
 		} catch (e: any) {
 			setVkd(undefined);
 			setError(`Failed to load ${entry.file}: ${e.message}`);

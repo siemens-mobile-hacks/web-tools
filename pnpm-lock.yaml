@@ -29,6 +29,9 @@ importers:
       '@sie-js/apoxi-tool':
         specifier: ^1.0.10
         version: 1.0.10(@sie-js/serial@1.1.17(@serialport/stream@13.0.0)(debug@4.4.3))(@types/node@25.4.0)
+      '@sie-js/flasher':
+        specifier: github:siemens-mobile-hacks/sieflasher#path:core
+        version: https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/595784e5fbc8707ef4bb7f8a171ad203e23562fb#path:core(@serialport/stream@13.0.0)
       '@sie-js/fw':
         specifier: ^1.3.0
         version: 1.3.0
@@ -95,6 +98,9 @@ importers:
       vite-plugin-solid-svg:
         specifier: ^0.8.1
         version: 0.8.1(solid-js@1.9.11)(vite@6.4.1(@types/node@25.4.0)(sass@1.97.3)(terser@5.46.0))
+      vklay-loaders:
+        specifier: github:siemens-mobile-hacks/sieflasher#path:loaders
+        version: https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/595784e5fbc8707ef4bb7f8a171ad203e23562fb#path:loaders
     devDependencies:
       '@serialport/bindings-interface':
         specifier: ^1.2.2
@@ -886,6 +892,10 @@ packages:
 
   '@sie-js/creampie@1.0.3':
     resolution: {integrity: sha512-NwJzIvCVXxbGuBlnNIqq3PVzmCznaow8LSWFDDfMnW9L8UhfSiNeZY7HBapc3PZzu8sD3aBDzwHCLwD+Mg7Tmg==}
+
+  '@sie-js/flasher@https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/595784e5fbc8707ef4bb7f8a171ad203e23562fb#path:core':
+    resolution: {path: core, tarball: https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/595784e5fbc8707ef4bb7f8a171ad203e23562fb}
+    version: 0.1.0
 
   '@sie-js/fw@1.3.0':
     resolution: {integrity: sha512-X+sqctTAS9NhqKpp0Rh6kt4MMUoURe67mGrk/X1jA1zIqg6iCTLvwtLnjq8/0sWGySozb5UkvMI2CXaFT03+gA==}
@@ -2201,6 +2211,10 @@ packages:
       vite:
         optional: true
 
+  vklay-loaders@https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/595784e5fbc8707ef4bb7f8a171ad203e23562fb#path:loaders:
+    resolution: {path: loaders, tarball: https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/595784e5fbc8707ef4bb7f8a171ad203e23562fb}
+    version: 0.1.0
+
   vm-browserify@1.1.2:
     resolution: {integrity: sha512-2ham8XPWTONajOR0ohOKOHXkm3+gaBmGut3SRuu75xLd/RRaY6vqgh8NBYYk7+RW3u5AtzPQZG8F10LHkl0lAQ==}
 
@@ -2868,6 +2882,16 @@ snapshots:
       - supports-color
 
   '@sie-js/creampie@1.0.3': {}
+
+  '@sie-js/flasher@https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/595784e5fbc8707ef4bb7f8a171ad203e23562fb#path:core(@serialport/stream@13.0.0)':
+    dependencies:
+      '@sie-js/serial': 1.1.17(@serialport/stream@13.0.0)(debug@4.4.3)
+      '@sie-js/vkp': 2.0.2
+      debug: 4.4.3
+      sprintf-js: 1.1.3
+    transitivePeerDependencies:
+      - '@serialport/stream'
+      - supports-color
 
   '@sie-js/fw@1.3.0':
     dependencies:
@@ -4319,6 +4343,8 @@ snapshots:
   vitefu@1.1.2(vite@6.4.1(@types/node@25.4.0)(sass@1.97.3)(terser@5.46.0)):
     optionalDependencies:
       vite: 6.4.1(@types/node@25.4.0)(sass@1.97.3)(terser@5.46.0)
+
+  vklay-loaders@https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/595784e5fbc8707ef4bb7f8a171ad203e23562fb#path:loaders: {}
 
   vm-browserify@1.1.2: {}
 

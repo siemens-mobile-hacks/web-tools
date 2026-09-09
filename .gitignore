@@ -45,6 +45,10 @@ build/Release
 node_modules/
 jspm_packages/
 
+# Local dev override: link @sie-js/flasher / vklay-loaders to the sibling
+# sieflasher checkout instead of the GitHub dependency
+pnpm-workspace.yaml
+
 # Snowpack dependency directory (https://snowpack.dev/)
 web_modules/
 
@@ -133,3 +137,4 @@ dist
 .pnp.*
 .pnpm-store
 .test-build
+reference
