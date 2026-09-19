@@ -5,6 +5,7 @@
  * filesystem from memory.
  */
 import EventEmitter from "eventemitter3";
+import type { ObexDirEntry, ObexProgress } from "@sie-js/serial";
 
 export enum SerialReadyState {
 	DISCONNECTED,
@@ -14,18 +15,6 @@ export enum SerialReadyState {
 }
 
 export type SerialProtocol = 'none' | 'BFC' | 'CGSN' | 'DWD' | 'OBEX';
-
-type ObexDirEntry = {
-	name: string;
-	isDir: boolean;
-	size: number;
-	mtime?: Date;
-	readable: boolean;
-	writable: boolean;
-	hidden: boolean;
-};
-
-type ObexProgress = { percent: number; cursor: number; total: number; speed: number };
 
 // 1x1 red PNG
 const PNG = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='), (c) => c.charCodeAt(0));
@@ -90,24 +79,18 @@ const obexService = {
 		await sleep(120);
 		return data;
 	},
-	// Siemens phones append to an existing file instead of replacing it, so the
-	// mock reproduces the same quirk when overwrite is not requested
-	async putFile(path: string, data: Uint8Array, onProgress?: (e: ObexProgress) => void, overwrite = true) {
+	// The client replaces an existing file
+	async putFile(path: string, data: Uint8Array, onProgress?: (e: ObexProgress) => void) {
 		await sleep(150);
 		const name = basename(path);
 		const dir = dirname(path);
 		FILES[dir] ??= [];
 		const entry = FILES[dir].find((e) => e.name == name && !e.isDir);
-		if (entry && !overwrite) {
-			CONTENT[path] = new Uint8Array([...CONTENT[path] ?? [], ...data]);
-			entry.size = CONTENT[path].length;
-		} else {
-			CONTENT[path] = new Uint8Array(data);
-			if (entry)
-				entry.size = data.length;
-			else
-				FILES[dir].push(mk(name, false, data.length));
-		}
+		CONTENT[path] = new Uint8Array(data);
+		if (entry)
+			entry.size = data.length;
+		else
+			FILES[dir].push(mk(name, false, data.length));
 		onProgress?.({ percent: 100, cursor: data.length, total: data.length, speed: 100000 });
 	},
 	async deleteFile() {},
