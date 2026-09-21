@@ -353,6 +353,7 @@ const PhoneFlasher: Component = () => {
 			setPhoneInfo(undefined);
 			setConnBaudrate(0);
 			setAreas([]);
+			setFlashBounds({ addr: 0, size: 0 });
 			setStatus(undefined);
 		});
 	};
@@ -399,6 +400,7 @@ const PhoneFlasher: Component = () => {
 			return;
 		try {
 			setConnBaudrate(await serial.flasher.getBaudrate().catch(() => 0));
+			setFlashBounds(await serial.flasher.getFullFlashInfo());
 			const areas = await serial.flasher.getMemAreas();
 			setAreas(areas);
 			if (areas.length) {
