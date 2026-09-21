@@ -24,11 +24,12 @@ import { showToast } from '@/components/App/Toaster';
 import { LogWindow } from '@/components/UI/LogWindow';
 import { Buffer } from 'buffer';
 import { downloadBlob, formatSize, validateHex } from '@/utils.js';
-import { getAddrFromFileName, makeDumpFileName, parseVkd, phoneDisplayName, PhoneInfo, VkdFile,
+import { makeDumpFileName, parseVkd, phoneDisplayName, PhoneInfo, VkdFile,
 	diffBuffers, diffEraseStats, diffRegionPreviews, DiffRegionPreview } from '@sie-js/flasher';
+import { dumpStartOffset } from '@/pages/Flasher/dump.js';
 import { vkpCanonicalize, vkpNormalize, vkpParse, VkpParseResult } from '@sie-js/vkp';
-import { applyVkpToDevice, hexPreview, VkpApplyResult, VkpMismatchInfo } from '@sie-js/flasher';
-import { FullFlashDevice } from '@sie-js/flasher';
+import { applyVkpToDevice, DeviceMemory, hexPreview, VkpApplyResult, VkpMismatchInfo } from '@sie-js/flasher';
+import { FlashDumpDevice } from '@sie-js/flasher';
 import { VkpEditor } from '@/pages/Flasher/VkpEditor';
 import { PatchHistory } from '@/pages/Flasher/PatchHistory';
 import {
@@ -139,6 +140,7 @@ const PhoneFlasher: Component = () => {
 	// used for the patch history log.
 	const [phoneInfo, setPhoneInfo] = createSignal<PhoneInfo | undefined>();
 	const [areas, setAreas] = createSignal<FlasherMemoryArea[]>([]);
+	const [flashBounds, setFlashBounds] = createSignal<{ addr: number; size: number }>({ addr: 0, size: 0 });
 	const [buffer, setBuffer] = createSignal<Buffer | undefined>();
 	const [bufferName, setBufferName] = createSignal<string>('');
 	const [bufferLastFrom, setBufferLastFrom] = createSignal<number | undefined>();
@@ -163,30 +165,24 @@ const PhoneFlasher: Component = () => {
 
 	// Combo presets from the driver memory areas (like V_KLay fills the
 	// From/Size/Offset combos in OnDeviceChanged): relative 0x addresses.
-	const fromPresets = createMemo(() => {
-		const base = areas()[0]?.addr ?? 0;
-		return areas().map((a) => ({
-			value: hexField(a.addr - base),
-			label: sprintf('0x%08X (%s%s)', a.addr - base, a.name, a.isBootcore ? ', bootcore' : ''),
-			size: a.size,
-			name: a.name,
-		}));
-	});
+	const fromPresets = createMemo(() => areas().map((a) => ({
+		value: hexField(a.addr),
+		label: sprintf('0x%08X (%s%s)', a.addr, a.name, a.isBootcore ? ', bootcore' : ''),
+		size: a.size,
+		name: a.name,
+	})));
 	const sizePresets = createMemo(() => areas().map((a) => ({
 		value: hexField(a.size),
 		label: sprintf('0x%08X (%s)', a.size, a.name),
 		name: a.name,
 	})));
-	const offsetPresets = createMemo(() => {
-		const base = areas()[0]?.addr ?? 0;
-		return [
-			{ value: hexField(0), label: sprintf('0x%08X (start)', 0) },
-			...areas().slice(1).map((a) => ({
-				value: hexField(a.addr - base),
-				label: sprintf('0x%08X (%s)', a.addr - base, a.name),
-			})),
-		];
-	});
+	const offsetPresets = createMemo(() => [
+		{ value: hexField(0), label: sprintf('0x%08X (start)', 0) },
+		...areas().slice(1).map((a) => ({
+			value: hexField(a.addr),
+			label: sprintf('0x%08X (%s)', a.addr, a.name),
+		})),
+	]);
 
 	// Helper info under the fields: the name of the matching area.
 	const fromHelper = createMemo(() =>
@@ -357,6 +353,7 @@ const PhoneFlasher: Component = () => {
 			setPhoneInfo(undefined);
 			setConnBaudrate(0);
 			setAreas([]);
+			setFlashBounds({ addr: 0, size: 0 });
 			setStatus(undefined);
 		});
 	};
@@ -403,6 +400,7 @@ const PhoneFlasher: Component = () => {
 			return;
 		try {
 			setConnBaudrate(await serial.flasher.getBaudrate().catch(() => 0));
+			setFlashBounds(await serial.flasher.getFullFlashInfo());
 			const areas = await serial.flasher.getMemAreas();
 			setAreas(areas);
 			if (areas.length) {
@@ -487,7 +485,7 @@ const PhoneFlasher: Component = () => {
 		setEta({ elapsed: 0, remaining: undefined });
 		const t0 = Date.now();
 		try {
-			const data = await serial.flasher.readMemory(addr, size,
+			const data = await serial.flasher.readFlash(addr, size,
 				Comlink.proxy(onProgress));
 			setBuffer(Buffer.from(data));
 			setOffsetText(hexField(0));
@@ -549,7 +547,7 @@ const PhoneFlasher: Component = () => {
 		setEta({ elapsed: 0, remaining: undefined });
 		const t0 = Date.now();
 		try {
-			await serial.flasher.writeMemory(addr, data,
+			await serial.flasher.writeFlash(addr, data,
 				Comlink.proxy(onProgress));
 			setBufferLastFrom(addr);
 			await perfReport('Memory written', data.length, t0);
@@ -641,9 +639,7 @@ const PhoneFlasher: Component = () => {
 
 	const onLoadFile = async (file: File) => {
 		const data = Buffer.from(await file.arrayBuffer());
-		// V_KLay OpenDocument: the address comes from the file name
-		// (GetAddrFromFileName), the size from the file length.
-		const addr = getAddrFromFileName(file.name) ?? 0;
+		const addr = dumpStartOffset(file.name);
 		setBuffer(data);
 		setFromText(hexField(addr));
 		setSizeText(hexField(data.length));
@@ -951,13 +947,13 @@ const PhoneFlasher: Component = () => {
 				</Show>
 				{/* VKP patches: inspection is always possible, applying needs a connection */}
 				<VkpPanel
-					readMemory={connected() ? async (addr, size) => Buffer.from(await serial.flasher.readMemory(
-						addr - (areas()[0]?.addr ?? addr), size)) : undefined}
-					writeMemory={connected() ? async (addr, data) => {
-						await serial.flasher.writeMemory(addr - (areas()[0]?.addr ?? addr), data);
+					device={connected() ? {
+						read: (addr, size) => serial.flasher.read(addr, size),
+						write: (addr, data) => serial.flasher.write(addr, Buffer.from(data)),
+						flush: () => serial.flasher.flush(),
+						getMemoryStart: () => flashBounds().addr,
+						getMemorySize: () => flashBounds().size,
 					} : undefined}
-					flashStart={() => areas()[0]?.addr ?? 0}
-					flashSize={() => areas()[0]?.size ?? 0}
 					onError={setError}
 					import={phonePatchImport}
 					logContext={patchLogContext}
@@ -979,7 +975,7 @@ const FileFlasher: Component = () => {
 	// Partial dump support (like the V_KLay file device): the "From address"
 	// field places the dump anywhere in the memory map, "Size" limits the
 	// used part of the file (e.g. an EEPROM-only dump).
-	const [addrText, setAddrText] = createSignal<string>('400000');
+	const [addrText, setAddrText] = createSignal<string>('0');
 	const [sizeText, setSizeText] = createSignal<string>('');
 	const [addrError, setAddrError] = createSignal(false);
 	const [sizeError, setSizeError] = createSignal(false);
@@ -1005,13 +1001,13 @@ const FileFlasher: Component = () => {
 
 	const device = () => {
 		const buf = buffer();
-		return buf ? new FullFlashDevice(buf.subarray(0, bufferSize()), bufferAddr()) : undefined;
+		return buf ? new FlashDumpDevice(buf.subarray(0, bufferSize()), bufferAddr()) : undefined;
 	};
 
 	const onLoadFile = async (file: File) => {
 		const data = Buffer.from(await file.arrayBuffer());
 		setBuffer(data);
-		setAddrText((getAddrFromFileName(file.name) ?? 0x400000).toString(16).toUpperCase());
+		setAddrText(dumpStartOffset(file.name).toString(16).toUpperCase());
 		setSizeText('');
 		setFileName(file.name);
 		setError(undefined);
@@ -1097,18 +1093,7 @@ const FileFlasher: Component = () => {
 				</Paper>
 			</Show>
 			<VkpPanel
-				readMemory={buffer() ? async (addr, size) => {
-					// FullFlashDevice takes absolute addresses.
-					const dev = device()!;
-					return Buffer.from(await dev.read(addr, size));
-				} : undefined}
-				writeMemory={buffer() ? async (addr, data) => {
-					const dev = device()!;
-					await dev.write(addr, data);
-					await dev.flush();
-				} : undefined}
-				flashStart={() => bufferAddr()}
-				flashSize={() => buffer()?.length ?? 0}
+				device={device()}
 				onError={setError}
 				import={filePatchImport}
 				logContext={patchLogContext}
@@ -1125,10 +1110,7 @@ const FileFlasher: Component = () => {
 
 interface VkpPanelProps {
 	// Device access; when undefined, the patch can only be inspected.
-	readMemory?: (addr: number, size: number) => Promise<Buffer>;
-	writeMemory?: (addr: number, data: Buffer) => Promise<void>;
-	flashStart: () => number;
-	flashSize: () => number;
+	device?: DeviceMemory;
 	onError: (msg: string | undefined) => void;
 	// External patch injection (e.g. from the dump compare tool).
 	import?: () => { text: string; name?: string } | undefined;
@@ -1143,7 +1125,7 @@ const VkpPanel: Component<VkpPanelProps> = (props) => {
 	const [result, setResult] = createSignal<VkpApplyResult | undefined>();
 	const [busy, setBusy] = createSignal(false);
 
-	const canOperate = createMemo(() => !!props.readMemory && !!props.writeMemory);
+	const canOperate = createMemo(() => !!props.device);
 	const writesCount = createMemo(() => vkp()?.writes.length ?? 0);
 
 	// Patch generated by other tools (compare) lands in the editor.
@@ -1283,20 +1265,14 @@ const VkpPanel: Component<VkpPanelProps> = (props) => {
 
 	const run = async (revert: boolean, dryRun: boolean) => {
 		const currentVkp = vkp();
-		if (!currentVkp || !currentVkp.valid || !canOperate())
+		const device = props.device;
+		if (!currentVkp || !currentVkp.valid || !device)
 			return;
 		if (!dryRun && !confirm(revert ? 'Undo the patch?' : 'Apply the patch?'))
 			return;
 		setBusy(true);
 		props.onError(undefined);
 		try {
-			const device = {
-				read: (addr: number, size: number) => props.readMemory!(addr, size),
-				write: (addr: number, data: Uint8Array) => props.writeMemory!(addr, Buffer.from(data)),
-				flush: async () => {},
-				getMemoryStart: () => props.flashStart(),
-				getMemorySize: () => props.flashSize(),
-			} as any;
 			const res = await applyVkpToDevice(device, currentVkp, {
 				revert,
 				dryRun,
