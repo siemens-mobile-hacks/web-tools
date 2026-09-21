@@ -76,7 +76,7 @@ export class FlasherService extends SerialService<PhoneDevice> {
 	}
 
 	getMemAreas(): FlasherMemoryArea[] {
-		return this.handle.phone.memAreas.map((a) => ({
+		return this.handle.memAreas.map((a) => ({
 			name: a.name,
 			addr: a.addr,
 			size: a.size,
@@ -87,7 +87,7 @@ export class FlasherService extends SerialService<PhoneDevice> {
 	}
 
 	getFullFlashInfo(): { addr: number; size: number } {
-		return { addr: this.handle.memoryStart, size: this.handle.memorySize };
+		return { addr: this.handle.getMemoryStart(), size: this.handle.getMemorySize() };
 	}
 
 	getFlashInfo(): PhoneInfo | undefined {
@@ -102,24 +102,53 @@ export class FlasherService extends SerialService<PhoneDevice> {
 		return this.handle.getUniqueName();
 	}
 
-	readMemory(addr: number, size: number, onProgress?: (p: FlasherProgress) => void) {
+	readFlash(offset: number, size: number, onProgress?: (p: FlasherProgress) => void) {
 		const signal = this.getAbortSignal();
 		this.handle.onProgress = (p) => onProgress?.(p);
 		this.handle.isCanceled = () => signal.aborted;
-		// readMemory() reports the progress of the whole operation,
-		// not of the current flash block.
-		return this.handle.readMemory(addr, size).then((data) => {
+		return this.handle.readFlash(offset, size).then((data) => {
 			this.handle.onProgress = undefined;
 			const result = Buffer.from(data);
 			return Comlink.transfer(result, [result.buffer]);
 		});
 	}
 
-	writeMemory(addr: number, data: Buffer, onProgress?: (p: FlasherProgress) => void): Promise<void> {
+	writeFlash(offset: number, data: Buffer, onProgress?: (p: FlasherProgress) => void): Promise<void> {
 		const signal = this.getAbortSignal();
 		this.handle.onProgress = (p) => onProgress?.(p);
 		this.handle.isCanceled = () => signal.aborted;
-		return this.handle.writeMemory(addr, data);
+		return this.handle.writeFlash(offset, data);
+	}
+
+	async read(offset: number, size: number, onProgress?: (p: FlasherProgress) => void): Promise<Buffer> {
+		const signal = this.getAbortSignal();
+		this.handle.onProgress = (p) => onProgress?.(p);
+		this.handle.isCanceled = () => signal.aborted;
+		const data = await this.handle.read(offset, size);
+		this.handle.onProgress = undefined;
+		const result_1 = Buffer.from(data);
+		return Comlink.transfer(result_1, [result_1.buffer]);
+	}
+
+	// Marks the pages as changed; the flash itself is only programmed by
+	// flush(), once per touched block.
+	write(offset: number, data: Buffer, onProgress?: (p: FlasherProgress) => void): Promise<void> {
+		const signal = this.getAbortSignal();
+		this.handle.onProgress = (p) => onProgress?.(p);
+		this.handle.isCanceled = () => signal.aborted;
+		return this.handle.write(offset, data);
+	}
+
+	// Programs the pages marked by write() back to the phone.
+	async flush(onProgress?: (p: FlasherProgress) => void): Promise<void> {
+		const signal = this.getAbortSignal();
+		this.handle.onProgress = (p) => onProgress?.(p);
+		this.handle.isCanceled = () => signal.aborted;
+		try {
+			await this.handle.flush();
+		} finally {
+			this.handle.onProgress = undefined;
+		}
 	}
 
 	restoreBootcore(): Promise<void> {

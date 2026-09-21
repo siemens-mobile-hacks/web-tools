@@ -30,8 +30,8 @@ importers:
         specifier: ^1.0.10
         version: 1.0.10(@sie-js/serial@1.1.17(@serialport/stream@13.0.0)(debug@4.4.3))(@types/node@25.4.0)
       '@sie-js/flasher':
-        specifier: github:siemens-mobile-hacks/sieflasher#path:core
-        version: https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/595784e5fbc8707ef4bb7f8a171ad203e23562fb#path:core(@serialport/stream@13.0.0)
+        specifier: github:siemens-mobile-hacks/sieflasher#341186bb9b24b1a8d0ad89115cfda26b7113914e&path:core
+        version: https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/341186bb9b24b1a8d0ad89115cfda26b7113914e#path:core
       '@sie-js/fw':
         specifier: ^1.3.0
         version: 1.3.0
@@ -893,8 +893,8 @@ packages:
   '@sie-js/creampie@1.0.3':
     resolution: {integrity: sha512-NwJzIvCVXxbGuBlnNIqq3PVzmCznaow8LSWFDDfMnW9L8UhfSiNeZY7HBapc3PZzu8sD3aBDzwHCLwD+Mg7Tmg==}
 
-  '@sie-js/flasher@https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/595784e5fbc8707ef4bb7f8a171ad203e23562fb#path:core':
-    resolution: {path: core, tarball: https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/595784e5fbc8707ef4bb7f8a171ad203e23562fb}
+  '@sie-js/flasher@https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/341186bb9b24b1a8d0ad89115cfda26b7113914e#path:core':
+    resolution: {path: core, tarball: https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/341186bb9b24b1a8d0ad89115cfda26b7113914e}
     version: 0.1.0
 
   '@sie-js/fw@1.3.0':
@@ -2883,14 +2883,12 @@ snapshots:
 
   '@sie-js/creampie@1.0.3': {}
 
-  '@sie-js/flasher@https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/595784e5fbc8707ef4bb7f8a171ad203e23562fb#path:core(@serialport/stream@13.0.0)':
+  '@sie-js/flasher@https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/341186bb9b24b1a8d0ad89115cfda26b7113914e#path:core':
     dependencies:
-      '@sie-js/serial': 1.1.17(@serialport/stream@13.0.0)(debug@4.4.3)
       '@sie-js/vkp': 2.0.2
       debug: 4.4.3
       sprintf-js: 1.1.3
     transitivePeerDependencies:
-      - '@serialport/stream'
       - supports-color
 
   '@sie-js/fw@1.3.0':
