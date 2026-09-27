@@ -9,7 +9,11 @@ import fs from 'node:fs';
 
 const ROUTES = [
 	`/screenshot`,
+	`/screenshot/bfb`,
+	`/screenshot/bfc`,
 	`/dumper`,
+	`/dumper/bfb`,
+	`/dumper/bfc`,
 	`/dumper/dwd`,
 	`/sms-reader`,
 	`/apoxi/unlock-boot`,
