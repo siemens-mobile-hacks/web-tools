@@ -30,8 +30,8 @@ importers:
         specifier: ^1.0.10
         version: 1.0.10(@sie-js/serial@1.4.0(@serialport/stream@13.0.0)(debug@4.4.3))(@types/node@25.4.0)
       '@sie-js/flasher':
-        specifier: github:siemens-mobile-hacks/sieflasher#341186bb9b24b1a8d0ad89115cfda26b7113914e&path:core
-        version: https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/341186bb9b24b1a8d0ad89115cfda26b7113914e#path:core
+        specifier: github:siemens-mobile-hacks/sieflasher#1049243461991ec5a4839051a985fa08307d992e&path:core
+        version: https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/1049243461991ec5a4839051a985fa08307d992e#path:core
       '@sie-js/fw':
         specifier: ^1.3.0
         version: 1.3.0
@@ -912,8 +912,8 @@ packages:
   '@sie-js/creampie@1.0.3':
     resolution: {integrity: sha512-NwJzIvCVXxbGuBlnNIqq3PVzmCznaow8LSWFDDfMnW9L8UhfSiNeZY7HBapc3PZzu8sD3aBDzwHCLwD+Mg7Tmg==}
 
-  '@sie-js/flasher@https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/341186bb9b24b1a8d0ad89115cfda26b7113914e#path:core':
-    resolution: {gitHosted: true, integrity: sha512-AMKnwWPXDJriiFUcJ52c0qyE9Vn6qZ9b/erEb3aDbW+f6FkBMWQpDEPus4dZJitu5XcY9/2c9EwcOfytCaGlkQ==, tarball: https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/341186bb9b24b1a8d0ad89115cfda26b7113914e}
+  '@sie-js/flasher@https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/1049243461991ec5a4839051a985fa08307d992e#path:core':
+    resolution: {gitHosted: true, integrity: sha512-pn4kw6Lk5lA//kT7fSKWEf+AIwneFU67lee6HWgZQm2Bk48YJcI6OMk/vcP7+gU+GffbCmL9GmFEoqBmzJ5/GA==, tarball: https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/1049243461991ec5a4839051a985fa08307d992e}
     version: 0.1.0
 
   '@sie-js/fw@1.3.0':
@@ -2906,7 +2906,7 @@ snapshots:
 
   '@sie-js/creampie@1.0.3': {}
 
-  '@sie-js/flasher@https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/341186bb9b24b1a8d0ad89115cfda26b7113914e#path:core':
+  '@sie-js/flasher@https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/1049243461991ec5a4839051a985fa08307d992e#path:core':
     dependencies:
       '@sie-js/vkp': 2.0.2
       debug: 4.4.3
