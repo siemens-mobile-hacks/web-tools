@@ -8,9 +8,8 @@ interface MemoryDumperHelpProps {
 export const MemoryDumperHelp: Component<MemoryDumperHelpProps> = (props) => {
 	const tipsTricks: Record<string, JSX.Element[]> = {
 		"BFB": [
-			<>Connect an EGOLD phone powered on in normal mode.</>,
-			<>Use a DCA-500 or DCA-510 service cable for the best compatibility.</>,
-			<>BFB memory reads are slower than SGOLD debugger reads.</>,
+			<>Use a DCA-500 or DCA-510 service cable.</>,
+			<>Install the OpenBFB patch or enter the SKEY before reading memory.</>,
 		],
 		"DWD": [
 			<>Only phones with NOR flash are supported. NAND support is coming soon.</>,
@@ -30,7 +29,7 @@ export const MemoryDumperHelp: Component<MemoryDumperHelpProps> = (props) => {
 			<><Link href="https://siemens-mobile-hacks.github.io/docs/reverse-engineering/arm-debugger.html" target="_blank" rel="noopener">
 				CGSN patch is required.
 			</Link></>,
-			<>You can achieve maximum speed using DCA-540 or DCA-510 data cables.</>,
+			<>You can achieve maximum speed using DCA-540 or DCA-110 data cables.</>,
 			<>Bluetooth is also possible, but has the slowest speed.</>,
 			<>It is better to read memory before using ArmDebugger.</>,
 			<>

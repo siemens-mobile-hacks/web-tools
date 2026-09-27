@@ -57,7 +57,8 @@ export class BfbService extends SerialService<BFB> {
 	async getDeviceName() {
 		const model = await this.handle.getPhoneModel();
 		const version = await this.handle.getFirmwareVersion();
-		return `SIEMENS ${model} v${version}`;
+		const versionBcd = version.toString(16).padStart(2, "0").toUpperCase();
+		return `SIEMENS ${model} v${versionBcd}`;
 	}
 
 	async disconnect(): Promise<void> {

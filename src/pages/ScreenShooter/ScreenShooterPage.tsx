@@ -37,13 +37,29 @@ type ProgressInfo = {
 
 type ScreenShooterProtocol = "BFB" | "BFC";
 
+function defaultPhoneDisplays(protocol: ScreenShooterProtocol): PhoneDisplay[] {
+	switch (protocol) {
+		case "BFB":
+			return [{ width: 130, height: 130, bufferWidth: 130, bufferHeight: 130 }];
+		case "BFC":
+			return [{ width: 240, height: 320, bufferWidth: 240, bufferHeight: 320 }];
+	}
+}
+
+function screenMinWidth(protocol: ScreenShooterProtocol): string {
+	switch (protocol) {
+		case "BFB":
+			return '135px';
+		case "BFC":
+			return '255px';
+	}
+}
+
 export const ScreenShooterPage: Component = () => {
 	const params = useParams();
 	const protocol = (params.protocol?.toUpperCase() ?? "BFC") as ScreenShooterProtocol;
 	const [displayNumber, setDisplayNumber] = createSignal<number>(0);
-	const [phoneDisplays, setPhoneDisplays] = createSignal<PhoneDisplay[]>([
-		{ width: 240, height: 320, bufferWidth: 240, bufferHeight: 320 }
-	]);
+	const [phoneDisplays, setPhoneDisplays] = createSignal<PhoneDisplay[]>(defaultPhoneDisplays(protocol));
 	const [progressValue, setProgressValue] = createSignal<ProgressInfo | undefined>(undefined);
 	const [hasScreenshot, setHasScreenshot] = createSignal<boolean>(false);
 	const [errorMessage, setErrorMessage] = createSignal<string | null | false>(false);
@@ -85,17 +101,18 @@ export const ScreenShooterPage: Component = () => {
 		}
 	};
 
-	const getDisplayBuffer = (onProgress: (e: IoReadWriteProgress) => void) => {
+	const getDisplayBuffer = (displayIndex: number, onProgress: (e: IoReadWriteProgress) => void) => {
 		switch (protocol) {
 			case "BFB":
-				return serial.bfb.getDisplayBuffer(displayNumber() + 1, onProgress);
+				return serial.bfb.getDisplayBuffer(displayIndex + 1, onProgress);
 			case "BFC":
-				return serial.bfc.getDisplayBuffer(displayNumber() + 1, onProgress);
+				return serial.bfc.getDisplayBuffer(displayIndex + 1, onProgress);
 		}
 	};
 
 	const makeScreenshot = errorWrap(async (): Promise<void> => {
 		setProgressValue({ percent: 0 });
+		const displayIndex = displayNumber();
 
 		const onProgress =  Comlink.proxy((e: IoReadWriteProgress) => {
 			setProgressValue({
@@ -107,8 +124,19 @@ export const ScreenShooterPage: Component = () => {
 		});
 
 		try {
-			const response = await getDisplayBuffer(onProgress);
+			const response = await getDisplayBuffer(displayIndex, onProgress);
 			const decodedBuffer = decodeBfcDisplayBuffer(response);
+			setPhoneDisplays((displays) => displays.map((display, index) => {
+				if (index === displayIndex) {
+					return {
+						width: decodedBuffer.width,
+						height: decodedBuffer.height,
+						bufferWidth: response.width,
+						bufferHeight: response.height,
+					};
+				}
+				return display;
+			}));
 			const imageData = new ImageData(
 				new Uint8ClampedArray(decodedBuffer.data),
 				decodedBuffer.width,
@@ -118,6 +146,8 @@ export const ScreenShooterPage: Component = () => {
 			const ctx = canvasRef.getContext('2d');
 			if (!ctx)
 				return;
+			canvasRef.width = decodedBuffer.width;
+			canvasRef.height = decodedBuffer.height;
 			ctx.putImageData(imageData, 0, 0);
 
 			setHasScreenshot(true);
@@ -161,7 +191,7 @@ export const ScreenShooterPage: Component = () => {
 					sx={{
 						order: { xs: 2, sm: 1 },
 						textAlign: 'center',
-						minWidth: '255px',
+						minWidth: screenMinWidth(protocol),
 						width: phoneDisplays()[displayNumber()].width + 15 + 'px'
 					}}
 				>
