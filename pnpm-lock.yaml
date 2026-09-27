@@ -100,7 +100,7 @@ importers:
         version: 0.8.1(solid-js@1.9.11)(vite@6.4.1(@types/node@25.4.0)(sass@1.97.3)(terser@5.46.0))
       vklay-loaders:
         specifier: github:siemens-mobile-hacks/sieflasher#path:loaders
-        version: https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/595784e5fbc8707ef4bb7f8a171ad203e23562fb#path:loaders
+        version: https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/1049243461991ec5a4839051a985fa08307d992e#path:loaders
     devDependencies:
       '@serialport/bindings-interface':
         specifier: ^1.2.2
@@ -2211,8 +2211,8 @@ packages:
       vite:
         optional: true
 
-  vklay-loaders@https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/595784e5fbc8707ef4bb7f8a171ad203e23562fb#path:loaders:
-    resolution: {path: loaders, tarball: https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/595784e5fbc8707ef4bb7f8a171ad203e23562fb}
+  vklay-loaders@https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/1049243461991ec5a4839051a985fa08307d992e#path:loaders:
+    resolution: {path: loaders, tarball: https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/1049243461991ec5a4839051a985fa08307d992e}
     version: 0.1.0
 
   vm-browserify@1.1.2:
@@ -4342,7 +4342,7 @@ snapshots:
     optionalDependencies:
       vite: 6.4.1(@types/node@25.4.0)(sass@1.97.3)(terser@5.46.0)
 
-  vklay-loaders@https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/595784e5fbc8707ef4bb7f8a171ad203e23562fb#path:loaders: {}
+  vklay-loaders@https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/1049243461991ec5a4839051a985fa08307d992e#path:loaders: {}
 
   vm-browserify@1.1.2: {}
 
