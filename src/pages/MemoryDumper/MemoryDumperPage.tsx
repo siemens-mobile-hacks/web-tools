@@ -60,12 +60,21 @@ const MEMORY_REGION_DESCR: Record<string, string> = {
 	FLASH:	'NOR flash.',
 };
 
+function defaultMemoryAddress(protocol: SerialProtocol): string {
+	switch (protocol) {
+		case "BFB":
+			return '00000000';
+		default:
+			return 'A0000000';
+	}
+}
+
 export const MemoryDumperPage: Component = () => {
 	const params = useParams();
 	const protocol = (params.protocol?.toUpperCase() ?? "CGSN") as SerialProtocol;
 	const serial = useSerial();
 	const [memoryPresets, setMemoryPresets] = createSignal<MemoryRegion[]>(DEFAULT_MEMORY_PRESETS);
-	const [customMemoryAddr, setCustomMemoryAddr] = createSignal<string>('A0000000');
+	const [customMemoryAddr, setCustomMemoryAddr] = createSignal<string>(defaultMemoryAddress(protocol));
 	const [customMemorySize, setCustomMemorySize] = createSignal<string>('00020000');
 	const [customMemoryAddrError, setCustomMemoryAddrError] = createSignal<boolean>(false);
 	const [customMemorySizeError, setCustomMemorySizeError] = createSignal<boolean>(false);
@@ -97,6 +106,17 @@ export const MemoryDumperPage: Component = () => {
 	createEffect(async () => {
 		if (serialReady()) {
 			switch (protocol) {
+				case "BFB": {
+					const memoryRegions = await serial.bfb.getMemoryRegions();
+					setMemoryPresets([
+						...DEFAULT_MEMORY_PRESETS,
+						...memoryRegions.map((region) => {
+							return { ...region, descr: MEMORY_REGION_DESCR[region.name] ?? "Unknown memory region." };
+						}),
+					]);
+					setPhone(await serial.bfb.getDeviceName());
+					break;
+				}
 				case "CGSN": {
 					const response = await serial.cgsn.getPhoneInfo();
 					setMemoryPresets([
@@ -130,6 +150,9 @@ export const MemoryDumperPage: Component = () => {
 
 	const onCancel = (): void => {
 		switch (protocol) {
+			case "BFB":
+				void serial.bfb.abort();
+				break;
 			case "CGSN":
 				void serial.cgsn.abort();
 				break;
@@ -185,6 +208,14 @@ export const MemoryDumperPage: Component = () => {
 
 		try {
 			switch (protocol) {
+				case "BFB": {
+					const response = await serial.bfb.readMemory(memoryAddr(), memorySize(), Comlink.proxy(onProgress));
+					setReadResult({
+						buffer: response.buffer,
+						canceled: response.canceled,
+					});
+					break;
+				}
 				case "CGSN": {
 					const response = await serial.cgsn.readMemory(memoryAddr(), memorySize(), Comlink.proxy(onProgress));
 					setReadResult({

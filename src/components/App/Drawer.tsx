@@ -15,6 +15,7 @@ import FlashOnIcon from '@suid/icons-material/FlashOn';
 import SyncAltIcon from '@suid/icons-material/SyncAlt';
 import ApoxiIcon from '@/assets/apoxi.svg';
 import SgoldIcon from '@/assets/sgold.svg';
+import EgoldIcon from '@/assets/egold.svg';
 import { useTheme } from '@suid/material/styles';
 import { matchURL } from '@/utils.js';
 import { Collapse } from '@/components/UI/Collapse';
@@ -125,7 +126,6 @@ export const AppDrawer: Component<AppDrawerProps> = (props) => {
 				 */
 			]
 		},
-		/*
 		{
 			icon: <EgoldIcon width="1.5em" height="1.5em" />,
 			title: "EGOLD Tools",
@@ -133,11 +133,15 @@ export const AppDrawer: Component<AppDrawerProps> = (props) => {
 				{
 					icon: <ScreenshotIcon />,
 					title: "Screenshotter",
-					url: "/screenshot",
+					url: "/screenshot/bfb",
+				},
+				{
+					icon: <SdCardIcon />,
+					title: "Memory Dumper",
+					url: "/dumper/bfb",
 				},
 			]
 		},
-		 */
 		{
 			icon: <ApoxiIcon width="1.5em" height="1.5em" />,
 			title: "APOXI Tools",

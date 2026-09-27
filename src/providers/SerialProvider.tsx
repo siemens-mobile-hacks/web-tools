@@ -12,8 +12,10 @@ import { LogService } from "@/workers/services/LogService.js";
 import { FlasherService } from "@/workers/services/FlasherService.js";
 import { SerialService } from "@/workers/services/SerialService";
 import { useApp } from "@/providers/AppProvider";
+import { BfbService } from "@/workers/services/BfbService";
 
 interface SerialContext {
+	bfb: Comlink.Remote<BfbService>;
 	bfc: Comlink.Remote<BfcService>;
 	cgsn: Comlink.Remote<CgsnService>;
 	dwd: Comlink.Remote<DwdService>;
@@ -123,6 +125,7 @@ export const SerialProvider: ParentComponent = (props) => {
 
 	return (
 		<SerialContext.Provider value={{
+			bfb: serialWorker.getService("BFB"),
 			bfc: serialWorker.getService("BFC"),
 			cgsn: serialWorker.getService("CGSN"),
 			dwd: serialWorker.getService("DWD"),
@@ -131,6 +134,8 @@ export const SerialProvider: ParentComponent = (props) => {
 			logs: serialWorker.getService("LOG"),
 			getAdapter(type: string) {
 				switch (type) {
+					case "BFB":
+						return BfbService;
 					case "BFC":
 						return BfcService;
 					case "CGSN":

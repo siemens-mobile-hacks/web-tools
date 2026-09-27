@@ -24,6 +24,7 @@ export const Root: Component = () => {
 			<Router root={App} base={import.meta.env.BASE_URL}>
 				<Route path="/" component={() => <Navigate href={() => "/screenshot"} />} />
 				<Route path="/screenshot" component={ScreenShooterPage} />
+				<Route path="/screenshot/:protocol" component={ScreenShooterPage} />
 				<Route path="/ffs" component={FFSExplorerPage} />
 				<Route path="/dumper" component={MemoryDumperPage} />
 				<Route path="/dumper/:protocol" component={MemoryDumperPage} />

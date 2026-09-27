@@ -7,6 +7,11 @@ interface MemoryDumperHelpProps {
 
 export const MemoryDumperHelp: Component<MemoryDumperHelpProps> = (props) => {
 	const tipsTricks: Record<string, JSX.Element[]> = {
+		"BFB": [
+			<>Connect an EGOLD phone powered on in normal mode.</>,
+			<>Use a DCA-500 or DCA-510 service cable for the best compatibility.</>,
+			<>BFB memory reads are slower than SGOLD debugger reads.</>,
+		],
 		"DWD": [
 			<>Only phones with NOR flash are supported. NAND support is coming soon.</>,
 			<>You can achieve maximum speed using a USB cable</>,

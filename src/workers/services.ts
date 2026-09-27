@@ -6,8 +6,10 @@ import { FFSService } from "@/workers/services/FFSService";
 import { ObexService } from "@/workers/services/ObexService";
 import { LogService } from "@/workers/services/LogService";
 import { FlasherService } from "@/workers/services/FlasherService";
+import { BfbService } from "@/workers/services/BfbService";
 
 export const services: Record<string, any> = {
+	'BFB': new BfbService(),
 	'BFC': new BfcService(),
 	'CGSN': new CgsnService(),
 	'DWD': new DwdService(),

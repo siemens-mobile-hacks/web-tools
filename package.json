@@ -41,7 +41,7 @@
 		"@sie-js/flasher": "github:siemens-mobile-hacks/sieflasher#341186bb9b24b1a8d0ad89115cfda26b7113914e&path:core",
 		"@sie-js/fw": "^1.3.0",
 		"@sie-js/libffshit": "^0.0.9",
-		"@sie-js/serial": "^1.1.17",
+		"@sie-js/serial": "^1.3.0",
 		"@sie-js/vkp": "^2.0.2",
 		"@solid-primitives/storage": "^4.3.4",
 		"@solidjs/router": "^0.15.4",

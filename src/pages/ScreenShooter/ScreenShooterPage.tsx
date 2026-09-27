@@ -26,6 +26,7 @@ import { PageTitle } from "@/components/Layout/PageTitle";
 import { downloadCanvasImage } from "@/utils/canvas";
 
 import { decodeBfcDisplayBuffer } from "@/utils/bfc";
+import { useParams } from "@solidjs/router";
 
 type ProgressInfo = {
 	percent: number
@@ -34,7 +35,11 @@ type ProgressInfo = {
 	speed?: string;
 };
 
+type ScreenShooterProtocol = "BFB" | "BFC";
+
 export const ScreenShooterPage: Component = () => {
+	const params = useParams();
+	const protocol = (params.protocol?.toUpperCase() ?? "BFC") as ScreenShooterProtocol;
 	const [displayNumber, setDisplayNumber] = createSignal<number>(0);
 	const [phoneDisplays, setPhoneDisplays] = createSignal<PhoneDisplay[]>([
 		{ width: 240, height: 320, bufferWidth: 240, bufferHeight: 320 }
@@ -46,8 +51,8 @@ export const ScreenShooterPage: Component = () => {
 	const serial = useSerial();
 	let canvasRef!: HTMLCanvasElement;
 
-	const bfcReady = createMemo<boolean>(() => {
-		return serial.readyState() === SerialReadyState.CONNECTED && serial.protocol() === "BFC";
+	const serialReady = createMemo<boolean>(() => {
+		return serial.readyState() === SerialReadyState.CONNECTED && serial.protocol() === protocol;
 	});
 
 	onMount(() => {
@@ -71,6 +76,24 @@ export const ScreenShooterPage: Component = () => {
 		};
 	};
 
+	const getAllDisplays = () => {
+		switch (protocol) {
+			case "BFB":
+				return serial.bfb.getAllDisplays();
+			case "BFC":
+				return serial.bfc.getAllDisplays();
+		}
+	};
+
+	const getDisplayBuffer = (onProgress: (e: IoReadWriteProgress) => void) => {
+		switch (protocol) {
+			case "BFB":
+				return serial.bfb.getDisplayBuffer(displayNumber() + 1, onProgress);
+			case "BFC":
+				return serial.bfc.getDisplayBuffer(displayNumber() + 1, onProgress);
+		}
+	};
+
 	const makeScreenshot = errorWrap(async (): Promise<void> => {
 		setProgressValue({ percent: 0 });
 
@@ -84,7 +107,7 @@ export const ScreenShooterPage: Component = () => {
 		});
 
 		try {
-			const response = await serial.bfc.getDisplayBuffer(displayNumber() + 1, onProgress);
+			const response = await getDisplayBuffer(onProgress);
 			const decodedBuffer = decodeBfcDisplayBuffer(response);
 			const imageData = new ImageData(
 				new Uint8ClampedArray(decodedBuffer.data),
@@ -116,9 +139,9 @@ export const ScreenShooterPage: Component = () => {
 		});
 	};
 
-	createEffect(on(bfcReady, () => {
-		if (bfcReady()) {
-			serial.bfc.getAllDisplays().then((displays) => {
+	createEffect(on(serialReady, () => {
+		if (serialReady()) {
+			getAllDisplays().then((displays) => {
 				if (displayNumber() >= displays.length)
 					setDisplayNumber(0);
 				setPhoneDisplays(displays);
@@ -153,7 +176,7 @@ export const ScreenShooterPage: Component = () => {
 
 				<Grid mt={1} item sx={{ order: { xs: 1, sm: 2 } }}>
 					<Box mb={1}>
-						<SerialConnect protocol="BFC" />
+						<SerialConnect protocol={protocol} />
 					</Box>
 
 					<Stack alignItems="center" direction="row" gap={2}>
@@ -175,7 +198,7 @@ export const ScreenShooterPage: Component = () => {
 						<FormControl variant="standard">
 							<Button
 								variant="outlined"
-								disabled={!bfcReady() || !!progressValue()}
+								disabled={!serialReady() || !!progressValue()}
 								onClick={makeScreenshot}
 							>
 								Make screenshot

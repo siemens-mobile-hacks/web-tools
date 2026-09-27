@@ -1,5 +1,5 @@
 import { getBitmapDecoder } from "@/utils/bitmap";
-import { BfcDisplayBufferData } from "@sie-js/serial";
+import { BfbDisplayBufferData, BfcDisplayBufferData } from "@sie-js/serial";
 
 interface BfcDisplayDecodedBuffer {
 	width: number;
@@ -7,7 +7,12 @@ interface BfcDisplayDecodedBuffer {
 	data: Buffer;
 }
 
-export function decodeBfcDisplayBuffer(response: BfcDisplayBufferData): BfcDisplayDecodedBuffer {
+type DisplayBufferData = BfcDisplayBufferData | BfbDisplayBufferData & {
+	displayWidth: number;
+	displayHeight: number;
+};
+
+export function decodeBfcDisplayBuffer(response: DisplayBufferData): BfcDisplayDecodedBuffer {
 	let type = response.type;
 	let isYuvMask = false;
 	if (type == 'argb8888+yuv') {

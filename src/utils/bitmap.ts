@@ -1,4 +1,5 @@
 export type BitmapType =
+	| "bw"
 	| "wb"
 	| "rgb332"
 	| "argb4444"
@@ -10,29 +11,48 @@ export type BitmapType =
 export type BitmapPixelReader = (x: number, y: number, w: number, h: number, bitmap: Buffer) => number;
 export type BitmapPixelWriter = (x: number, y: number, w: number, h: number, bitmap: Buffer, color: number) => void;
 
-export function getPixelWB(x: number, y: number, w: number, _h: number, bitmap: Buffer): number {
+function getBitmapBit(x: number, y: number, w: number, bitmap: Buffer): number {
 	const rowBytes = Math.floor((w + 7) / 8);
 	const bitN = y * (rowBytes * 8) + x;
 	const byteN = bitN >>> 3;
 	const shift = 7 - (bitN - (byteN << 3));
-	const bit = (bitmap[byteN] >>> shift) & 1;
-	return bit ? 0xFFFFFFFF : 0xFF000000;
+	return (bitmap[byteN] >>> shift) & 1;
 }
 
-export function setPixelWB(x: number, y: number, w: number, _h: number, bitmap: Buffer, color: number): void {
+function setBitmapBit(x: number, y: number, w: number, bitmap: Buffer, value: boolean): void {
 	const rowBytes = Math.floor((w + 7) / 8);
 	const bitN = y * (rowBytes * 8) + x;
 	const byteN = bitN >>> 3;
 	const shift = 7 - (bitN - (byteN << 3));
-	const b = (color >>> 16) & 0xFF;
-	const g = (color >>> 8) & 0xFF;
-	const r = color & 0xFF;
-	const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-	if (gray >= 128) {
+	if (value) {
 		bitmap[byteN] |= (1 << shift);
 	} else {
 		bitmap[byteN] &= ~(1 << shift)
 	}
+}
+
+function isWhite(color: number): boolean {
+	const b = (color >>> 16) & 0xFF;
+	const g = (color >>> 8) & 0xFF;
+	const r = color & 0xFF;
+	const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+	return gray >= 128;
+}
+
+export function getPixelBW(x: number, y: number, w: number, _h: number, bitmap: Buffer): number {
+	return getBitmapBit(x, y, w, bitmap) ? 0xFFFFFFFF : 0xFF000000;
+}
+
+export function setPixelBW(x: number, y: number, w: number, _h: number, bitmap: Buffer, color: number): void {
+	setBitmapBit(x, y, w, bitmap, isWhite(color));
+}
+
+export function getPixelWB(x: number, y: number, w: number, _h: number, bitmap: Buffer): number {
+	return getBitmapBit(x, y, w, bitmap) ? 0xFF000000 : 0xFFFFFFFF;
+}
+
+export function setPixelWB(x: number, y: number, w: number, _h: number, bitmap: Buffer, color: number): void {
+	setBitmapBit(x, y, w, bitmap, !isWhite(color));
 }
 
 /* ================= ARGB4444 ================= */
@@ -158,6 +178,7 @@ export function setPixelRGB332(x: number, y: number, w: number, _h: number, bitm
 
 export function getBitmapDecoder(type: BitmapType): BitmapPixelReader {
 	switch (type) {
+		case "bw":				return getPixelBW;
 		case "wb":				return getPixelWB;
 		case "rgb332":			return getPixelRGB332;
 		case "argb4444":		return getPixelARGB4444;
@@ -171,6 +192,7 @@ export function getBitmapDecoder(type: BitmapType): BitmapPixelReader {
 
 export function getBitmapEncoder(type: BitmapType): BitmapPixelWriter {
 	switch (type) {
+		case "bw":				return setPixelBW;
 		case "wb":				return setPixelWB;
 		case "rgb332":			return setPixelRGB332;
 		case "argb4444":		return setPixelARGB4444;
