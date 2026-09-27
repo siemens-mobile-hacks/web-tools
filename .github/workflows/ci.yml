@@ -31,9 +31,6 @@ jobs:
       - run: npm install --global corepack@latest
       - run: corepack enable pnpm
       - run: corepack pnpm install --frozen-lockfile
-        env:
-          pnpm_config_dangerously_allow_all_builds: 'true'
-          pnpm_config_pm_on_fail: ignore
       - run: pnpm run gh-pages-build
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
