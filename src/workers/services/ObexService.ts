@@ -1,9 +1,9 @@
 import * as Comlink from "comlink";
-import { Obex, type ObexProgress } from "@/utils/obex";
+import { OBEX, type ObexProgress } from "@sie-js/serial";
 import { SerialService } from "./SerialService";
 import { openSerialPort } from "@/utils/serial.js";
 
-export class ObexService extends SerialService<Obex> {
+export class ObexService extends SerialService<OBEX> {
 	protocol(): string {
 		return "OBEX";
 	}
@@ -12,7 +12,7 @@ export class ObexService extends SerialService<Obex> {
 		const availablePorts = await navigator.serial.getPorts();
 		if (!availablePorts[portIndex])
 			throw new Error(`Invalid port index ${portIndex}`);
-		this.handle = new Obex(await openSerialPort(availablePorts[portIndex]));
+		this.handle = new OBEX(await openSerialPort(availablePorts[portIndex]));
 		await this.handle.connect(limitBaudrate);
 	}
 
@@ -45,8 +45,8 @@ export class ObexService extends SerialService<Obex> {
 		return Comlink.transfer(data, [data.buffer]);
 	}
 
-	async putFile(path: string, data: Uint8Array, onProgress?: (e: ObexProgress) => void, overwrite = true): Promise<void> {
-		await this.handle.putFile(path, data, onProgress, { overwrite });
+	async putFile(path: string, data: Uint8Array, onProgress?: (e: ObexProgress) => void): Promise<void> {
+		await this.handle.putFile(path, data, onProgress);
 	}
 
 	async deleteFile(path: string): Promise<void> {

@@ -42,7 +42,7 @@ import { PageTitle } from '@/components/Layout/PageTitle';
 import { downloadBlob, formatSize } from '@/utils';
 import { createFilePreviewUrl, prepareFilePreview } from '@/utils/filePreview';
 import JSZip from 'jszip';
-import type { ObexDirEntry, ObexProgress } from '@/utils/obex';
+import type { ObexDirEntry, ObexProgress } from '@sie-js/serial';
 import { useTheme } from '@suid/material/styles';
 import { useApp } from '@/providers/AppProvider';
 
@@ -630,7 +630,7 @@ export const FileExplorerPage: Component = () => {
 					});
 				});
 
-				await serial.obex.putFile(`/${[...dirParts, fileName].join("/")}`, data, onProgress, true);
+				await serial.obex.putFile(`/${[...dirParts, fileName].join("/")}`, data, onProgress);
 				uploadedSize += file.size;
 				setTransfer((prev) => prev && { ...prev, filesDone: index + 1 });
 			}

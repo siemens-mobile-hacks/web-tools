@@ -11,10 +11,6 @@ const buildDir = path.join(root, ".test-build");
 
 const testSuites = [
 	{
-		sources: ["src/utils/obex.ts", "src/tests/obex.test.ts"],
-		run: [".test-build/tests/obex.test.js"],
-	},
-	{
 		sources: [
 			"src/pages/Flasher/history.ts",
 			"src/tests/patch-history.test.ts",
