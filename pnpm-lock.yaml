@@ -28,7 +28,7 @@ importers:
         version: 13.0.0
       '@sie-js/apoxi-tool':
         specifier: ^1.0.10
-        version: 1.0.10(@sie-js/serial@1.4.0(@serialport/stream@13.0.0)(debug@4.4.3))(@types/node@25.4.0)
+        version: 1.0.10(@sie-js/serial@1.5.2(@serialport/stream@13.0.0)(debug@4.4.3))(@types/node@25.4.0)
       '@sie-js/flasher':
         specifier: github:siemens-mobile-hacks/sieflasher#path:core&1049243461991ec5a4839051a985fa08307d992e
         version: https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/1049243461991ec5a4839051a985fa08307d992e#path:core
@@ -39,8 +39,8 @@ importers:
         specifier: ^0.0.9
         version: 0.0.9
       '@sie-js/serial':
-        specifier: ^1.4.0
-        version: 1.4.0(@serialport/stream@13.0.0)(debug@4.4.3)
+        specifier: ^1.5.2
+        version: 1.5.2(@serialport/stream@13.0.0)(debug@4.4.3)
       '@sie-js/vkp':
         specifier: ^2.0.2
         version: 2.0.2
@@ -922,12 +922,8 @@ packages:
   '@sie-js/libffshit@0.0.9':
     resolution: {integrity: sha512-xO1XqV7DIlBzTw0ca/lZ5368+ncYKag06QTurwhI7ajiKExoskSY1SxavJR7yQWXeDkNqiELTDNyajwGmuF0JQ==}
 
-  '@sie-js/node-serialport-bindings-cpp@0.0.2':
-    resolution: {integrity: sha512-GJGMZjkHJD4ZRpRyZxQCuM0pJvTPC5E4wX1FIjzlfGwEblBDTJlleUD5WIrk9Z7EB1b8brvbCzkl5Yb/CJYZnw==}
-    engines: {node: '>=18.0.0'}
-
-  '@sie-js/serial@1.4.0':
-    resolution: {integrity: sha512-S5aC+ihXYNpA62wDCVlXiOZ+44azJeb5jMGpFRZ5+IdUv1PcKJsJwLuVU/9LHYiljiDourCtu7QcPqh8omJUdA==}
+  '@sie-js/serial@1.5.2':
+    resolution: {integrity: sha512-io+BUVnS6k/Md6gWoE+FXfNFlIpNaUMapcVa9YZOJX+tSKkBbvIC1qvW5GBdTLZzdIf1yo2w03i/K5xx8D1LeQ==}
     peerDependencies:
       '@serialport/stream': ^13.0.0
       debug: ^4.4.3
@@ -2887,10 +2883,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@sie-js/apoxi-tool@1.0.10(@sie-js/serial@1.4.0(@serialport/stream@13.0.0)(debug@4.4.3))(@types/node@25.4.0)':
+  '@sie-js/apoxi-tool@1.0.10(@sie-js/serial@1.5.2(@serialport/stream@13.0.0)(debug@4.4.3))(@types/node@25.4.0)':
     dependencies:
       '@sie-js/creampie': 1.0.3
-      '@sie-js/serial': 1.4.0(@serialport/stream@13.0.0)(debug@4.4.3)
+      '@sie-js/serial': 1.5.2(@serialport/stream@13.0.0)(debug@4.4.3)
       '@types/debug': 4.1.12
       chalk: 5.6.2
       cli-progress: 3.12.0
@@ -2927,24 +2923,11 @@ snapshots:
 
   '@sie-js/libffshit@0.0.9': {}
 
-  '@sie-js/node-serialport-bindings-cpp@0.0.2':
-    dependencies:
-      '@serialport/bindings-interface': 1.2.2
-      '@serialport/parser-readline': 13.0.0
-      debug: 4.4.0
-      node-addon-api: 8.3.0
-      node-gyp-build: 4.8.4
-    transitivePeerDependencies:
-      - supports-color
-
-  '@sie-js/serial@1.4.0(@serialport/stream@13.0.0)(debug@4.4.3)':
+  '@sie-js/serial@1.5.2(@serialport/stream@13.0.0)(debug@4.4.3)':
     dependencies:
       '@serialport/stream': 13.0.0
-      '@sie-js/node-serialport-bindings-cpp': 0.0.2
       debug: 4.4.3
       sprintf-js: 1.1.3
-    transitivePeerDependencies:
-      - supports-color
 
   '@sie-js/vkp@2.0.2':
     dependencies:
