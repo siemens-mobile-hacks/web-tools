@@ -1,6 +1,6 @@
 import * as Comlink from 'comlink';
-import { useLocation, useNavigate } from '@solidjs/router';
-import { Component, createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show } from 'solid-js';
+import { useBeforeLeave, useLocation, useNavigate } from '@solidjs/router';
+import { batch, Component, createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show } from 'solid-js';
 import { format as dateFormat } from 'date-fns/format';
 import {
 	Alert,
@@ -19,6 +19,8 @@ import {
 	TableContainer,
 	TableHead,
 	TableRow,
+	ToggleButton,
+	ToggleButtonGroup,
 	Typography
 } from '@suid/material';
 import DeleteIcon from '@suid/icons-material/Delete';
@@ -35,22 +37,19 @@ import RefreshIcon from '@suid/icons-material/Refresh';
 import ClearIcon from '@suid/icons-material/Clear';
 import ContentCopyIcon from '@suid/icons-material/ContentCopy';
 import OpenInNewIcon from '@suid/icons-material/OpenInNew';
-import { SerialConnect } from '@/components/SerialConnect.js';
 import { useSerial } from '@/providers/SerialProvider.js';
-import { SerialReadyState, serialWorker } from '@/workers/endpoints/serial';
+import { SerialReadyState } from '@/workers/endpoints/serial';
 import { PageTitle } from '@/components/Layout/PageTitle';
 import { downloadBlob, formatSize } from '@/utils';
-import { createFilePreviewUrl, prepareFilePreview } from '@/utils/filePreview';
+import { createFilePreviewUrl, isScripted, prepareFilePreview } from '@/utils/filePreview';
 import JSZip from 'jszip';
-import type { ObexDirEntry, ObexProgress } from '@sie-js/serial';
 import { useTheme } from '@suid/material/styles';
-import { useApp } from '@/providers/AppProvider';
-
-type FlexMemStats = {
-	capacity: number;
-	available: number;
-	maxPacketSize: number;
-};
+import { attributeLetters, attributeNames, type DiskInfo, type FileSystem, type FileSystemEntry, type FileSystemProgress } from '@/pages/FileExplorer/FileSystem';
+import { ObexFS } from '@/pages/FileExplorer/ObexFS';
+import type { FullFlashFS } from '@/pages/FileExplorer/FullFlashFS';
+import { ObexStatusBar } from '@/pages/FileExplorer/ObexStatusBar';
+import { FullFlashStatusBar } from '@/pages/FileExplorer/FullFlashStatusBar';
+import { FullFlashNotices } from '@/pages/FileExplorer/FullFlashNotices';
 
 type TransferState = {
 	kind: 'download' | 'upload';
@@ -63,7 +62,29 @@ type TransferState = {
 	filesTotal?: number;
 };
 
-type SortKey = 'name' | 'size' | 'mtime' | 'access';
+type SortKey = 'name' | 'size' | 'mtime' | 'attributes';
+
+type Source = 'phone' | 'fullflash';
+
+// A directory's entries as they were read, or why they could not be
+type Listing = {
+	fs: FileSystem;
+	dir: string[];
+	entries?: FileSystemEntry[];
+	error?: string;
+};
+
+const toPath = (names: string[]): string => "/" + names.join("/");
+
+// The order the phones list their disks in, which the root's directories are
+const DISK_ORDER = ['Data', 'Cache', 'Config'];
+
+const diskRank = (entry: FileSystemEntry): number => {
+	const rank = DISK_ORDER.indexOf(entry.name);
+	return rank < 0 ? DISK_ORDER.length : rank;
+};
+
+const isFileExplorer = (pathname: string): boolean => /\/file-explorer\/?$/.test(pathname);
 
 // Enough for the browser to display common phone files inline instead of downloading
 const MIME_TYPES: Record<string, string> = {
@@ -93,7 +114,7 @@ function guessMimeType(fileName: string): string {
 const escapeHtml = (s: string): string =>
 	s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
-type OpenFileProgressTab = { update: (e: ObexProgress) => void };
+type OpenFileProgressTab = { update: (e: FileSystemProgress) => void };
 
 // Paints a progress page into the freshly opened tab so it doesn't sit blank
 // while the file is transferred over the slow serial link
@@ -153,21 +174,20 @@ const initOpenFileTab = (win: Window | null, name: string): OpenFileProgressTab 
 
 export const FileExplorerPage: Component = () => {
 	const serial = useSerial();
-	const app = useApp();
 	const location = useLocation();
 	const navigate = useNavigate();
-	const [entries, setEntries] = createSignal<ObexDirEntry[]>([]);
-	const [displayedDir, setDisplayedDir] = createSignal<string[] | undefined>(undefined);
-	const [isLoading, setIsLoading] = createSignal(false);
+	const [listing, setListing] = createSignal<Listing | undefined>(undefined);
+	// Of the loads and changes under way
+	const [pending, setPending] = createSignal(0);
 	const [error, setError] = createSignal<string | null>(null);
 	const [transfer, setTransfer] = createSignal<TransferState | undefined>(undefined);
-	const [stats, setStats] = createSignal<FlexMemStats | undefined>(undefined);
-	const [baudrate, setBaudrate] = createSignal<number>(0);
 	const [selected, setSelected] = createSignal<Set<string>>(new Set());
 	const [sortKey, setSortKey] = createSignal<SortKey>('name');
 	const [sortDir, setSortDir] = createSignal<1 | -1>(1);
 	const [logLines, setLogLines] = createSignal<string[]>([]);
-	const [deviceName, setDeviceName] = createSignal<string | undefined>(undefined);
+	const [fullflash, setFullflash] = createSignal<FullFlashFS | undefined>(undefined);
+	// Of the file system and the disk it was read for, as a fullflash's partitions are disks of their own
+	const [diskInfo, setDiskInfo] = createSignal<{ fs: FileSystem; disk: string; info: DiskInfo } | undefined>(undefined);
 	const theme = useTheme();
 
 	const [stickToLogBottom, setStickToLogBottom] = createSignal(true);
@@ -249,12 +269,27 @@ export const FileExplorerPage: Component = () => {
 		return serial.readyState() === SerialReadyState.CONNECTED && serial.protocol() === "OBEX";
 	});
 
-	// Current directory is part of the URL, so browser back/forward and deep links work
+	// Source and current directory are part of the URL, so browser back/forward and deep links work
+	const source = createMemo<Source>(() => {
+		return new URLSearchParams(location.search).get("source") == "fullflash" ? "fullflash" : "phone";
+	});
+
+	// One for each connection, so that nothing read over the one before is taken for the phone's
+	const phoneFS = createMemo<ObexFS | undefined>(() => obexReady() ? new ObexFS(serial.obex) : undefined);
+
+	// Undefined until the phone is connected or a fullflash is opened
+	const fs = createMemo<FileSystem | undefined>(() => {
+		if (source() == 'fullflash')
+			return fullflash();
+		return phoneFS();
+	});
+
+	// URLSearchParams decodes the names navigateTo() encodes
 	const path = createMemo<string[]>(() => {
 		const raw = new URLSearchParams(location.search).get("path");
 		if (!raw)
 			return [];
-		return raw.split("/").filter(Boolean).map(decodeURIComponent);
+		return raw.split("/").filter(Boolean);
 	});
 
 	const errorWrap = <T extends (...args: any[]) => Promise<void>>(callback: T): ((...args: Parameters<T>) => Promise<void>) => {
@@ -268,40 +303,142 @@ export const FileExplorerPage: Component = () => {
 		};
 	};
 
-	const refreshStats = async (): Promise<void> => {
-		const speed = await serial.obex.getBaudrate().catch(() => 0);
-		setBaudrate(speed);
-		const capacity = await serial.obex.getCapacity();
-		const available = await serial.obex.getAvailable();
-		const maxPacketSize = await serial.obex.getMaxPacketSize();
-		setStats({ capacity, available, maxPacketSize });
-	};
+	const isLoading = (): boolean => pending() > 0;
 
-	const loadDir = errorWrap(async (targetPath: string[] = []): Promise<void> => {
-		setIsLoading(true);
-		try {
-			const list = await serial.obex.readDir("/" + targetPath.join("/"));
-			list.sort((a, b) => Number(b.isDir) - Number(a.isDir) || a.name.localeCompare(b.name));
-			setEntries(list);
-			setSelected(new Set<string>());
-			selectionAnchor = undefined;
-			setDisplayedDir(targetPath);
-		} finally {
-			setIsLoading(false);
-		}
+	// The listing of the current file system, which the page shows
+	const shownListing = createMemo<Listing | undefined>(() => listing()?.fs == fs() ? listing() : undefined);
+	const entries = createMemo<FileSystemEntry[]>(() => shownListing()?.entries ?? []);
+	// An operation's, else the shown listing's
+	const shownError = (): string | undefined => error() ?? shownListing()?.error;
+	const displayedDir = (): string[] | undefined => shownListing()?.dir;
+
+	const disk = createMemo<DiskInfo | undefined>(() => {
+		const fileSystem = fs();
+		const cached = diskInfo();
+		return fileSystem && cached?.fs == fileSystem && cached.disk == fileSystem.diskOf(toPath(path())) ? cached.info : undefined;
 	});
 
+	// Nothing is written to a directory that could not be listed, or to a disk that can't be changed
+	const isReadOnly = (): boolean => !shownListing()?.entries || !!disk()?.readOnly;
+
+	// Whether the page still shows the file system and the directory, or its disk, which loads and
+	// changes that finish after the user has moved on must leave alone
+	const isShown = (fileSystem: FileSystem, dir: string[]): boolean => fs() == fileSystem && toPath(path()) == toPath(dir);
+	const isDiskShown = (fileSystem: FileSystem, dir: string[]): boolean =>
+		fs() == fileSystem && fileSystem.diskOf(toPath(path())) == fileSystem.diskOf(toPath(dir));
+
+	// Tells of the disk the directory is on
+	const refreshDisk = async (fileSystem: FileSystem, dir: string[]): Promise<void> => {
+		try {
+			const info = await fileSystem.getDiskInfo(toPath(dir));
+			if (isDiskShown(fileSystem, dir))
+				setDiskInfo({ fs: fileSystem, disk: fileSystem.diskOf(toPath(dir)), info });
+		} catch (e) {
+			if (isDiskShown(fileSystem, dir))
+				setError((e as Error).message);
+		}
+	};
+
+	// Lists the directory, and tells of its disk when that is another than the one told of, or when
+	// the directory was changed. A directory that can't be listed is shown empty, with the error.
+	const loadDir = async (fileSystem: FileSystem, dir: string[], isChanged = false): Promise<void> => {
+		setPending((count) => count + 1);
+		try {
+			let list: FileSystemEntry[] | undefined;
+			let listError: string | undefined;
+			try {
+				list = await fileSystem.readDir(toPath(dir));
+			} catch (e) {
+				listError = (e as Error).message;
+			}
+			if (!isShown(fileSystem, dir))
+				return;
+			batch(() => {
+				setListing({ fs: fileSystem, dir, entries: list, error: listError });
+				setSelected(new Set<string>());
+			});
+			selectionAnchor = undefined;
+			if (list && (isChanged || !disk()))
+				await refreshDisk(fileSystem, dir);
+		} finally {
+			setPending((count) => count - 1);
+		}
+	};
+
+	// Changes the current directory, which is listed again afterwards, also when the change failed
+	// midway, since what it did before is done
+	const changeDir = async (change: (fileSystem: FileSystem, dir: string[]) => Promise<void>): Promise<void> => {
+		const fileSystem = fs()!;
+		const dir = path();
+		setPending((count) => count + 1);
+		try {
+			await change(fileSystem, dir);
+		} finally {
+			await loadDir(fileSystem, dir, true);
+			setPending((count) => count - 1);
+		}
+	};
+
 	// Pushes a new history entry, the URL effect below performs the actual listing
-	const navigateTo = (targetPath: string[]): void => {
+	const navigateTo = (targetPath: string[], targetSource = source()): void => {
 		if (isBusy())
 			return;
-		const qs = targetPath.length
-			? `?path=${targetPath.map(encodeURIComponent).join("/")}`
-			: "";
+		const params: string[] = [];
+		if (targetSource == 'fullflash')
+			params.push("source=fullflash");
+		if (targetPath.length)
+			params.push(`path=${targetPath.map(encodeURIComponent).join("/")}`);
+		const qs = params.length ? `?${params.join("&")}` : "";
 		if (qs == location.search)
 			return;
 		navigate(`/file-explorer${qs}`);
 	};
+
+	const switchSource = (_: unknown, value: Source | null): void => {
+		// null when the selected button is clicked again
+		if (value)
+			navigateTo([], value);
+	};
+
+	// A fullflash that finishes opening after the page was left is closed right away
+	let isDisposed = false;
+	onCleanup(() => {
+		isDisposed = true;
+		void fullflash()?.close();
+	});
+
+	// The one opened next opens at its root
+	const changeFullflash = (opened?: FullFlashFS): void => {
+		if (isDisposed)
+			return void opened?.close();
+		if (source() == 'fullflash')
+			setError(null);
+		if (!opened)
+			navigateTo([]);
+		setFullflash(opened);
+	};
+
+	// An open that fails once the user has switched to the phone is no error of the phone's
+	const showFullflashError = (message: string): void => {
+		if (source() == 'fullflash')
+			setError(message);
+	};
+
+	// The changes to a fullflash are lost when the page is left, which the user is asked about. Browser
+	// back and forward give the steps alone, and have changed the location already.
+	useBeforeLeave((e) => {
+		const opened = fullflash();
+		const destination = typeof e.to == 'number' ? window.location.pathname : new URL(e.to, window.location.href).pathname;
+		if (opened && !e.defaultPrevented && !isFileExplorer(destination) && !opened.mayDiscard())
+			e.preventDefault();
+	});
+
+	const onBeforeUnload = (e: BeforeUnloadEvent): void => {
+		if (fullflash()?.isModified())
+			e.preventDefault();
+	};
+	onMount(() => window.addEventListener('beforeunload', onBeforeUnload));
+	onCleanup(() => window.removeEventListener('beforeunload', onBeforeUnload));
 
 	const filePath = (name: string): string => "/" + [...path(), name].join("/");
 
@@ -314,10 +451,15 @@ export const FileExplorerPage: Component = () => {
 		}
 	};
 
-	// Display order: directories first, then the selected column in the selected direction
-	const sortedEntries = createMemo<ObexDirEntry[]>(() => {
+	// Display order: directories first, then the selected column in the selected direction, and by name
+	// where that column is equal. The phone's disks, which are directories of the root, come first by
+	// name, in the phone's order.
+	const sortedEntries = createMemo<FileSystemEntry[]>(() => {
 		const key = sortKey();
 		const dir = sortDir();
+		const isRoot = !displayedDir()?.length;
+		const byName = (a: FileSystemEntry, b: FileSystemEntry): number =>
+			(isRoot && a.isDir ? diskRank(a) - diskRank(b) : 0) || a.name.localeCompare(b.name);
 		return [...entries()].sort((a, b) => {
 			const dirDiff = Number(b.isDir) - Number(a.isDir);
 			if (dirDiff != 0)
@@ -330,32 +472,32 @@ export const FileExplorerPage: Component = () => {
 				case 'mtime':
 					result = (a.mtime?.getTime() ?? 0) - (b.mtime?.getTime() ?? 0);
 					break;
-				case 'access':
-					result = (Number(a.readable) * 2 + Number(a.writable)) - (Number(b.readable) * 2 + Number(b.writable));
+				case 'attributes':
+					result = attributeLetters(a).localeCompare(attributeLetters(b));
 					break;
 				default:
-					result = a.name.localeCompare(b.name);
+					result = byName(a, b);
 			}
-			return result * dir;
+			return result * dir || byName(a, b);
 		});
 	});
 
-	const isSelected = (entry: ObexDirEntry): boolean => selected().has(entry.name);
-	const selectedEntries = createMemo<ObexDirEntry[]>(() => entries().filter(isSelected));
+	const isSelected = (entry: FileSystemEntry): boolean => selected().has(entry.name);
+	const selectedEntries = createMemo<FileSystemEntry[]>(() => entries().filter(isSelected));
 	const isAllSelected = createMemo(() => entries().length > 0 && selected().size == entries().length);
 
 	// Last entry clicked without shift and the state that click gave it. Shift-clicks
 	// extend the selection from this anchor, in the order the list is displayed in
 	let selectionAnchor: { name: string; select: boolean } | undefined;
 
-	const selectOnly = (entry: ObexDirEntry): void => {
+	const selectOnly = (entry: FileSystemEntry): void => {
 		selectionAnchor = { name: entry.name, select: true };
 		setSelected(new Set([entry.name]));
 	};
 
 	// Applies the anchor's selection state to every entry between the anchor and
 	// the clicked one (in display order), like desktop file managers do
-	const selectRange = (entry: ObexDirEntry): void => {
+	const selectRange = (entry: FileSystemEntry): void => {
 		const anchor = selectionAnchor;
 		if (!anchor)
 			return selectOnly(entry);
@@ -377,7 +519,7 @@ export const FileExplorerPage: Component = () => {
 		});
 	};
 
-	const toggleSelected = (entry: ObexDirEntry, shiftKey = false): void => {
+	const toggleSelected = (entry: FileSystemEntry, shiftKey = false): void => {
 		if (shiftKey)
 			return selectRange(entry);
 		const select = !selected().has(entry.name);
@@ -395,7 +537,7 @@ export const FileExplorerPage: Component = () => {
 	// Row clicks select like in a desktop file manager: a plain click selects a
 	// single entry, ctrl toggles one, shift extends from the anchor. Clicks on
 	// interactive elements (file links, buttons, the checkbox) are left alone.
-	const onRowClick = (entry: ObexDirEntry, e: MouseEvent): void => {
+	const onRowClick = (entry: FileSystemEntry, e: MouseEvent): void => {
 		if (isBusy())
 			return;
 		if (e.target instanceof Element && e.target.closest('button, a, input, label'))
@@ -418,7 +560,7 @@ export const FileExplorerPage: Component = () => {
 	};
 
 	const makeProgressHandler = (kind: 'download' | 'upload', name: string) => {
-		return Comlink.proxy((e: ObexProgress) => {
+		return (e: FileSystemProgress): void => {
 			setTransfer({
 				kind,
 				name,
@@ -427,13 +569,13 @@ export const FileExplorerPage: Component = () => {
 				total: e.total,
 				speed: e.speed
 			});
-		});
+		};
 	};
 
-	const downloadFile = errorWrap(async (entry: ObexDirEntry): Promise<void> => {
+	const downloadFile = errorWrap(async (entry: FileSystemEntry): Promise<void> => {
 		setTransfer({ kind: 'download', name: entry.name, percent: -1, cursor: 0, total: entry.size, speed: 0 });
 		try {
-			const data = await serial.obex.getFile(filePath(entry.name), makeProgressHandler('download', entry.name));
+			const data = await fs()!.readFile(filePath(entry.name), makeProgressHandler('download', entry.name));
 			downloadBlob(new Blob([new Uint8Array(data)]), entry.name);
 		} finally {
 			setTransfer(undefined);
@@ -443,13 +585,16 @@ export const FileExplorerPage: Component = () => {
 	// Opens a file in a new browser tab, viewable types are displayed inline.
 	// The tab must be opened synchronously with the click, otherwise popup blockers
 	// kill it once the download has taken a while. It shows a progress page while
-	// the file is transferred over serial and is redirected once the download finishes.
-	const openFile = errorWrap(async (entry: ObexDirEntry): Promise<void> => {
+	// the file is transferred and is redirected once the download finishes.
+	const openFile = errorWrap(async (entry: FileSystemEntry): Promise<void> => {
 		const win = window.open('about:blank', '_blank');
+		// The file, or a page it links to, gets no hold on this one
+		if (win)
+			win.opener = null;
 		const tab = initOpenFileTab(win, entry.name);
 		setTransfer({ kind: 'download', name: entry.name, percent: -1, cursor: 0, total: entry.size, speed: 0 });
 		try {
-			const onProgress = Comlink.proxy((e: ObexProgress) => {
+			const onProgress = (e: FileSystemProgress): void => {
 				setTransfer({
 					kind: 'download',
 					name: entry.name,
@@ -459,17 +604,18 @@ export const FileExplorerPage: Component = () => {
 					speed: e.speed
 				});
 				tab?.update(e);
-			});
-			const data = await serial.obex.getFile(filePath(entry.name), onProgress);
+			};
+			const data = await fs()!.readFile(filePath(entry.name), onProgress);
 			const blob = new Blob([new Uint8Array(data)], { type: guessMimeType(entry.name) });
 			const previewUrl = await createFilePreviewUrl(blob, entry.name);
 			if (win && previewUrl) {
 				// Real URL ending with the file name: "Save as" keeps the name
 				// and the tab can be reloaded
 				win.location.href = previewUrl;
-			} else if (win && blob.type != 'application/octet-stream') {
+			} else if (win && blob.type != 'application/octet-stream' && !isScripted(blob.type)) {
 				// Browser can display it (image, text, pdf, ...), but no preview
-				// worker: fall back to a blob URL ("Save as" won't know the name)
+				// worker: fall back to a blob URL ("Save as" won't know the name).
+				// A blob URL can't keep scripts from running on this origin.
 				const url = URL.createObjectURL(blob);
 				openedObjectUrls.push(url);
 				win.location.href = url;
@@ -488,24 +634,24 @@ export const FileExplorerPage: Component = () => {
 	});
 
 	// Recursively adds an entry (file or directory) to the zip. remoteRoot is the
-	// absolute phone path of the directory containing the entry, zipRoot the matching
+	// absolute path of the directory containing the entry, zipRoot the matching
 	// path inside the archive.
-	const addEntryToZip = async (zip: JSZip, remoteRoot: string, zipRoot: string, entry: ObexDirEntry, onProgress: (e: ObexProgress) => void, counters: { bytes: number }): Promise<void> => {
+	const addEntryToZip = async (fileSystem: FileSystem, zip: JSZip, remoteRoot: string, zipRoot: string, entry: FileSystemEntry, onProgress: (e: FileSystemProgress) => void, counters: { bytes: number }): Promise<void> => {
 		if (entry.isDir) {
 			zip.file(`${zipRoot}${entry.name}/`, null, { dir: true, date: entry.mtime });
-			const children = await serial.obex.readDir(`${remoteRoot}/${entry.name}`);
+			const children = await fileSystem.readDir(`${remoteRoot}/${entry.name}`);
 			children.sort((a, b) => a.name.localeCompare(b.name));
 			for (const child of children)
-				await addEntryToZip(zip, `${remoteRoot}/${entry.name}`, `${zipRoot}${entry.name}/`, child, onProgress, counters);
+				await addEntryToZip(fileSystem, zip, `${remoteRoot}/${entry.name}`, `${zipRoot}${entry.name}/`, child, onProgress, counters);
 			return;
 		}
 
-		const data = await serial.obex.getFile(`${remoteRoot}/${entry.name}`, onProgress);
+		const data = await fileSystem.readFile(`${remoteRoot}/${entry.name}`, onProgress);
 		zip.file(`${zipRoot}${entry.name}`, data, { date: entry.mtime });
 		counters.bytes += data.length;
 	};
 
-	const downloadSelection = errorWrap(async (list: ObexDirEntry[]): Promise<void> => {
+	const downloadSelection = errorWrap(async (list: FileSystemEntry[]): Promise<void> => {
 		if (!list.length)
 			return;
 
@@ -515,50 +661,51 @@ export const FileExplorerPage: Component = () => {
 			return;
 		}
 
+		const fileSystem = fs()!;
 		const zipName = list.length == 1
 			? `${list[0].name}.zip`
-			: `${path().length ? path()[path().length - 1] : 'Phone'}.zip`;
+			: `${path().length ? path()[path().length - 1] : fileSystem.name}.zip`;
 		setTransfer({ kind: 'download', name: zipName, percent: -1, cursor: 0, total: 0, speed: 0 });
 		const counters = { bytes: 0 };
-		// One proxy for the whole archive, reading counters at call time, instead of
-		// leaking a new Comlink endpoint per transferred file
-		const onProgress = Comlink.proxy((e: ObexProgress) => {
+		// One handler for the whole archive, reading counters at call time
+		const onProgress = (e: FileSystemProgress): void => {
 			setTransfer((prev) => prev && {
 				...prev,
 				cursor: counters.bytes + e.cursor,
 				percent: prev.total > 0 ? Math.min(100, ((counters.bytes + e.cursor) / prev.total) * 100) : -1,
 				speed: e.speed,
 			});
-		});
+		};
 		const remoteRoot = path().length ? "/" + path().join("/") : "";
 		try {
 			const zip = new JSZip();
 			for (const entry of list)
-				await addEntryToZip(zip, remoteRoot, "", entry, onProgress, counters);
+				await addEntryToZip(fileSystem, zip, remoteRoot, "", entry, onProgress, counters);
 			downloadBlob(new Blob([new Uint8Array(await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' }))]), zipName);
 		} finally {
 			setTransfer(undefined);
 		}
 	});
 
-	// Asks for confirmation when an upload would replace entries that already exist
-	// on the phone. Names in the current directory come from the loaded listing, for
-	// other target directories (folder uploads) a listing is fetched per directory.
-	// Directories that don't exist yet are created by the upload itself.
-	const confirmOverwrites = async (targets: { dirParts: string[]; fileName: string }[]): Promise<boolean> => {
-		const dirPath = (dirParts: string[]): string => "/" + dirParts.join("/");
+	// Asks for confirmation when an upload would replace entries that already exist.
+	// Names in the current directory come from the loaded listing, for other target
+	// directories (folder uploads) a listing is fetched per directory. Directories
+	// that don't exist yet are created by the upload itself. The file systems find
+	// names regardless of case, of ASCII letters at least.
+	const confirmOverwrites = async (fileSystem: FileSystem, dir: string[], targets: { dirParts: string[]; fileName: string }[]): Promise<boolean> => {
+		const listed = entries().map((e) => e.name);
 		const namesByDir = new Map<string, Set<string>>();
-		for (const dir of new Set(targets.map((t) => dirPath(t.dirParts)))) {
+		for (const targetDir of new Set(targets.map((t) => toPath(t.dirParts)))) {
 			try {
-				const names = dir == dirPath(path())
-					? entries().map((e) => e.name)
-					: (await serial.obex.readDir(dir)).map((e) => e.name);
-				namesByDir.set(dir, new Set(names));
+				let names = listed;
+				if (targetDir != toPath(dir))
+					names = (await fileSystem.readDir(targetDir)).map((e) => e.name);
+				namesByDir.set(targetDir, new Set(names.map((name) => name.toLowerCase())));
 			} catch {
 				// Directory not found: the upload creates it, nothing to overwrite
 			}
 		}
-		const overwrites = targets.filter((t) => namesByDir.get(dirPath(t.dirParts))?.has(t.fileName));
+		const overwrites = targets.filter((t) => namesByDir.get(toPath(t.dirParts))?.has(t.fileName.toLowerCase()));
 		if (!overwrites.length)
 			return true;
 		const shown = overwrites.slice(0, 5).map((t) => `"${t.fileName}"`).join(', ');
@@ -570,27 +717,36 @@ export const FileExplorerPage: Component = () => {
 		await uploadFiles([file]);
 	});
 
+	// Goes to the file system and directory it was started in, whichever the user turns to meanwhile
 	const uploadFiles = errorWrap(async (files: File[]): Promise<void> => {
 		if (!files.length)
 			return;
+
+		const fileSystem = fs()!;
+		const dir = path();
+		const space = disk();
 
 		// webkitRelativePath is set for directory uploads, e.g. "Sounds/midi/theme.mid"
 		const targets = files.map((file) => {
 			const relPathParts = (file.webkitRelativePath || file.name).split('/').filter(Boolean);
 			const fileName = relPathParts.pop()!;
-			return { fileName, dirParts: [...path(), ...relPathParts] };
+			return { fileName, dirParts: [...dir, ...relPathParts] };
 		});
 
 		// The phone's FlexMem server appends to existing files, so an upload of a
 		// known name replaces it and needs the user's consent first
-		if (!(await confirmOverwrites(targets)))
-			return;
+		setPending((count) => count + 1);
+		try {
+			if (!(await confirmOverwrites(fileSystem, dir, targets)))
+				return;
+		} finally {
+			setPending((count) => count - 1);
+		}
 
 		const totalSize = files.reduce((sum, file) => sum + file.size, 0);
 
-		// Warn before starting if the phone clearly can't fit the upload
-		const s = stats();
-		if (s && totalSize > s.available && !confirm('Not enough free space, are you sure you want to continue?'))
+		// Warn before starting if the disk clearly can't fit the upload
+		if (space && totalSize > space.available && !confirm('Not enough free space, are you sure you want to continue?'))
 			return;
 
 		setTransfer({
@@ -611,14 +767,14 @@ export const FileExplorerPage: Component = () => {
 			for (const [index, file] of files.entries()) {
 				const { fileName, dirParts } = targets[index];
 
-				const dirPath = "/" + dirParts.join("/");
+				const dirPath = toPath(dirParts);
 				if (dirParts.length && !createdDirs.has(dirPath)) {
-					await serial.obex.mkdir(dirPath);
+					await fileSystem.mkdir(dirPath);
 					createdDirs.add(dirPath);
 				}
 
 				const data = new Uint8Array(await file.arrayBuffer());
-				const onProgress = Comlink.proxy((e: ObexProgress) => {
+				const onProgress = (e: FileSystemProgress): void => {
 					setTransfer((prev) => prev && {
 						...prev,
 						name: fileName,
@@ -628,39 +784,32 @@ export const FileExplorerPage: Component = () => {
 						percent: totalSize > 0 ? Math.min(100, ((uploadedSize + e.cursor) / totalSize) * 100) : -1,
 						filesDone: index,
 					});
-				});
+				};
 
-				await serial.obex.putFile(`/${[...dirParts, fileName].join("/")}`, data, onProgress);
+				await fileSystem.writeFile(toPath([...dirParts, fileName]), data, onProgress);
 				uploadedSize += file.size;
 				setTransfer((prev) => prev && { ...prev, filesDone: index + 1 });
 			}
-			await loadDir(path());
-			await refreshStats();
 		} finally {
+			// The files uploaded before one that failed are there as well
+			await loadDir(fileSystem, dir, true);
 			setTransfer(undefined);
 		}
 	});
 
-	const deleteRecursive = async (target: string, entry: ObexDirEntry): Promise<void> => {
+	const deleteRecursive = async (fileSystem: FileSystem, target: string, entry: FileSystemEntry): Promise<void> => {
 		if (entry.isDir) {
-			const children = await serial.obex.readDir(target);
+			const children = await fileSystem.readDir(target);
 			for (const child of children)
-				await deleteRecursive(`${target}/${child.name}`, child);
+				await deleteRecursive(fileSystem, `${target}/${child.name}`, child);
 		}
-		await serial.obex.deleteFile(target);
+		await fileSystem.deleteFile(target);
 	};
 
-	const deleteEntry = errorWrap(async (entry: ObexDirEntry): Promise<void> => {
+	const deleteEntry = errorWrap(async (entry: FileSystemEntry): Promise<void> => {
 		if (!confirm(`Delete "${entry.name}"${entry.isDir ? ' and everything inside it' : ''}?`))
 			return;
-		setIsLoading(true);
-		try {
-			await deleteRecursive(filePath(entry.name), entry);
-			await loadDir(path());
-			await refreshStats();
-		} finally {
-			setIsLoading(false);
-		}
+		await changeDir((fileSystem, dir) => deleteRecursive(fileSystem, toPath([...dir, entry.name]), entry));
 	});
 
 	const deleteSelected = errorWrap(async (): Promise<void> => {
@@ -672,42 +821,24 @@ export const FileExplorerPage: Component = () => {
 			: `Delete ${list.length} selected items and everything inside them?`;
 		if (!confirm(message))
 			return;
-		setIsLoading(true);
-		try {
+		await changeDir(async (fileSystem, dir) => {
 			for (const entry of list)
-				await deleteRecursive(filePath(entry.name), entry);
-			await loadDir(path());
-			await refreshStats();
-		} finally {
-			setIsLoading(false);
-		}
+				await deleteRecursive(fileSystem, toPath([...dir, entry.name]), entry);
+		});
 	});
 
-	const renameEntry = errorWrap(async (entry: ObexDirEntry): Promise<void> => {
+	const renameEntry = errorWrap(async (entry: FileSystemEntry): Promise<void> => {
 		const newName = prompt(`Rename "${entry.name}" to:`, entry.name)?.trim();
 		if (!newName || newName == entry.name)
 			return;
-		setIsLoading(true);
-		try {
-			await serial.obex.move(filePath(entry.name), filePath(newName));
-			await loadDir(path());
-		} finally {
-			setIsLoading(false);
-		}
+		await changeDir((fileSystem, dir) => fileSystem.move(toPath([...dir, entry.name]), toPath([...dir, newName])));
 	});
 
 	const createDirectory = errorWrap(async (): Promise<void> => {
 		const name = prompt('New folder name:')?.trim();
 		if (!name)
 			return;
-		setIsLoading(true);
-		try {
-			await serial.obex.mkdir(filePath(name));
-			await loadDir(path());
-			await refreshStats();
-		} finally {
-			setIsLoading(false);
-		}
+		await changeDir((fileSystem, dir) => fileSystem.mkdir(toPath([...dir, name])));
 	});
 
 	const isBusy = createMemo(() => isLoading() || !!transfer());
@@ -717,7 +848,7 @@ export const FileExplorerPage: Component = () => {
 		if (e.key != 'F2')
 			return;
 		const list = selectedEntries();
-		if (list.length != 1 || isBusy())
+		if (list.length != 1 || isBusy() || isReadOnly())
 			return;
 		e.preventDefault();
 		void renameEntry(list[0]);
@@ -726,46 +857,18 @@ export const FileExplorerPage: Component = () => {
 	onMount(() => window.addEventListener('keydown', onKeyDown));
 	onCleanup(() => window.removeEventListener('keydown', onKeyDown));
 
-	const onDeviceChange = (device?: string) => setDeviceName(device);
-	onMount(() => serialWorker.on('deviceChange', onDeviceChange));
-	onCleanup(() => serialWorker.off('deviceChange', onDeviceChange));
+	// An error is of the file system it happened on
+	createEffect(on([fs, source], () => setError(null), { defer: true }));
 
-	// Connection speed and free space are shown in the title bar right after the phone name
-	createEffect(() => {
-		const name = deviceName();
-		if (!name)
+	// Loads the directory from the URL whenever it or the file system changes (navigation,
+	// back/forward, connect, fullflash opened), unless it is listed already. The OBEX queue
+	// and the worker serialize concurrent requests, so this is safe even during a transfer.
+	createEffect(on([fs, path, listing], ([fileSystem, target, listed]) => {
+		if (!fileSystem || (listed?.fs == fileSystem && toPath(listed.dir) == toPath(target)))
 			return;
-		const s = stats();
-		const parts = [name];
-		if (baudrate())
-			parts.push(`${baudrate()} baud`);
-		if (s)
-			parts.push(`${formatSize(s.available)}/${formatSize(s.capacity)} free`);
-		app.setStatus(parts.join(' · '));
-	});
-
-	createEffect(on(obexReady, (ready) => {
-		setEntries([]);
 		setError(null);
-		setStats(undefined);
-		setBaudrate(0);
-		setDisplayedDir(undefined);
-		if (!ready)
-			return;
-
-		void refreshStats().catch((e) => setError((e as Error).message));
+		void loadDir(fileSystem, target);
 	}));
-
-	// Loads the directory from the URL whenever it changes (navigation, back/forward, connect).
-	// The OBEX queue serializes concurrent requests, so this is safe even during a transfer.
-	createEffect(() => {
-		const target = path();
-		if (!obexReady())
-			return;
-		if (target.join("/") == displayedDir()?.join("/"))
-			return;
-		void loadDir(target);
-	});
 
 	const sortIcon = (key: SortKey) => {
 		if (key != sortKey())
@@ -791,10 +894,37 @@ export const FileExplorerPage: Component = () => {
 			<PageTitle>File Explorer</PageTitle>
 
 			<Box mb={2}>
+				<ToggleButtonGroup
+					exclusive
+					size="small"
+					value={source()}
+					disabled={isBusy()}
+					aria-label="Source"
+					onChange={switchSource}
+				>
+					<ToggleButton value="phone">Phone</ToggleButton>
+					<ToggleButton value="fullflash">Fullflash</ToggleButton>
+				</ToggleButtonGroup>
+			</Box>
+
+			<Box mb={2}>
 				{/* Progress lives next to the connect controls so an active transfer
 				  doesn't add a line and shift the file list down */}
-				<Stack direction="row" alignItems="center" gap={1}>
-					<SerialConnect protocol="OBEX" />
+				<Stack direction="row" alignItems="center" flexWrap="wrap" gap={1}>
+					<Show
+						when={source() == 'phone'}
+						fallback={
+							<FullFlashStatusBar
+								fullflash={fullflash()}
+								disk={disk()}
+								disabled={isBusy()}
+								onChange={changeFullflash}
+								onError={showFullflashError}
+							/>
+						}
+					>
+						<ObexStatusBar disk={disk()} />
+					</Show>
 					<Show when={transfer()}>
 						<Stack direction="row" alignItems="center" gap={1} sx={{ minWidth: 0, flexGrow: 1 }}>
 							<Typography variant="body2" sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -818,8 +948,12 @@ export const FileExplorerPage: Component = () => {
 			</Box>
 
 			<Stack spacing={2} sx={{ maxWidth: 900 }}>
+				<Show when={source() == 'fullflash' && fullflash()}>{(opened) =>
+					<FullFlashNotices info={opened().info} />
+				}</Show>
+
 				{/* Status window: logs AT commands and OBEX operations, also while connecting */}
-				<Box sx={{ position: 'relative' }}>
+				<Box hidden={source() != 'phone'} sx={{ position: 'relative' }}>
 					<Show when={logLines().length}>
 						<IconButton
 							size="small"
@@ -894,18 +1028,25 @@ export const FileExplorerPage: Component = () => {
 				</Box>
 
 				<Show
-					when={obexReady()}
+					when={fs()}
 					fallback={
-						<Alert severity="info">
-							Connect to your phone via serial to access its filesystem over OBEX.
-						</Alert>
+						<>
+							<Alert severity="info">
+								{source() == 'phone' ?
+									'Connect to your phone via serial to access its filesystem over OBEX.' :
+									'Open a fullflash to browse its filesystem. Everything is processed in your browser, the files are never uploaded.'}
+							</Alert>
+							<Show when={shownError()}>
+								<Alert severity="error">{shownError()}</Alert>
+							</Show>
+						</>
 					}
 				>
 					{/* Current path and navigation */}
 					<Stack direction="row" alignItems="center" gap={1}>
 						<Box sx={{ flexGrow: 1, minWidth: 200 }}>
 							<Breadcrumbs>
-								<Link component="button" onClick={() => navigateTo([])}>Phone</Link>
+								<Link component="button" onClick={() => navigateTo([])}>{fs()?.name}</Link>
 								<For each={path()}>{(part, index) =>
 									<Show
 										when={index() < path().length - 1}
@@ -931,8 +1072,8 @@ export const FileExplorerPage: Component = () => {
 							title="Refresh"
 							disabled={isBusy()}
 							onClick={() => {
-								void loadDir(path());
-								void refreshStats().catch((e) => setError((e as Error).message));
+								setError(null);
+								void loadDir(fs()!, path(), true);
 							}}
 						>
 							<RefreshIcon />
@@ -954,15 +1095,15 @@ export const FileExplorerPage: Component = () => {
 							variant="outlined"
 							color="error"
 							startIcon={<DeleteIcon />}
-							disabled={isBusy() || !selectedEntries().length}
+							disabled={isBusy() || isReadOnly() || !selectedEntries().length}
 							onClick={() => void deleteSelected()}
 						>
 							Delete selected{selectedEntries().length > 1 ? ` (${selectedEntries().length})` : ''}
 						</Button>
-						
+
 						<IconButton
 							title="New folder"
-							disabled={isBusy()}
+							disabled={isBusy() || isReadOnly()}
 							onClick={() => void createDirectory()}
 						>
 							<CreateNewFolderIcon />
@@ -972,7 +1113,7 @@ export const FileExplorerPage: Component = () => {
 							variant="contained"
 							component="label"
 							startIcon={<UploadFileIcon />}
-							disabled={isBusy()}
+							disabled={isBusy() || isReadOnly()}
 						>
 							Upload File
 							<input
@@ -992,7 +1133,7 @@ export const FileExplorerPage: Component = () => {
 							variant="outlined"
 							component="label"
 							startIcon={<DriveFolderUploadIcon />}
-							disabled={isBusy()}
+							disabled={isBusy() || isReadOnly()}
 						>
 							Upload folder
 							<input
@@ -1015,8 +1156,8 @@ export const FileExplorerPage: Component = () => {
 						<LinearProgress />
 					</Show>
 
-					<Show when={error()}>
-						<Alert severity="error">{error()}</Alert>
+					<Show when={shownError()}>
+						<Alert severity="error">{shownError()}</Alert>
 					</Show>
 
 					<TableContainer component={Paper}>
@@ -1035,7 +1176,7 @@ export const FileExplorerPage: Component = () => {
 									{sortableHeader('name', 'Name')}
 									{sortableHeader('size', 'Size', { align: 'right' })}
 									{sortableHeader('mtime', 'Modified')}
-									{sortableHeader('access', 'Access', { align: 'center' })}
+									{sortableHeader('attributes', 'Attributes', { align: 'center' })}
 									<TableCell padding="checkbox" />
 								</TableRow>
 							</TableHead>
@@ -1055,7 +1196,7 @@ export const FileExplorerPage: Component = () => {
 									</TableRow>
 								</Show>
 								<For each={sortedEntries()}>{(entry) =>
-									<TableRow hover selected={isSelected(entry)} sx={entry.hidden ? { opacity: 0.55 } : undefined} onClick={(e: MouseEvent) => onRowClick(entry, e)}>
+									<TableRow hover selected={isSelected(entry)} sx={entry.hidden || entry.system ? { opacity: 0.55 } : undefined} onClick={(e: MouseEvent) => onRowClick(entry, e)}>
 										<TableCell padding="checkbox">
 											<Checkbox
 												size="small"
@@ -1102,8 +1243,11 @@ export const FileExplorerPage: Component = () => {
 										</TableCell>
 										<TableCell align="right">{entry.isDir ? '' : formatSize(entry.size)}</TableCell>
 										<TableCell>{entry.mtime ? dateFormat(entry.mtime, 'dd.MM.yyyy HH:mm') : ''}</TableCell>
-										<TableCell align="center">
-											{[entry.readable && 'R', entry.writable && 'W'].filter(Boolean).join(' ')}
+										<TableCell
+											align="center"
+											title={attributeNames(entry)}
+										>
+											{attributeLetters(entry)}
 										</TableCell>
 										<TableCell padding="checkbox" sx={{ whiteSpace: 'nowrap' }}>
 											<Stack direction="row" alignItems="center" sx={{ flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
@@ -1118,7 +1262,7 @@ export const FileExplorerPage: Component = () => {
 												<IconButton
 													size="small"
 													title="Rename"
-													disabled={isBusy()}
+													disabled={isBusy() || isReadOnly()}
 													onClick={() => void renameEntry(entry)}
 												>
 													<DriveFileRenameOutlineIcon />
@@ -1126,7 +1270,7 @@ export const FileExplorerPage: Component = () => {
 												<IconButton
 													size="small"
 													title="Delete"
-													disabled={isBusy()}
+													disabled={isBusy() || isReadOnly()}
 													onClick={() => void deleteEntry(entry)}
 												>
 													<DeleteIcon />
@@ -1135,7 +1279,7 @@ export const FileExplorerPage: Component = () => {
 										</TableCell>
 									</TableRow>
 								}</For>
-								<Show when={!entries().length && !isLoading()}>
+								<Show when={shownListing()?.entries && !entries().length && !isLoading()}>
 									<TableRow>
 										<TableCell colSpan={6} align="center">
 											<Typography color="text.secondary">Folder is empty</Typography>

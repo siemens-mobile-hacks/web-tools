@@ -1,8 +1,15 @@
 import { Accessor, createContext, createEffect, createSignal, ParentComponent, Setter, useContext } from "solid-js";
 
+// What the title bar's status is of: a connected phone, or an opened file
+export type StatusKind = 'connection' | 'file';
+
 interface AppContext {
 	status: Accessor<string | undefined>;
+	statusKind: Accessor<StatusKind>;
+	// Of the connected phone
 	setStatus: Setter<string | undefined>;
+	// Of an opened file, shown instead of the connection's until it is cleared
+	setFileStatus: Setter<string | undefined>;
 	title: Accessor<string>;
 	setTitle: Setter<string | undefined>;
 }
@@ -18,6 +25,7 @@ export function useApp(): AppContext {
 
 export const AppProvider: ParentComponent = (props) => {
 	const [status, setStatus] = createSignal<string>();
+	const [fileStatus, setFileStatus] = createSignal<string>();
 	const [title, setTitle] = createSignal<string>();
 
 	createEffect(() => {
@@ -26,8 +34,10 @@ export const AppProvider: ParentComponent = (props) => {
 
 	return (
 		<AppContext.Provider value={{
-			status,
+			status: () => fileStatus() ?? status(),
+			statusKind: () => fileStatus() ? 'file' : 'connection',
 			setStatus,
+			setFileStatus,
 			setTitle,
 			title: () => title() ?? `Siemens Web Tools`,
 		}}>

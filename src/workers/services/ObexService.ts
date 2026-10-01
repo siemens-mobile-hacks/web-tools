@@ -16,12 +16,9 @@ export class ObexService extends SerialService<OBEX> {
 		await this.handle.connect(limitBaudrate);
 	}
 
+	// "SIEMENS CX70v56", as the client's "SIEMENS CX70 v56" is written in fullflashes' names
 	async getDeviceName(): Promise<string | undefined> {
-		return this.handle.getDeviceName();
-	}
-
-	getMaxPacketSize(): number {
-		return this.handle.getMaxPacketSize();
+		return this.handle.getDeviceName()?.replace(/ (v\d+)$/, "$1");
 	}
 
 	getBaudrate(): number {

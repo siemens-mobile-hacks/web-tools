@@ -62,7 +62,6 @@ const obexService = {
 	async getBaudrate() { return 115200; },
 	async getCapacity() { return 8 * 1024 * 1024; },
 	async getAvailable() { return 4 * 1024 * 1024; },
-	getMaxPacketSize() { return 4096; },
 	async readDir(path: string) {
 		await sleep(150);
 		return (FILES[path] ?? []).map((e) => ({ ...e }));

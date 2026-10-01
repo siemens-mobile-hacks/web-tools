@@ -5,6 +5,7 @@ import MenuIcon from '@suid/icons-material/Menu';
 import LightModeIcon from '@suid/icons-material/LightMode';
 import BedtimeIcon from '@suid/icons-material/Bedtime';
 import BrightnessMediumIcon from '@suid/icons-material/BrightnessMedium';
+import MemoryIcon from '@suid/icons-material/Memory';
 import { useTheme } from '@suid/material/styles';
 import { useApp } from "@/providers/AppProvider";
 
@@ -37,6 +38,11 @@ export const AppHeader: Component<AppHeaderProps> = (props) => {
 		}
 	};
 
+	// A connection pulses, an opened fullflash is a flash chip's contents
+	const statusIcon = () => app.statusKind() == 'file' ?
+		<MemoryIcon sx={{ fontSize: '1.2em', mr: 1, verticalAlign: 'text-bottom' }} /> :
+		<div class="header-status-indicator"></div>;
+
 	return (
 		<AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
 			<Toolbar>
@@ -59,7 +65,7 @@ export const AppHeader: Component<AppHeaderProps> = (props) => {
 
 						<Show when={app.status()}>
 							<Typography color="inherit">
-								<div class="header-status-indicator"></div>
+								{statusIcon()}
 								{app.status()}
 							</Typography>
 						</Show>
@@ -67,15 +73,16 @@ export const AppHeader: Component<AppHeaderProps> = (props) => {
 				</Show>
 
 				<Show when={!isWideScreen()}>
-					<Stack sx={{ flexGrow: 1 }} direction="row" justifyContent="center" alignItems="center">
-						<Stack direction="column">
+					<Stack sx={{ flexGrow: 1, minWidth: 0 }} direction="row" justifyContent="center" alignItems="center">
+						<Stack direction="column" sx={{ minWidth: 0 }}>
 							<Typography variant="h6" color="inherit">
 								{app.title()}
 							</Typography>
 
+							{/* On one line, so that the fixed bar does not grow over the page */}
 							<Show when={app.status()}>
-								<Typography variant="caption" color="inherit" align="center">
-									<div class="header-status-indicator"></div>
+								<Typography variant="caption" color="inherit" align="center" noWrap>
+									{statusIcon()}
 									{app.status()}
 								</Typography>
 							</Show>
