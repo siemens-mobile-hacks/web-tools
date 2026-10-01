@@ -38,6 +38,13 @@ export async function prepareFilePreview(): Promise<void> {
 	}
 }
 
+// Types whose documents run scripts. A file of someone else's, from a shared fullflash
+// for instance, must not run them on this origin, where they could drive the File
+// Explorer through window.opener.
+const SCRIPTED_TYPES = ['text/html', 'image/svg+xml', 'text/xml'];
+
+export const isScripted = (type: string): boolean => SCRIPTED_TYPES.includes(type);
+
 // Puts the file into the preview cache and returns a URL ending with the file
 // name, or undefined if the preview service worker is not available
 export async function createFilePreviewUrl(data: Blob, name: string): Promise<string | undefined> {
@@ -50,9 +57,11 @@ export async function createFilePreviewUrl(data: Blob, name: string): Promise<st
 		// Content-Disposition — either makes "Save page as" save an HTML wrapper
 		// instead of the file itself. The name comes from the last path segment.
 		const url = `${PREVIEW_PREFIX}${crypto.randomUUID()}/${encodeURIComponent(name)}`;
-		await cache.put(new Request(url), new Response(data, {
-			headers: { 'Content-Type': data.type || 'application/octet-stream' },
-		}));
+		const headers: Record<string, string> = { 'Content-Type': data.type || 'application/octet-stream' };
+		// Displayed without scripts, in an origin of its own
+		if (isScripted(data.type))
+			headers['Content-Security-Policy'] = 'sandbox';
+		await cache.put(new Request(url), new Response(data, { headers }));
 		return url;
 	} catch {
 		return undefined;

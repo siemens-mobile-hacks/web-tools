@@ -7,7 +7,6 @@ const ScreenShooterPage = lazy(() => import("@/pages/ScreenShooter/ScreenShooter
 const MemoryDumperPage = lazy(() => import("@/pages/MemoryDumper/MemoryDumperPage"));
 const SMSReaderPage = lazy(() => import("@/pages/SMSReader/SMSReaderPage"));
 const UnlockBootloaderPage = lazy(() => import("@/pages/Apoxi/UnlockBootloaderPage"));
-const FFSExplorerPage = lazy(() => import("@/pages/FFSExplorerPage/FFSExplorerPage"));
 const FileExplorerPage = lazy(() => import("@/pages/FileExplorer/FileExplorerPage"));
 const FlasherPage = lazy(() => import("@/pages/Flasher/FlasherPage"));
 const FirmwareConverterPage = lazy(() => import("@/pages/FirmwareConverter/FirmwareConverterPage"));
@@ -25,7 +24,6 @@ export const Root: Component = () => {
 				<Route path="/" component={() => <Navigate href={() => "/screenshot"} />} />
 				<Route path="/screenshot" component={ScreenShooterPage} />
 				<Route path="/screenshot/:protocol" component={ScreenShooterPage} />
-				<Route path="/ffs" component={FFSExplorerPage} />
 				<Route path="/dumper" component={MemoryDumperPage} />
 				<Route path="/dumper/:protocol" component={MemoryDumperPage} />
 				<Route path="/sms-reader" component={SMSReaderPage} />

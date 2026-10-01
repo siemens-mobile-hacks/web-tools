@@ -1,6 +1,6 @@
 /* @refresh reload */
 import * as Comlink from 'comlink';
-import { Accessor, createContext, createSignal, onCleanup, onMount, ParentComponent, useContext } from 'solid-js';
+import { Accessor, batch, createContext, createSignal, onCleanup, onMount, ParentComponent, useContext } from 'solid-js';
 import { WebSerialBinding, WebSerialPortInfo } from 'serialport-bindings-webserial';
 import { SerialProtocol, SerialReadyState, serialWorker } from '@/workers/endpoints/serial';
 import { makePersisted } from "@solid-primitives/storage";
@@ -26,6 +26,8 @@ interface SerialContext {
 	readyState: Accessor<SerialReadyState>;
 	connectError: Accessor<Error | undefined>;
 	protocol: Accessor<string>;
+	// The connected phone's name
+	device: Accessor<string | undefined>;
 
 	getAdapter(type: string): typeof SerialService<any>;
 	getLastUsedPort(type: string): string | undefined;
@@ -49,6 +51,7 @@ export const SerialProvider: ParentComponent = (props) => {
 	const [currentProtocol, setCurrentProtocol] = createSignal('none');
 	const [readyState, setReadyState] = createSignal<SerialReadyState>(SerialReadyState.DISCONNECTED);
 	const [connectError, setConnectError] = createSignal<Error | undefined>();
+	const [device, setDevice] = createSignal<string | undefined>();
 	const [ports, setPorts] = createSignal<WebSerialPortInfo[]>([]);
 	const [lastUsedPorts, setLastUsedPorts] = makePersisted(createSignal<Record<string, string>>({}), { name: "lastUsedPorts" });
 
@@ -95,9 +98,11 @@ export const SerialProvider: ParentComponent = (props) => {
 		});
 		monitorNewPorts();
 	};
-	const onDeviceChange = (deviceName?: string) => {
+	// Batched, so that the effects putting the device into a status of their own run after the name alone is set
+	const onDeviceChange = (deviceName?: string) => batch(() => {
+		setDevice(deviceName);
 		app.setStatus(deviceName);
-	};
+	});
 
 	onMount(() => {
 		serialWorker.on('deviceChange', onDeviceChange);
@@ -157,6 +162,7 @@ export const SerialProvider: ParentComponent = (props) => {
 			readyState,
 			connectError,
 			protocol: currentProtocol,
+			device,
 
 			connect,
 			disconnect,

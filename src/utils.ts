@@ -64,3 +64,10 @@ export function formatSize(size: number): string {
 		return +(size / 1024).toFixed(2) + " kB";
 	}
 }
+
+// As formatSize, with its binary units named as such
+export function formatBinarySize(size: number): string {
+	if (size > 1024 * 1024)
+		return +(size / 1024 / 1024).toFixed(2) + " MiB";
+	return +(size / 1024).toFixed(2) + " KiB";
+}

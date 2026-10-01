@@ -83,11 +83,11 @@ export default defineConfig({
 		 }),
 	],
 	optimizeDeps: {
-		include: ['@sie-js/fw'],
+		// Imported by the worker only, which the scan for dependencies does not reach
+		include: ['@sie-js/fw', '@sie-js/ffs'],
 		exclude: [
 			'siemens-sms-parser',
 			'@sie-js/creampie',
-			'@sie-js/libffshit',
 			'@ffmpeg/util',
 			'@ffmpeg/ffmpeg',
 			'@ffmpeg/core',

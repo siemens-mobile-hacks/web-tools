@@ -3,6 +3,14 @@ Tools for working with mobile phones from a browser.
 
 https://tools.siepatch.dev
 
+# Tests
+
+Running e2e tests:
+Clone https://git.siepatch.dev/siepatch/fullflashes and run:
+`SIE_FFS_TEST_FULLFLASHES=../fullflashes CHROME_PATH=$(command -v google-chrome) pnpm run test:e2e`
+
+Without `CHROME_PATH`, the tests use Playwright's Chromium, which `pnpm exec playwright install chromium` installs.
+
 # AI-assisted contributions
 
 We are not against AI. We are against vibe coding, AI slop, and attempts to offload engineering work to a model. This project prioritizes quality, not development speed or results at any cost.
