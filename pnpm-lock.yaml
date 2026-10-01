@@ -30,8 +30,8 @@ importers:
         specifier: ^1.0.10
         version: 1.0.10(@sie-js/serial@1.6.0(@serialport/stream@13.0.0)(debug@4.4.3))(@types/node@25.4.0)
       '@sie-js/ffs':
-        specifier: ^0.1.3
-        version: 0.1.3
+        specifier: ^0.1.4
+        version: 0.1.4
       '@sie-js/flasher':
         specifier: github:siemens-mobile-hacks/sieflasher#path:core&1049243461991ec5a4839051a985fa08307d992e
         version: https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/1049243461991ec5a4839051a985fa08307d992e#path:core
@@ -918,8 +918,8 @@ packages:
   '@sie-js/creampie@1.0.3':
     resolution: {integrity: sha512-NwJzIvCVXxbGuBlnNIqq3PVzmCznaow8LSWFDDfMnW9L8UhfSiNeZY7HBapc3PZzu8sD3aBDzwHCLwD+Mg7Tmg==}
 
-  '@sie-js/ffs@0.1.3':
-    resolution: {integrity: sha512-/ZJPvwLDi3+N2MALfgGwJ6+/HOIuQ3ointRP3UTZEzy2dY5UwIsdarYXOlkBgjBS9lr0TkQeiOyXLzr8Da6YuA==}
+  '@sie-js/ffs@0.1.4':
+    resolution: {integrity: sha512-35bw8PrfpyZh+dKaGiy6QgyJKK4rKTPph2Z0M8DUbypDr3UzXdIMYRIi1GvoFwhzaeCOGyqE3/lFdw+yqMYCTA==}
     engines: {node: '>=20'}
 
   '@sie-js/flasher@https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/1049243461991ec5a4839051a985fa08307d992e#path:core':
@@ -3061,7 +3061,7 @@ snapshots:
 
   '@sie-js/creampie@1.0.3': {}
 
-  '@sie-js/ffs@0.1.3': {}
+  '@sie-js/ffs@0.1.4': {}
 
   '@sie-js/flasher@https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/1049243461991ec5a4839051a985fa08307d992e#path:core':
     dependencies:
