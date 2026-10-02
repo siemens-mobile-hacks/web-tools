@@ -151,12 +151,6 @@ export class FlasherService extends SerialService<PhoneDevice> {
 		}
 	}
 
-	restoreBootcore(): Promise<void> {
-		const signal = this.getAbortSignal();
-		this.handle.isCanceled = () => signal.aborted;
-		return this.handle.restoreBootcore();
-	}
-
 	async disconnect(): Promise<void> {
 		if (this.isConnected) {
 			const device = this.handle;

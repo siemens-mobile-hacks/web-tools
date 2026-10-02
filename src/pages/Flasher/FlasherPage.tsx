@@ -1,6 +1,6 @@
 import { Component, For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
 import {
-	Alert, Box, Button, Checkbox, CircularProgress, Divider, FormControl, FormControlLabel,
+	Alert, Box, Button, Checkbox, CircularProgress, FormControl, FormControlLabel,
 	InputLabel, LinearProgress, MenuItem, Menu, ListSubheader, Paper,
 	Select, Stack, TextField, Typography,
 } from '@suid/material';
@@ -10,7 +10,6 @@ import DownloadIcon from '@suid/icons-material/Download';
 import DeleteIcon from '@suid/icons-material/Delete';
 import ArrowDropDownIcon from '@suid/icons-material/ArrowDropDown';
 import CompareArrowsIcon from '@suid/icons-material/CompareArrows';
-import SettingsBackupRestoreIcon from '@suid/icons-material/SettingsBackupRestore';
 import { sprintf } from 'sprintf-js';
 import * as Comlink from 'comlink';
 import { useSerial } from '@/providers/SerialProvider.js';
@@ -560,23 +559,6 @@ const PhoneFlasher: Component = () => {
 		}
 	};
 
-	const onRestoreBootcore = async () => {
-		if (!confirm('Restore the bootcore to its original state?\n\n' +
-			'After this operation the phone will no longer boot into the service mode ' +
-			'and you will not be able to use the flasher until you boot it again!'))
-			return;
-		setBusy(true);
-		setError(undefined);
-		try {
-			await serial.flasher.restoreBootcore();
-			setStatus('Bootcore restored successfully.');
-		} catch (e: any) {
-			setError(e.message);
-		} finally {
-			setBusy(false);
-		}
-	};
-
 	// The default name uses the V_KLay scheme:
 	// {DeviceName}_{YYYY-MM-DD_HH-MM-SS}_From_{XX}.bin
 	const dumpDeviceName = (): string => {
@@ -807,7 +789,7 @@ const PhoneFlasher: Component = () => {
 								</Alert>
 							</Show>
 						</Show>
-						{/* Operation progress: memory read/write, bootcore restore */}
+						{/* Operation progress: memory read/write */}
 						<Show when={busy()}>
 							<Stack spacing={1} alignItems="center">
 								<Show when={progress()} fallback={<CircularProgress size={24} />} keyed>
@@ -877,12 +859,6 @@ const PhoneFlasher: Component = () => {
 									onClick={() => void onWriteMemory()}
 								>
 									Write Memory
-								</Button>
-							</Stack>
-							<Divider />
-							<Stack direction="row" spacing={1} flexWrap="wrap">
-								<Button variant="outlined" color="warning" startIcon={<SettingsBackupRestoreIcon />} disabled={busy()} onClick={() => void onRestoreBootcore()}>
-									Restore bootcore
 								</Button>
 							</Stack>
 						</Stack>

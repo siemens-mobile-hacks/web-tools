@@ -10,6 +10,9 @@ import fs from 'node:fs';
 fs.mkdirSync('/tmp/e2e-upload', { recursive: true });
 fs.writeFileSync('/tmp/e2e-upload/notes.txt', 'x'.repeat(40));
 fs.writeFileSync('/tmp/e2e-new.txt', 'y'.repeat(30));
+fs.mkdirSync('/tmp/e2e-multi', { recursive: true });
+fs.writeFileSync('/tmp/e2e-multi/e2e-multi.txt', 'z'.repeat(20));
+fs.writeFileSync('/tmp/e2e-multi/notes.txt', 'w'.repeat(50));
 
 const require = createRequire(path.join(process.env.PUPPETEER_CORE ?? '/tmp/node_modules', '/'));
 const puppeteer = require('puppeteer-core');
@@ -235,6 +238,16 @@ await uploadInput.uploadFile('/tmp/e2e-upload/notes.txt');
 await page.waitForFunction(() => window.__confirms.length > 0, { timeout: 10000 });
 await sleep(500);
 check('declined upload keeps the old file', await rowSize('notes.txt'), '0.04 kB');
+
+// Several files at once: only the existing name is confirmed, all of them are uploaded
+await page.evaluate(() => { window.__confirms = []; window.__confirmReply = true; });
+await uploadInput.uploadFile('/tmp/e2e-multi/e2e-multi.txt', '/tmp/e2e-multi/notes.txt');
+await page.waitForFunction(() => {
+	const row = [...document.querySelectorAll('tr')].find((r) => r.textContent.includes('notes.txt'));
+	return row?.querySelectorAll('td')[2]?.textContent == '0.05 kB';
+}, { timeout: 10000 });
+check('multiple files confirm only the existing name', (await page.evaluate(() => window.__confirms)), ['Overwrite "notes.txt"?']);
+check('multiple files are all uploaded', [await rowSize('e2e-multi.txt'), await rowSize('notes.txt')], ['0.02 kB', '0.05 kB']);
 
 console.log(`\n${failures == 0 ? 'ALL PASSED' : failures + ' FAILED'}`);
 await browser.close();
