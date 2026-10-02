@@ -124,7 +124,7 @@ export class FileExplorer {
 	}
 
 	isUploadDisabled(): Promise<boolean> {
-		return this.page.locator('label', { hasText: 'Upload File' }).evaluate((label) => label.classList.contains('Mui-disabled'));
+		return this.page.locator('label', { hasText: 'Upload files' }).evaluate((label) => label.classList.contains('Mui-disabled'));
 	}
 
 	async switchSource(source: 'Phone' | 'Fullflash'): Promise<void> {
@@ -165,7 +165,7 @@ export class FileExplorer {
 	}
 
 	async upload(name: string, data: Uint8Array): Promise<void> {
-		await this.page.locator('label', { hasText: 'Upload File' }).locator('input[type=file]').setInputFiles({
+		await this.page.locator('label', { hasText: 'Upload files' }).locator('input[type=file]').setInputFiles({
 			name,
 			mimeType: 'application/octet-stream',
 			buffer: Buffer.from(data),

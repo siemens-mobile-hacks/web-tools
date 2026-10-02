@@ -713,10 +713,6 @@ export const FileExplorerPage: Component = () => {
 		return confirm(`Overwrite ${shown}${suffix}?`);
 	};
 
-	const uploadFile = errorWrap(async (file: File): Promise<void> => {
-		await uploadFiles([file]);
-	});
-
 	// Goes to the file system and directory it was started in, whichever the user turns to meanwhile
 	const uploadFiles = errorWrap(async (files: File[]): Promise<void> => {
 		if (!files.length)
@@ -1115,16 +1111,17 @@ export const FileExplorerPage: Component = () => {
 							startIcon={<UploadFileIcon />}
 							disabled={isBusy() || isReadOnly()}
 						>
-							Upload File
+							Upload files
 							<input
 								ref={fileInputRef}
 								type="file"
+								multiple
 								hidden
 								onChange={(e) => {
-									const file = e.currentTarget.files?.[0];
+									const files = Array.from(e.currentTarget.files ?? []);
 									e.currentTarget.value = "";
-									if (file)
-										void uploadFile(file);
+									if (files.length)
+										void uploadFiles(files);
 								}}
 							/>
 						</Button>
