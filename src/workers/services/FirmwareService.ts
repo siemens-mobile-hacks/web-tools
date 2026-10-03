@@ -12,7 +12,7 @@ import {
 	type XbiInfo,
 } from '@sie-js/fw';
 
-export type FirmwareMode = 'unpack' | 'convert';
+export type FirmwareMode = 'unpack' | 'convert' | 'fullflash';
 
 export interface FirmwareBlock {
 	addr: number;
@@ -22,20 +22,36 @@ export interface FirmwareBlock {
 
 export interface FirmwareOutput {
 	name: string;
+	// The file's format, where its name doesn't tell it
+	format?: string;
 	blob?: Blob;
+	// Instead of blob, the file is made when saved, by a request with save
+	deferred?: boolean;
+	// The phone models the file can be for, one of which it is saved for, and the model detected
+	models?: string[];
+	model?: string;
 	info: [string, string][];
 	hashArea?: string;
 	blocks: FirmwareBlock[];
 	error?: string;
 }
 
+// The deferred output to make, by its name, and its phone model
+export interface FirmwareSave {
+	name: string;
+	model?: string;
+}
+
 export interface FirmwareRequest {
 	file: File;
 	mode: FirmwareMode;
+	save?: FirmwareSave;
 }
 
 export interface FirmwareResult {
 	type: string;
+	// Why all the files may be wrong
+	warning?: string;
 	files: FirmwareOutput[];
 }
 

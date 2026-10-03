@@ -1,11 +1,11 @@
 import { type Component, createSignal, onCleanup } from 'solid-js';
-import { Box, Stack } from '@suid/material';
+import { Box, Stack, Typography } from '@suid/material';
 import ArrowForwardIcon from '@suid/icons-material/ArrowForward';
 import { PageTitle } from '@/components/Layout/PageTitle';
 import { FirmwareTabs } from './FirmwareTabs';
 import { FirmwarePanel } from './FirmwarePanel';
 import FirmwareWorker from '@/workers/firmware?worker';
-import type { FirmwareMode, FirmwareRequest, FirmwareResponse } from '@/workers/services/FirmwareService';
+import type { FirmwareMode, FirmwareRequest, FirmwareResponse, FirmwareSave } from '@/workers/services/FirmwareService';
 
 const FirmwareConverterPage: Component = () => {
 	const [tab, setTab] = createSignal<FirmwareMode>('unpack');
@@ -20,7 +20,7 @@ const FirmwareConverterPage: Component = () => {
 	};
 	onCleanup(cancel);
 
-	const process = async (file: File, mode: FirmwareMode): Promise<FirmwareResponse | undefined> => {
+	const process = async (file: File, mode: FirmwareMode, save?: FirmwareSave): Promise<FirmwareResponse | undefined> => {
 		if (activeMode())
 			return;
 		setActiveMode(mode);
@@ -31,7 +31,7 @@ const FirmwareConverterPage: Component = () => {
 				cancelTask = () => resolve(undefined);
 				currentWorker.onmessage = (event: MessageEvent<FirmwareResponse>) => resolve(event.data);
 				currentWorker.onerror = (event) => reject(new Error(event.message || 'Firmware processing failed.'));
-				currentWorker.postMessage({ file, mode } satisfies FirmwareRequest);
+				currentWorker.postMessage({ file, mode, save } satisfies FirmwareRequest);
 			});
 		} catch (error) {
 			cancel();
@@ -49,6 +49,9 @@ const FirmwareConverterPage: Component = () => {
 	return (
 		<Box>
 			<PageTitle>Firmware Converter</PageTitle>
+			<Typography variant="body2" color="text.secondary" mb={1}>
+				Conversion happens in the browser, files never leave your PC.
+			</Typography>
 			<FirmwareTabs
 				id="firmware"
 				label="Firmware tools"
@@ -71,6 +74,7 @@ const FirmwareConverterPage: Component = () => {
 							</Stack>
 						),
 					},
+					{ value: 'fullflash', label: 'Fullflash formats (MFL, BIN)' },
 				]}
 				disabled={!!activeMode()}
 			/>
@@ -88,6 +92,14 @@ const FirmwareConverterPage: Component = () => {
 					activeMode={activeMode()}
 					onCancel={cancel}
 					onProcess={(file) => process(file, 'convert')}
+				/>
+			</Box>
+			<Box hidden={tab() !== 'fullflash'}>
+				<FirmwarePanel
+					mode="fullflash"
+					activeMode={activeMode()}
+					onCancel={cancel}
+					onProcess={(file, save) => process(file, 'fullflash', save)}
 				/>
 			</Box>
 		</Box>

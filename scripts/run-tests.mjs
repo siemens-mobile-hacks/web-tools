@@ -24,6 +24,13 @@ const testSuites = [
 		],
 		run: [".test-build/tests/vkp-highlight.test.js"],
 	},
+	{
+		sources: [
+			"src/utils/mfl.ts",
+			"src/tests/mfl.test.ts",
+		],
+		run: [".test-build/tests/mfl.test.js"],
+	},
 ];
 
 rmSync(buildDir, { recursive: true, force: true });
