@@ -1,0 +1,24 @@
+diff --git a/shims/process/dist/index.cjs b/shims/process/dist/index.cjs
+--- a/shims/process/dist/index.cjs
++++ b/shims/process/dist/index.cjs
+@@ -147,7 +147,7 @@ process.nextTick = function (fun) {
+     }
+     queue.push(new Item(fun, args));
+     if (queue.length === 1 && !draining) {
+-        runTimeout(drainQueue);
++        queueMicrotask(drainQueue);
+     }
+ };
+ 
+diff --git a/shims/process/dist/index.js b/shims/process/dist/index.js
+--- a/shims/process/dist/index.js
++++ b/shims/process/dist/index.js
+@@ -147,7 +147,7 @@ process.nextTick = function (fun) {
+     }
+     queue.push(new Item(fun, args));
+     if (queue.length === 1 && !draining) {
+-        runTimeout(drainQueue);
++        queueMicrotask(drainQueue);
+     }
+ };
+ 

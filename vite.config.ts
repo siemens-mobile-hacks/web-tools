@@ -97,8 +97,8 @@ export default defineConfig({
 		port: 3000,
 		fs: {
 			// This project's root (the default) plus the sibling sieflasher
-			// checkout, for when the gitignored pnpm-workspace.yaml override
-			// links @sie-js/flasher and vklay-loaders from there.
+			// checkout, for local setups that link @sie-js/flasher and
+			// vklay-loaders from there.
 			allow: ['.', '../sieflasher'],
 		},
 	},

@@ -36,7 +36,7 @@ export class FlasherService extends SerialService<PhoneDevice> {
 		return "FLSH";
 	}
 
-	async connect(portIndex: number, baudrate: number | undefined, data?: FlasherConnectData): Promise<void> {
+	async connect(portPath: string, baudrate: number | undefined, data?: FlasherConnectData): Promise<void> {
 		if (!data)
 			throw new Error("Flasher requires the loader data for connecting.");
 
@@ -45,11 +45,7 @@ export class FlasherService extends SerialService<PhoneDevice> {
 		if (!phone)
 			throw new Error("The selected loader file does not contain any phone definitions.");
 
-		const availablePorts = await navigator.serial.getPorts();
-		if (!availablePorts[portIndex])
-			throw new Error(`Invalid port index ${portIndex}`);
-
-		const serialPort = await openSerialPort(availablePorts[portIndex]);
+		const serialPort = await openSerialPort(portPath);
 		const transport = new AsyncSerialPortTransport(serialPort);
 		const device = new PhoneDevice(transport, phone, vkd.boots, {
 			dtr: data.dtr ?? true,

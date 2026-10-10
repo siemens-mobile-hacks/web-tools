@@ -1,6 +1,6 @@
 import * as Comlink from 'comlink';
 import EventEmitter from "eventemitter3";
-import { getSerialPort } from "@/utils/serial";
+import { resolveSerialPortPath } from '@/utils/serial';
 import { BfcService } from "@/workers/services/BfcService";
 import { CgsnService } from "@/workers/services/CgsnService";
 import { SerialService } from "../services/SerialService";
@@ -66,11 +66,13 @@ export class Serial extends EventEmitter<SerialWorkerEvents> {
 		this.setProtocol(protocol);
 		this.setReadyState(SerialReadyState.CONNECTING);
 		try {
-			const { index: portIndex, path: portPath } = await getSerialPort(prevPortPath);
-			this.setLastPortPath(portPath);
+			if (!prevPortPath)
+				throw new Error('No serial transport is available.');
+			const portPath = await resolveSerialPortPath(prevPortPath);
 			if (debug)
 				await this.service.setDebug(debug);
-			await this.service.connect(portIndex, limitBaudrate, data);
+			await this.service.connect(portPath, limitBaudrate, data);
+			this.setLastPortPath(portPath);
 			this.setDevice(await this.service.getDeviceName() ?? "Unknown device");
 			this.setReadyState(SerialReadyState.CONNECTED);
 		} catch (e) {

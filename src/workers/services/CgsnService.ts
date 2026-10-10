@@ -19,11 +19,8 @@ export interface PhoneInfo {
 }
 
 export class CgsnService extends SerialService<CGSN> {
-	async connect(portIndex: number, limitBaudrate?: number): Promise<void> {
-		const availablePorts = await navigator.serial.getPorts();
-		if (!availablePorts[portIndex])
-			throw new Error(`Invalid port index ${portIndex}`);
-		this.handle = new CGSN(await openSerialPort(availablePorts[portIndex]));
+	async connect(portPath: string, limitBaudrate?: number): Promise<void> {
+		this.handle = new CGSN(await openSerialPort(portPath));
 		if (!await this.handle.connect())
 			throw new Error(`Phone not connected or CGSN patch is not installed!`);
 		await this.handle.setBestBaudRate(limitBaudrate);

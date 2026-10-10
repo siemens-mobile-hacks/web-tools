@@ -4,6 +4,14 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  serialport-bindings-webusb@0.1.3:
+    hash: b6395c4e691787c82e5f77fb81cfe89300c4d43cae2dbae322d550f0978377c2
+    path: patches/serialport-bindings-webusb@0.1.3.patch
+  vite-plugin-node-polyfills@0.25.0:
+    hash: f5813e27c1eee831d7866b6c46ee80343cfb28a0f9a1e400b5eb066e6dd145d9
+    path: patches/vite-plugin-node-polyfills@0.25.0.patch
+
 importers:
 
   .:
@@ -83,6 +91,9 @@ importers:
       serialport-bindings-webserial:
         specifier: ^0.5.10
         version: 0.5.10
+      serialport-bindings-webusb:
+        specifier: ^0.1.3
+        version: 0.1.3(patch_hash=b6395c4e691787c82e5f77fb81cfe89300c4d43cae2dbae322d550f0978377c2)(@serialport/bindings-interface@1.2.2)
       siemens-sms-parser:
         specifier: ^0.3.5
         version: 0.3.5
@@ -123,6 +134,9 @@ importers:
       '@types/w3c-web-serial':
         specifier: ^1.0.8
         version: 1.0.8
+      '@types/w3c-web-usb':
+        specifier: ^1.0.14
+        version: 1.0.14
       playwright:
         specifier: ^1.63.0
         version: 1.63.0
@@ -143,7 +157,7 @@ importers:
         version: 1.2.1(rollup@4.59.0)
       vite-plugin-node-polyfills:
         specifier: ^0.25.0
-        version: 0.25.0(rollup@4.59.0)(vite@6.4.1(@types/node@25.4.0)(sass@1.97.3)(terser@5.46.0))
+        version: 0.25.0(patch_hash=f5813e27c1eee831d7866b6c46ee80343cfb28a0f9a1e400b5eb066e6dd145d9)(rollup@4.59.0)(vite@6.4.1(@types/node@25.4.0)(sass@1.97.3)(terser@5.46.0))
       vite-plugin-solid:
         specifier: ^2.11.10
         version: 2.11.10(solid-js@1.9.11)(vite@6.4.1(@types/node@25.4.0)(sass@1.97.3)(terser@5.46.0))
@@ -1095,6 +1109,9 @@ packages:
   '@types/w3c-web-serial@1.0.8':
     resolution: {integrity: sha512-QQOT+bxQJhRGXoZDZGLs3ksLud1dMNnMiSQtBA0w8KXvLpXX4oM4TZb6J0GgJ8UbCaHo5s9/4VQT8uXy9JER2A==}
 
+  '@types/w3c-web-usb@1.0.14':
+    resolution: {integrity: sha512-Qu3Nn6JFuF4+sHKYl+IcX9vYiI40ogleXzFFSxoE1W94rG98o/kXs8uJ0QSfFzuwBCZWlGfUGpPkgwuuX4PchA==}
+
   '@vitest/expect@3.2.7':
     resolution: {integrity: sha512-E8eBXaKibuvH2pSZErOjdVb5vF4PbKYcrnluBTYxEk1l/VhhwZg1kZQsdtjq+CsF5CFydf2Rdkz7jDHKSisi3w==}
 
@@ -2018,6 +2035,16 @@ packages:
 
   serialport-bindings-webserial@0.5.10:
     resolution: {integrity: sha512-OEO6bnL0DUFYSMAuNDrd5FkZYYN9WiY35Wg/4UYLgAgFb94k0kgyHNQbT1V87acq7DH+I+dzn1obQOju2Z8j7Q==}
+
+  serialport-bindings-webusb@0.1.3:
+    resolution: {integrity: sha512-S043WHS52I2FXbV9DBnRcwp3XMGcTSmNgNzDlvL5uF171RKTAhiL48GFJu3PaIWBU5rQk+Udid7RjzGFDmsojg==}
+    engines: {node: '>=22.12.0'}
+    peerDependencies:
+      '@serialport/bindings-interface': ^1.2.2
+      usb: ^2.18.0
+    peerDependenciesMeta:
+      usb:
+        optional: true
 
   serialport@13.0.0:
     resolution: {integrity: sha512-PHpnTd8isMGPfFTZNCzOZp9m4mAJSNWle9Jxu6BPTcWq7YXl5qN7tp8Sgn0h+WIGcD6JFz5QDgixC2s4VW7vzg==}
@@ -3279,6 +3306,8 @@ snapshots:
 
   '@types/w3c-web-serial@1.0.8': {}
 
+  '@types/w3c-web-usb@1.0.14': {}
+
   '@vitest/expect@3.2.7':
     dependencies:
       '@types/chai': 5.2.3
@@ -4299,6 +4328,14 @@ snapshots:
 
   serialport-bindings-webserial@0.5.10: {}
 
+  serialport-bindings-webusb@0.1.3(patch_hash=b6395c4e691787c82e5f77fb81cfe89300c4d43cae2dbae322d550f0978377c2)(@serialport/bindings-interface@1.2.2):
+    dependencies:
+      '@serialport/bindings-interface': 1.2.2
+      '@types/w3c-web-usb': 1.0.14
+      debug: 4.4.3
+    transitivePeerDependencies:
+      - supports-color
+
   serialport@13.0.0:
     dependencies:
       '@serialport/binding-mock': 10.2.2
@@ -4586,7 +4623,7 @@ snapshots:
       - tsx
       - yaml
 
-  vite-plugin-node-polyfills@0.25.0(rollup@4.59.0)(vite@6.4.1(@types/node@25.4.0)(sass@1.97.3)(terser@5.46.0)):
+  vite-plugin-node-polyfills@0.25.0(patch_hash=f5813e27c1eee831d7866b6c46ee80343cfb28a0f9a1e400b5eb066e6dd145d9)(rollup@4.59.0)(vite@6.4.1(@types/node@25.4.0)(sass@1.97.3)(terser@5.46.0)):
     dependencies:
       '@rollup/plugin-inject': 5.0.5(rollup@4.59.0)
       node-stdlib-browser: 1.3.1

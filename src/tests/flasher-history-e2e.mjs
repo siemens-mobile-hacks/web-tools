@@ -64,8 +64,8 @@ await sleep(500);
 // The tab bar
 check('tabs', await page.evaluate(() =>
 	[...document.querySelectorAll('button')].map((b) => b.textContent.trim())
-		.filter((t) => ['Phone (WebSerial)', 'Fullflash file (.bin)', 'History'].includes(t))), [
-	'Phone (WebSerial)', 'Fullflash file (.bin)', 'History',
+		.filter((t) => ['Phone', 'Fullflash file (.bin)', 'History'].includes(t))), [
+	'Phone', 'Fullflash file (.bin)', 'History',
 ]);
 
 // Empty state
@@ -78,7 +78,7 @@ await seedHistory([
 	entry({ id: 'b', patchTitle: 'Blue EQ', model: 'CXV70', imei: '222222222222222', date: '2024-06-16T10:00:00.000Z' }),
 	entry({ id: 'c', patchTitle: 'Caller groups', model: 'S55', imei: '333333333333333', date: '2024-06-17T10:00:00.000Z', action: 'revert' }),
 ]);
-await clickButton('Phone (WebSerial)');
+await clickButton('Phone');
 await clickButton('History');
 const titles = () => page.evaluate(() =>
 	[...document.querySelectorAll('.MuiPaper-outlined')]

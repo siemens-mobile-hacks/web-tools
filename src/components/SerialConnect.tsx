@@ -1,4 +1,4 @@
-import { Component, createMemo, createSignal, For, on, Show } from 'solid-js';
+import { Component, createEffect, createMemo, createSignal, For, on, Show } from 'solid-js';
 import {
 	Alert,
 	Box,
@@ -19,12 +19,13 @@ import ReportGmailerrorredIcon from '@suid/icons-material/ReportGmailerrorred';
 import SettingsIcon from '@suid/icons-material/Settings';
 import { useSerial } from '@/providers/SerialProvider.js';
 import { makePersisted } from "@solid-primitives/storage";
-import { WebSerialPortInfo } from "serialport-bindings-webserial";
+import type { PortInfo } from '@serialport/bindings-interface';
 import { SerialProtocol, SerialReadyState } from '@/workers/endpoints/serial';
 import { useTheme } from "@suid/material/styles";
 import { ButtonLoadingText } from "@/components/UI/ButtonLoadingText";
 import { PopperWithArrow } from "@/components/UI/PopperWithArrow";
 import { getUSBDeviceName } from "@sie-js/serial";
+import { getAutoSerialPortPath } from '@/utils/serial';
 
 interface SerialConnectProps {
 	protocol: SerialProtocol;
@@ -38,7 +39,7 @@ export const SerialConnect: Component<SerialConnectProps> = (props) => {
 	const [serialDebug, setSerialDebug] = makePersisted(createSignal<string[]>([]), {
 		name: 'serialDebugFilter'
 	});
-	const [selectedSerialPort, setSelectedSerialPort] = createSignal<string>('webserial://any');
+	const [selectedSerialPort, setSelectedSerialPort] = createSignal<string>('');
 	const [showSettings, setShowSettings] = createSignal<boolean>(false);
 	const serial = useSerial();
 
@@ -53,10 +54,21 @@ export const SerialConnect: Component<SerialConnectProps> = (props) => {
 	const handleDisconnect = (): void => {
 		void serial.disconnect();
 	};
+	const handleTransportChange = (value: string): void => {
+		if (value === 'webserial' || value === 'webusb')
+			serial.setTransport(value);
+	};
+	const autoSerialPortPath = createMemo(() => {
+		const transport = serial.transport();
+		return transport ? getAutoSerialPortPath(transport) : '';
+	});
 
-	createMemo(on(
-		[serial.readyState, () => serial.getLastUsedPort(props.protocol)],
-		([_, port]) => setSelectedSerialPort(port ?? 'webserial://any')
+	createEffect(on(
+		[serial.readyState, () => serial.getLastUsedPort(props.protocol), serial.transport],
+		([_, port, transport]) => {
+			const autoPortPath = transport ? getAutoSerialPortPath(transport) : '';
+			setSelectedSerialPort(port?.startsWith(`${transport}://`) ? port : autoPortPath);
+		}
 	));
 
 	const toggleDebug = (type: string): void => {
@@ -70,10 +82,11 @@ export const SerialConnect: Component<SerialConnectProps> = (props) => {
 		setSerialDebug(debugFilter);
 	};
 
-	const currentSerialPort = createMemo(on(
-		[serial.ports, selectedSerialPort],
-		() => serial.isPortExists(selectedSerialPort()) ? selectedSerialPort() : 'webserial://any'
-	));
+	const currentSerialPort = createMemo(() => {
+		if (serial.isPortExists(selectedSerialPort()))
+			return selectedSerialPort();
+		return autoSerialPortPath();
+	});
 
 	const invalidProtocol = createMemo(() =>
 		serial.protocol() !== props.protocol &&
@@ -100,7 +113,7 @@ export const SerialConnect: Component<SerialConnectProps> = (props) => {
 					ref={popperAnchorRef}
 					sx={{ minWidth: 120 }}
 					size="small"
-					disabled={serial.readyState() !== SerialReadyState.DISCONNECTED}
+					disabled={serial.readyState() !== SerialReadyState.DISCONNECTED || !serial.transport()}
 				>
 					<InputLabel id="serial-port-selector-label">Port</InputLabel>
 					<Select
@@ -111,7 +124,7 @@ export const SerialConnect: Component<SerialConnectProps> = (props) => {
 						label="Port"
 						onChange={(e) => setSelectedSerialPort(e.target.value)}
 					>
-						<MenuItem value="webserial://any">
+						<MenuItem value={autoSerialPortPath()}>
 							Auto
 						</MenuItem>
 						<For each={serial.ports()}>{(port) => <MenuItem value={port.path}>{serialPortName(port)}</MenuItem>}</For>
@@ -148,7 +161,7 @@ export const SerialConnect: Component<SerialConnectProps> = (props) => {
 				<Show when={serial.readyState() === SerialReadyState.DISCONNECTED || serial.readyState() === SerialReadyState.CONNECTING}>
 					<Button
 						variant="contained"
-						disabled={serial.readyState() !== SerialReadyState.DISCONNECTED}
+						disabled={serial.readyState() !== SerialReadyState.DISCONNECTED || !serial.transport()}
 						onClick={handleConnect}
 					>
 						<ButtonLoadingText loading={serial.readyState() === SerialReadyState.CONNECTING}>
@@ -185,7 +198,28 @@ export const SerialConnect: Component<SerialConnectProps> = (props) => {
 						Advanced settings
 					</Typography>
 
-					<Box pt={2}>
+					<Stack pt={2} gap={2}>
+						<FormControl
+							size="small"
+							disabled={serial.readyState() !== SerialReadyState.DISCONNECTED || serial.availableTransports().length === 0}
+						>
+							<InputLabel id="serial-transport-selector-label">Transport</InputLabel>
+							<Select
+								labelId="serial-transport-selector-label"
+								id="serial-transport-selector"
+								label="Transport"
+								size="small"
+								value={serial.transport() ?? ''}
+								onChange={(e) => handleTransportChange(e.target.value)}
+							>
+								<For each={serial.availableTransports()}>{(transport) =>
+									<MenuItem value={transport}>
+										{transport === 'webusb' ? 'WebUSB' : 'WebSerial'}
+									</MenuItem>
+								}</For>
+							</Select>
+						</FormControl>
+
 						<FormControl size="small" disabled={serial.readyState() !== SerialReadyState.DISCONNECTED}>
 							<InputLabel id="serial-baudrate-selector-label">Baudrate</InputLabel>
 							<Select
@@ -202,32 +236,35 @@ export const SerialConnect: Component<SerialConnectProps> = (props) => {
 							</Select>
 						</FormControl>
 
-						<For each={serial.getAdapter(props.protocol).getDebugFilters()}>{(item) =>
-							<FormGroup>
-								<FormControlLabel
-									control={
-										<Checkbox
-											onChange={() => toggleDebug(item.filter)}
-											checked={serialDebug().includes(item.filter)}
-										/>
-									}
-									label={item.name}
-								/>
-							</FormGroup>
-						}</For>
-					</Box>
+						<Box>
+							<For each={serial.getAdapter(props.protocol).getDebugFilters()}>{(item) =>
+								<FormGroup>
+									<FormControlLabel
+										control={
+											<Checkbox
+												onChange={() => toggleDebug(item.filter)}
+												checked={serialDebug().includes(item.filter)}
+											/>
+										}
+										label={item.name}
+									/>
+								</FormGroup>
+							}</For>
+						</Box>
+					</Stack>
 				</Box>
 			</Popover>
 		</Stack>
 	);
 }
 
-function serialPortName(port: WebSerialPortInfo): string {
+function serialPortName(port: PortInfo): string {
 	const url = new URL(port.path);
-	const postfix = Number(url.searchParams.get("n") ?? "") > 0 ? ` (${url.searchParams.get("n")})` : "";
-	if (url.hostname === "usb") {
-		const vid = parseInt(port.vendorId!, 16);
-		const pid = parseInt(port.productId!, 16);
+	const instance = url.searchParams.get('n') ?? url.searchParams.get('instance');
+	const postfix = Number(instance ?? '') > 0 ? ` (${instance})` : '';
+	if (port.vendorId && port.productId) {
+		const vid = parseInt(port.vendorId, 16);
+		const pid = parseInt(port.productId, 16);
 		return getUSBDeviceName(vid, pid) ?? `USB ${sprintf("%04X:%04X", vid, pid)}${postfix}`;
 	} else if (url.hostname === "bluetooth") {
 		return `BT #${url.searchParams.get("n")}`;

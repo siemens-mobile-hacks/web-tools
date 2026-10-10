@@ -71,7 +71,7 @@ export const FlasherPage: Component = () => {
 
 			<Stack direction="row" sx={{ borderBottom: 1, borderColor: 'divider', width: '100%' }} flexWrap="wrap">
 				<For each={[
-					{ value: 'phone' as FlasherMode, label: 'Phone (WebSerial)' },
+					{ value: 'phone' as FlasherMode, label: 'Phone' },
 					{ value: 'file' as FlasherMode, label: 'Fullflash file (.bin)' },
 					{ value: 'history' as FlasherMode, label: 'History', icon: true },
 				]}>{(tab) =>

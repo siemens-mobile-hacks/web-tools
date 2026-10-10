@@ -5,11 +5,8 @@ import { isApoxiBootUnlocked, unlockApoxiBootloader } from "@sie-js/apoxi-tool";
 import * as Comlink from "comlink";
 
 export class DwdService extends SerialService<DWD> {
-	async connect(portIndex: number): Promise<void> {
-		const availablePorts = await navigator.serial.getPorts();
-		if (!availablePorts[portIndex])
-			throw new Error(`Invalid port index ${portIndex}`);
-		this.handle = new DWD(await openSerialPort(availablePorts[portIndex]));
+	async connect(portPath: string): Promise<void> {
+		this.handle = new DWD(await openSerialPort(portPath));
 		await this.handle.connect();
 	}
 

@@ -30,7 +30,8 @@
 		"types": [
 			"vite-plugin-solid-svg/types-component-solid",
 			"vite/client",
-			"@types/w3c-web-serial"
+			"@types/w3c-web-serial",
+			"@types/w3c-web-usb"
 		]
 	},
 	"include": [

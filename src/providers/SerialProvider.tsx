@@ -1,7 +1,9 @@
 /* @refresh reload */
 import * as Comlink from 'comlink';
-import { Accessor, batch, createContext, createSignal, onCleanup, onMount, ParentComponent, useContext } from 'solid-js';
-import { WebSerialBinding, WebSerialPortInfo } from 'serialport-bindings-webserial';
+import type { PortInfo } from '@serialport/bindings-interface';
+import { Accessor, batch, createContext, createEffect, createMemo, createSignal, onCleanup, onMount, ParentComponent, Setter, useContext } from 'solid-js';
+import { WebSerialBinding } from 'serialport-bindings-webserial';
+import { WebUSBBinding } from 'serialport-bindings-webusb';
 import { SerialProtocol, SerialReadyState, serialWorker } from '@/workers/endpoints/serial';
 import { makePersisted } from "@solid-primitives/storage";
 import { BfcService } from "@/workers/services/BfcService.js";
@@ -13,6 +15,8 @@ import { FlasherService } from "@/workers/services/FlasherService.js";
 import { SerialService } from "@/workers/services/SerialService";
 import { useApp } from "@/providers/AppProvider";
 import { BfbService } from "@/workers/services/BfbService";
+import { getAutoSerialPortPath, getAvailableSerialTransports, getDefaultSerialTransport } from '@/utils/serial';
+import type { SerialTransport } from '@/utils/serial';
 
 interface SerialContext {
 	bfb: Comlink.Remote<BfbService>;
@@ -22,7 +26,10 @@ interface SerialContext {
 	obex: Comlink.Remote<ObexService>;
 	flasher: Comlink.Remote<FlasherService>;
 	logs: Comlink.Remote<LogService>;
-	ports: Accessor<WebSerialPortInfo[]>;
+	ports: Accessor<PortInfo[]>;
+	availableTransports: Accessor<SerialTransport[]>;
+	transport: Accessor<SerialTransport | undefined>;
+	setTransport: Setter<SerialTransport>;
 	readyState: Accessor<SerialReadyState>;
 	connectError: Accessor<Error | undefined>;
 	protocol: Accessor<string>;
@@ -52,19 +59,46 @@ export const SerialProvider: ParentComponent = (props) => {
 	const [readyState, setReadyState] = createSignal<SerialReadyState>(SerialReadyState.DISCONNECTED);
 	const [connectError, setConnectError] = createSignal<Error | undefined>();
 	const [device, setDevice] = createSignal<string | undefined>();
-	const [ports, setPorts] = createSignal<WebSerialPortInfo[]>([]);
+	const [ports, setPorts] = createSignal<PortInfo[]>([]);
 	const [lastUsedPorts, setLastUsedPorts] = makePersisted(createSignal<Record<string, string>>({}), { name: "lastUsedPorts" });
+	const availableTransports = createMemo(getAvailableSerialTransports);
+	const defaultTransport = getDefaultSerialTransport(availableTransports()) ?? 'webserial';
+	const [preferredTransport, setTransport] = makePersisted(createSignal<SerialTransport>(defaultTransport), {
+		name: 'serialTransport'
+	});
+	const transport = createMemo(() => {
+		const available = availableTransports();
+		return available.includes(preferredTransport()) ? preferredTransport() : getDefaultSerialTransport(available);
+	});
 
+	let portListRequestId = 0;
 	const monitorNewPorts = () => {
-		WebSerialBinding.list().then(setPorts);
+		const requestId = ++portListRequestId;
+		const selectedTransport = transport();
+		if (!selectedTransport) {
+			setPorts([]);
+			return;
+		}
+		const binding = selectedTransport === 'webusb' ? WebUSBBinding : WebSerialBinding;
+		void binding.list().then((availablePorts) => {
+			if (requestId === portListRequestId)
+				setPorts(availablePorts);
+		});
 	};
 
 	const connect = async (protocol: SerialProtocol, prevPortPath?: string, limitBaudrate?: number, debug?: string, data?: any): Promise<void> => {
 		try {
 			setConnectError(undefined);
-			await serialWorker.connect(protocol, prevPortPath, limitBaudrate, debug, data);
+			const selectedTransport = transport();
+			let selectedPortPath: string | undefined;
+			if (selectedTransport && prevPortPath?.startsWith(`${selectedTransport}://`)) {
+				selectedPortPath = prevPortPath;
+			} else if (selectedTransport) {
+				selectedPortPath = getAutoSerialPortPath(selectedTransport);
+			}
+			await serialWorker.connect(protocol, selectedPortPath, limitBaudrate, debug, data);
 		} catch (e) {
-			setConnectError(e as Error);
+			setConnectError(e instanceof Error ? e : new Error(String(e)));
 			monitorNewPorts();
 		}
 	};
@@ -76,7 +110,8 @@ export const SerialProvider: ParentComponent = (props) => {
 	};
 
 	const isPortExists = (path: string): boolean => {
-		if (path === 'webserial://any')
+		const selectedTransport = transport();
+		if (selectedTransport && path === getAutoSerialPortPath(selectedTransport))
 			return true;
 		for (const port of ports()) {
 			if (port.path === path)
@@ -92,10 +127,10 @@ export const SerialProvider: ParentComponent = (props) => {
 	const onReadyStateChange = (readyState: SerialReadyState) => setReadyState(readyState);
 	const onProtocolChange = (protocol: SerialProtocol) => setCurrentProtocol(protocol);
 	const onSerialPortChange = (portPath: string) => {
-		setLastUsedPorts((prev) => {
-			prev[currentProtocol()] = portPath;
-			return prev;
-		});
+		setLastUsedPorts((prev) => ({
+			...prev,
+			[currentProtocol()]: portPath,
+		}));
 		monitorNewPorts();
 	};
 	// Batched, so that the effects putting the device into a status of their own run after the name alone is set
@@ -104,15 +139,24 @@ export const SerialProvider: ParentComponent = (props) => {
 		app.setStatus(deviceName);
 	});
 
+	createEffect(() => {
+		transport();
+		setPorts([]);
+		monitorNewPorts();
+	});
+
 	onMount(() => {
 		serialWorker.on('deviceChange', onDeviceChange);
 		serialWorker.on('readyStateChange', onReadyStateChange);
 		serialWorker.on('protocolChange', onProtocolChange);
 		serialWorker.on('serialPortChange', onSerialPortChange);
-		if (navigator.serial) {
+		if ('serial' in navigator) {
 			navigator.serial.addEventListener("connect", monitorNewPorts);
 			navigator.serial.addEventListener("disconnect", monitorNewPorts);
-			monitorNewPorts();
+		}
+		if ('usb' in navigator) {
+			navigator.usb.addEventListener("connect", monitorNewPorts);
+			navigator.usb.addEventListener("disconnect", monitorNewPorts);
 		}
 	});
 
@@ -121,9 +165,13 @@ export const SerialProvider: ParentComponent = (props) => {
 		serialWorker.off('readyStateChange', onReadyStateChange);
 		serialWorker.off('protocolChange', onProtocolChange);
 		serialWorker.off('serialPortChange', onSerialPortChange);
-		if (navigator.serial) {
+		if ('serial' in navigator) {
 			navigator.serial.removeEventListener("connect", monitorNewPorts);
 			navigator.serial.removeEventListener("disconnect", monitorNewPorts);
+		}
+		if ('usb' in navigator) {
+			navigator.usb.removeEventListener("connect", monitorNewPorts);
+			navigator.usb.removeEventListener("disconnect", monitorNewPorts);
 		}
 		void disconnect();
 	});
@@ -137,6 +185,9 @@ export const SerialProvider: ParentComponent = (props) => {
 			obex: serialWorker.getService("OBEX"),
 			flasher: serialWorker.getService("FLSH"),
 			logs: serialWorker.getService("LOG"),
+			availableTransports,
+			transport,
+			setTransport,
 			getAdapter(type: string) {
 				switch (type) {
 					case "BFB":

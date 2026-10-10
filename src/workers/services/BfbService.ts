@@ -8,11 +8,8 @@ export class BfbService extends SerialService<BFB> {
 		return "BFB";
 	}
 
-	async connect(portIndex: number, limitBaudrate?: number): Promise<void> {
-		const availablePorts = await navigator.serial.getPorts();
-		if (!availablePorts[portIndex])
-			throw new Error(`Invalid port index ${portIndex}`);
-		this.handle = new BFB(await openSerialPort(availablePorts[portIndex]));
+	async connect(portPath: string, limitBaudrate?: number): Promise<void> {
+		this.handle = new BFB(await openSerialPort(portPath));
 		await this.handle.connect();
 		await this.handle.setBestBaudrate(limitBaudrate);
 	}
