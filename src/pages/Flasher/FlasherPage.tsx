@@ -14,7 +14,6 @@ import { sprintf } from 'sprintf-js';
 import * as Comlink from 'comlink';
 import { useSerial } from '@/providers/SerialProvider.js';
 import { useApp } from '@/providers/AppProvider.js';
-import { makePersisted } from "@solid-primitives/storage";
 import HistoryIcon from '@suid/icons-material/History';
 import { SerialProtocol, SerialReadyState, serialWorker } from '@/workers/endpoints/serial';
 import { FlasherMemoryArea, FlasherProgress } from '@/workers/services/FlasherService';
@@ -34,6 +33,7 @@ import {
 	PatchLogContext, addPatchHistoryEntry, dumpModelFromFileName, newPatchHistoryId, vkpPatchTitle,
 } from '@/pages/Flasher/history';
 import builtinManifest from 'vklay-loaders/manifest.json';
+import { makePersistedSignal } from '@/utils/store/makePersistedSignal';
 
 // Built-in V_KLay drivers (.vkd text files) from the vklay-loaders package,
 // each as its own lazily-imported chunk.
@@ -118,16 +118,16 @@ const PhoneFlasher: Component = () => {
 	const [vkd, setVkd] = createSignal<VkdFile | undefined>();
 	const [vkdText, setVkdText] = createSignal<string>('');
 	// Remembered selections, like V_KLay stores them in the registry.
-	const [vkdName, setVkdName] = makePersisted(createSignal<string>(''), { name: 'flasher.loader' });
+	const [vkdName, setVkdName] = makePersistedSignal(createSignal<string>(''), { name: 'flasher.loader' });
 	// Custom .vkd drivers added by the user: file name -> file text.
-	const [customVkds, setCustomVkds] = makePersisted(createSignal<Record<string, string>>({}), { name: 'flasher.customLoaders' });
-	const [phoneId, setPhoneId] = makePersisted(createSignal<string>(''), { name: 'flasher.phone' });
-	const [baudrate, setBaudrate] = makePersisted(createSignal<number>(115200), { name: 'flasher.baudrate' });
-	const [dtr, setDtr] = makePersisted(createSignal<boolean>(true), { name: 'flasher.dtr' });
-	const [rts, setRts] = makePersisted(createSignal<boolean>(true), { name: 'flasher.rts' });
-	const [skipBootcore, setSkipBootcore] = makePersisted(createSignal<boolean>(true), { name: 'flasher.skipBootcore' });
-	const [skipLoader, setSkipLoader] = makePersisted(createSignal<boolean>(false), { name: 'flasher.skipLoader' });
-	const [autoIgnition, setAutoIgnition] = makePersisted(createSignal<boolean>(true), { name: 'flasher.autoIgnition' });
+	const [customVkds, setCustomVkds] = makePersistedSignal(createSignal<Record<string, string>>({}), { name: 'flasher.customLoaders' });
+	const [phoneId, setPhoneId] = makePersistedSignal(createSignal<string>(''), { name: 'flasher.phone' });
+	const [baudrate, setBaudrate] = makePersistedSignal(createSignal<number>(115200), { name: 'flasher.baudrate' });
+	const [dtr, setDtr] = makePersistedSignal(createSignal<boolean>(true), { name: 'flasher.dtr' });
+	const [rts, setRts] = makePersistedSignal(createSignal<boolean>(true), { name: 'flasher.rts' });
+	const [skipBootcore, setSkipBootcore] = makePersistedSignal(createSignal<boolean>(true), { name: 'flasher.skipBootcore' });
+	const [skipLoader, setSkipLoader] = makePersistedSignal(createSignal<boolean>(false), { name: 'flasher.skipLoader' });
+	const [autoIgnition, setAutoIgnition] = makePersistedSignal(createSignal<boolean>(true), { name: 'flasher.autoIgnition' });
 	const [flashInfo, setFlashInfo] = createSignal<string>('');
 	// Top bar info, like in the File Explorer: device name from the
 	// deviceChange event plus the actual baudrate and the flash details.

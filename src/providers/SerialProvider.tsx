@@ -5,7 +5,6 @@ import { Accessor, batch, createContext, createEffect, createMemo, createSignal,
 import { WebSerialBinding } from 'serialport-bindings-webserial';
 import { WebUSBBinding } from 'serialport-bindings-webusb';
 import { SerialProtocol, SerialReadyState, serialWorker } from '@/workers/endpoints/serial';
-import { makePersisted } from "@solid-primitives/storage";
 import { BfcService } from "@/workers/services/BfcService.js";
 import { CgsnService } from "@/workers/services/CgsnService.js";
 import { DwdService } from "@/workers/services/DwdService.js";
@@ -16,6 +15,7 @@ import { useApp } from "@/providers/AppProvider";
 import { BfbService } from "@/workers/services/BfbService";
 import { getAutoSerialPortPath, getAvailableSerialTransports, getDefaultSerialTransport } from '@/utils/serial';
 import type { SerialTransport } from '@/utils/serial';
+import { makePersistedSignal } from '@/utils/store/makePersistedSignal';
 
 interface SerialContext {
 	bfb: Comlink.Remote<BfbService>;
@@ -58,10 +58,10 @@ export const SerialProvider: ParentComponent = (props) => {
 	const [connectError, setConnectError] = createSignal<Error | undefined>();
 	const [device, setDevice] = createSignal<string | undefined>();
 	const [ports, setPorts] = createSignal<PortInfo[]>([]);
-	const [lastUsedPorts, setLastUsedPorts] = makePersisted(createSignal<Record<string, string>>({}), { name: "lastUsedPorts" });
+	const [lastUsedPorts, setLastUsedPorts] = makePersistedSignal(createSignal<Record<string, string>>({}), { name: "lastUsedPorts" });
 	const availableTransports = createMemo(getAvailableSerialTransports);
 	const defaultTransport = getDefaultSerialTransport(availableTransports()) ?? 'webserial';
-	const [preferredTransport, setTransport] = makePersisted(createSignal<SerialTransport>(defaultTransport), {
+	const [preferredTransport, setTransport] = makePersistedSignal(createSignal<SerialTransport>(defaultTransport), {
 		name: 'serialTransport'
 	});
 	const transport = createMemo(() => {

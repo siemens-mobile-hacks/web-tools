@@ -11,7 +11,6 @@ import {
 	MIN_DRAWER_WIDTH,
 } from '@/components/App/Drawer.js';
 import { SerialProvider } from '@/providers/SerialProvider.js';
-import { makePersisted } from "@solid-primitives/storage";
 import { Toaster } from "@/components/App/Toaster.js";
 import { AppProvider } from "@/providers/AppProvider";
 import { useLocation } from "@solidjs/router";
@@ -27,7 +26,7 @@ export const App: ParentComponent = (props) => {
 	const location = useLocation();
 	const [drawerIsOpen, setDrawerIsOpen] = createSignal<boolean>(false);
 	const [themeChangeCount, setThemeChangeCount] = createSignal(0);
-	const [preferredTheme, setPreferredTheme] = makePersisted(createSignal<ThemeMode>("system"), { name: "theme" });
+	const [preferredTheme, setPreferredTheme] = makePersistedSignal(createSignal<ThemeMode>("system"), { name: "theme" });
 	const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
 	const [preferredDrawerWidth, setPreferredDrawerWidth] = makePersistedSignal(
 		createSignal(DEFAULT_DRAWER_WIDTH),

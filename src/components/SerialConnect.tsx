@@ -20,7 +20,6 @@ import { sprintf } from 'sprintf-js';
 import ReportGmailerrorredIcon from '@suid/icons-material/ReportGmailerrorred';
 import SettingsIcon from '@suid/icons-material/Settings';
 import { useSerial } from '@/providers/SerialProvider.js';
-import { makePersisted } from "@solid-primitives/storage";
 import type { PortInfo } from '@serialport/bindings-interface';
 import { SerialProtocol, SerialReadyState } from '@/workers/endpoints/serial';
 import { useTheme } from "@suid/material/styles";
@@ -33,6 +32,7 @@ import {
 	TRX_DEBUG_PATTERN,
 } from '@/utils/debugChannels';
 import { useDebugSettings } from '@/store/debugSettings';
+import { makePersistedSignal } from '@/utils/store/makePersistedSignal';
 
 interface SerialConnectProps {
 	protocol: SerialProtocol;
@@ -40,7 +40,7 @@ interface SerialConnectProps {
 
 export const SerialConnect: Component<SerialConnectProps> = (props) => {
 	const theme = useTheme();
-	const [currentBaudrate, setCurrentBaudrate] = makePersisted(createSignal<number>(0), {
+	const [currentBaudrate, setCurrentBaudrate] = makePersistedSignal(createSignal<number>(0), {
 		name: 'limitMaxBaudrate' + props.protocol
 	});
 	const [, debugSettings] = useDebugSettings();
