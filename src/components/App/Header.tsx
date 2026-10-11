@@ -45,7 +45,7 @@ export const AppHeader: Component<AppHeaderProps> = (props) => {
 
 	return (
 		<AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
-			<Toolbar>
+			<Toolbar variant="dense">
 				<Show when={!isWideScreen()}>
 					<IconButton
 						color="inherit"
@@ -75,13 +75,13 @@ export const AppHeader: Component<AppHeaderProps> = (props) => {
 				<Show when={!isWideScreen()}>
 					<Stack sx={{ flexGrow: 1, minWidth: 0 }} direction="row" justifyContent="center" alignItems="center">
 						<Stack direction="column" sx={{ minWidth: 0 }}>
-							<Typography variant="h6" color="inherit">
+							<Typography variant="h6" color="inherit" noWrap sx={{ lineHeight: 1.15 }}>
 								{app.title()}
 							</Typography>
 
 							{/* On one line, so that the fixed bar does not grow over the page */}
 							<Show when={app.status()}>
-								<Typography variant="caption" color="inherit" align="center" noWrap>
+								<Typography variant="caption" color="inherit" align="center" noWrap sx={{ lineHeight: 1.1 }}>
 									{statusIcon()}
 									{app.status()}
 								</Typography>
@@ -90,7 +90,7 @@ export const AppHeader: Component<AppHeaderProps> = (props) => {
 					</Stack>
 				</Show>
 
-				<IconButton size="large" edge="end" color="inherit" onClick={changeTheme}>
+				<IconButton edge="end" color="inherit" onClick={changeTheme}>
 					<Switch>
 						<Match when={props.preferredTheme === 'light'}>
 							<LightModeIcon />

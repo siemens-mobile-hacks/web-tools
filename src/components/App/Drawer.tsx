@@ -184,7 +184,7 @@ export const AppDrawer: Component<AppDrawerProps> = (props) => {
 			variant={drawerVariant()}
 			sx={{ width: DRAWER_WIDTH, flexShrink: 0, [`& .MuiDrawer-paper`]: { width: DRAWER_WIDTH, boxSizing: 'border-box' } }}
 		>
-			<Toolbar />
+			<Toolbar variant="dense" />
 			<Box sx={{ overflow: 'auto' }}>
 				<List>
 					<For each={links}>{(link) => <DrawerLink {...link} />}</For>

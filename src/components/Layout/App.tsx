@@ -80,7 +80,7 @@ export const App: ParentComponent = (props) => {
 						<AppDrawer open={drawerIsOpen()} onClose={() => toggleDrawer(false)} />
 
 						<Box component="main" sx={{ flexGrow: 1, p: 1, maxWidth: '100%' }}>
-							<Toolbar />
+							<Toolbar variant="dense" />
 							{props.children}
 						</Box>
 					</Box>
