@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { test } from 'vitest';
 import { createSignal } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { makePersistedSignal } from '../utils/store/makePersistedSignal.js';

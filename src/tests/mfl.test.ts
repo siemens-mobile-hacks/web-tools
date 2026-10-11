@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -103,7 +103,7 @@ test('mfl: phone model detection', () => {
 	assert.deepEqual(detectMflModels(flash).map((model) => model.code), ['C11F', 'X65G', 'L71F']);
 });
 
-test('mfl: Martech files', { skip: !files.length && 'MFL_TEST_FILES has no .mfl files' }, () => {
+test.skipIf(!files.length)('mfl: Martech files', () => {
 	for (const file of files) {
 		const data = fs.readFileSync(file);
 		const { code, flash } = decodeMfl(data);

@@ -9,7 +9,7 @@
 		"build": "tsc && vite build",
 		"gh-pages-build": "tsc && vite build",
 		"serve": "vite preview",
-		"test": "node scripts/run-tests.mjs",
+		"test": "vitest run --project unit",
 		"test:e2e": "vitest run --project e2e --no-file-parallelism"
 	},
 	"license": "MIT",

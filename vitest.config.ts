@@ -5,10 +5,16 @@ import { defineConfig } from 'vitest/config';
 //   SIE_FFS_TEST_FULLFLASHES=<directories of fullflashes> CHROME_PATH=<chrome> pnpm test:e2e
 // Without CHROME_PATH, they take the Chromium of `pnpm exec playwright install chromium`. The tests
 // of a fullflash that isn't found are skipped, and the run fails when none is.
-// The unit tests run with Node's test runner: pnpm test.
 export default defineConfig({
 	test: {
 		projects: [
+			{
+				test: {
+					name: 'unit',
+					include: ['src/tests/**/*.test.ts'],
+					environment: 'node',
+				},
+			},
 			{
 				test: {
 					name: 'e2e',
