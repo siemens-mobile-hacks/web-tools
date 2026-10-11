@@ -179,7 +179,7 @@ export const App: ParentComponent = (props) => {
 								gridArea: 'main',
 								minWidth: 0,
 								minHeight: 0,
-								p: 1,
+								p: 2,
 								maxWidth: '100%',
 								overflow: hasPermanentDrawer() ? 'auto' : undefined,
 							}}

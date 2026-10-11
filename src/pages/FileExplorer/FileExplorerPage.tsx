@@ -34,6 +34,8 @@ import ArrowUpwardIcon from '@suid/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@suid/icons-material/ArrowDownward';
 import RefreshIcon from '@suid/icons-material/Refresh';
 import OpenInNewIcon from '@suid/icons-material/OpenInNew';
+import MemoryIcon from '@suid/icons-material/Memory';
+import PhoneAndroidIcon from '@suid/icons-material/PhoneAndroid';
 import { useSerial } from '@/providers/SerialProvider.js';
 import { SerialReadyState } from '@/workers/endpoints/serial';
 import { PageTitle } from '@/components/Layout/PageTitle';
@@ -336,7 +338,6 @@ export const FileExplorerPage: Component = () => {
 	};
 
 	const switchSource = (_: unknown, value: Source | null): void => {
-		// null when the selected button is clicked again
 		if (value)
 			navigateTo([], value);
 	};
@@ -830,61 +831,108 @@ export const FileExplorerPage: Component = () => {
 		<Box>
 			<PageTitle>File Explorer</PageTitle>
 
-			<Box mb={2}>
+			<Stack
+				direction="row"
+				sx={{
+					mb: 1,
+					minWidth: 0,
+					gap: { xs: 2, sm: 1 },
+					flexDirection: { xs: 'column', sm: 'row' },
+					alignItems: { xs: 'stretch', sm: 'center' },
+				}}
+			>
 				<ToggleButtonGroup
 					exclusive
 					size="small"
+					color="primary"
 					value={source()}
 					disabled={isBusy()}
 					aria-label="Source"
 					onChange={switchSource}
+					sx={{
+						width: { xs: '100%', sm: 'auto' },
+						height: 40,
+						flexShrink: 0,
+						'& .MuiToggleButtonGroup-grouped': {
+							flexGrow: { xs: 1, sm: 0 },
+						},
+					}}
 				>
-					<ToggleButton value="phone">Phone</ToggleButton>
-					<ToggleButton value="fullflash">Fullflash</ToggleButton>
+					<ToggleButton value="phone">
+						<PhoneAndroidIcon fontSize="small" />
+						Phone
+					</ToggleButton>
+					<ToggleButton value="fullflash">
+						<MemoryIcon fontSize="small" />
+						Fullflash
+					</ToggleButton>
 				</ToggleButtonGroup>
-			</Box>
-
-			<Box mb={2}>
-				{/* Progress lives next to the connect controls so an active transfer
-				  doesn't add a line and shift the file list down */}
-				<Stack direction="row" alignItems="center" flexWrap="wrap" gap={1}>
-					<Show
-						when={source() == 'phone'}
-						fallback={
-							<FullFlashStatusBar
-								fullflash={fullflash()}
-								disk={disk()}
-								disabled={isBusy()}
-								onChange={changeFullflash}
-								onError={showFullflashError}
-							/>
-						}
+				<Show
+					when={source() == 'phone'}
+					fallback={
+						<FullFlashStatusBar
+							fullflash={fullflash()}
+							disk={disk()}
+							disabled={isBusy()}
+							onChange={changeFullflash}
+							onError={showFullflashError}
+						/>
+					}
+				>
+					<ObexStatusBar disk={disk()} />
+				</Show>
+				<Show when={transfer()}>{(activeTransfer) =>
+					<Stack
+						direction="row"
+						alignItems="center"
+						gap={1}
+						sx={{
+							width: { xs: '100%', sm: 'auto' },
+							minWidth: 0,
+							flexGrow: 1,
+							flexWrap: { xs: 'wrap', sm: 'nowrap' },
+						}}
 					>
-						<ObexStatusBar disk={disk()} />
-					</Show>
-					<Show when={transfer()}>
-						<Stack direction="row" alignItems="center" gap={1} sx={{ minWidth: 0, flexGrow: 1 }}>
-							<Typography variant="body2" sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-								{transfer()!.kind == 'download' ? 'Downloading' : 'Uploading'}: {transfer()!.name}
-								<Show when={transfer()!.filesTotal}>
-									{' '}({transfer()!.filesDone} / {transfer()!.filesTotal})
-								</Show>
-							</Typography>
-							<Box sx={{ flexGrow: 1, minWidth: 80 }}>
-								<LinearProgress
-									variant={transfer()!.percent >= 0 ? 'determinate' : 'indeterminate'}
-									value={transfer()!.percent >= 0 ? transfer()!.percent : undefined}
-								/>
-							</Box>
-							<Typography variant="caption" sx={{ whiteSpace: 'nowrap' }}>
-								{formatSize(transfer()!.cursor)}{transfer()!.total > 0 ? ` / ${formatSize(transfer()!.total)}` : ''}, {formatSize(transfer()!.speed)}/s
-							</Typography>
-						</Stack>
-					</Show>
-				</Stack>
-			</Box>
+						<Typography
+							variant="body2"
+							sx={{
+								minWidth: 0,
+								order: 1,
+								flex: { xs: '1 1 0', sm: '0 1 auto' },
+								whiteSpace: 'nowrap',
+								overflow: 'hidden',
+								textOverflow: 'ellipsis',
+							}}
+						>
+							{activeTransfer().kind == 'download' ? 'Downloading' : 'Uploading'}: {activeTransfer().name}
+							<Show when={activeTransfer().filesTotal}>
+								{' '}({activeTransfer().filesDone} / {activeTransfer().filesTotal})
+							</Show>
+						</Typography>
+						<Box
+							sx={{
+								order: { xs: 3, sm: 2 },
+								width: { xs: '100%', sm: 'auto' },
+								flexGrow: 1,
+								minWidth: 80,
+							}}
+						>
+							<LinearProgress
+								variant={activeTransfer().percent >= 0 ? 'determinate' : 'indeterminate'}
+								value={activeTransfer().percent >= 0 ? activeTransfer().percent : undefined}
+							/>
+						</Box>
+						<Typography
+							variant="caption"
+							sx={{ order: { xs: 2, sm: 3 }, whiteSpace: 'nowrap' }}
+						>
+							{formatSize(activeTransfer().cursor)}{activeTransfer().total > 0 ? ` / ${formatSize(activeTransfer().total)}` : ''}, {formatSize(activeTransfer().speed)}/s
+						</Typography>
+					</Stack>
+				}</Show>
+			</Stack>
 
-			<Stack spacing={2} sx={{ maxWidth: 900 }}>
+			<Stack spacing={2}>
 				<Show when={source() == 'fullflash' && fullflash()}>{(opened) =>
 					<FullFlashNotices info={opened().info} />
 				}</Show>

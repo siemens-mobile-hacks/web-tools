@@ -8,6 +8,7 @@ import {
 	FormControlLabel,
 	FormGroup,
 	FormLabel,
+	IconButton,
 	InputLabel,
 	MenuItem,
 	Popover,
@@ -85,7 +86,13 @@ export const SerialConnect: Component<SerialConnectProps> = (props) => {
 	);
 
 	return (
-		<Stack alignItems="center" gap={1} direction="row" alignContent="center">
+		<Stack
+			alignItems="center"
+			gap={1}
+			direction="row"
+			alignContent="center"
+			sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: 0 }}
+		>
 			<Show
 				when={!invalidProtocol()}
 				fallback={
@@ -96,13 +103,25 @@ export const SerialConnect: Component<SerialConnectProps> = (props) => {
 								<Typography>Already connected to <b>{serial.protocol()}</b>.</Typography>
 							</Stack>
 						</Typography>
-						<Button size="small" variant="contained" color="error" onClick={handleDisconnect}>Disconnect</Button>
+						<Button
+							variant="contained"
+							color="error"
+							onClick={handleDisconnect}
+							sx={{ height: 40 }}
+						>
+							Disconnect
+						</Button>
 					</Stack>
 				}
 			>
 				<FormControl
 					ref={popperAnchorRef}
-					sx={{ minWidth: 120 }}
+					sx={{
+						minWidth: 0,
+						width: { xs: 'auto', sm: 160 },
+						flexGrow: { xs: 1, sm: 0 },
+						flexShrink: 1,
+					}}
 					size="small"
 					disabled={serial.readyState() !== SerialReadyState.DISCONNECTED || !serial.transport()}
 				>
@@ -138,21 +157,22 @@ export const SerialConnect: Component<SerialConnectProps> = (props) => {
 					</Alert>
 				</PopperWithArrow>
 
-				<Button
-					sx={{ minWidth: 0, padding: '6px' }}
-					variant="outlined"
+				<IconButton
+					color="primary"
 					title="Settings"
+					aria-label="Settings"
 					onClick={(event) => setSettingsAnchor(event.currentTarget)}
 					disabled={serial.readyState() !== SerialReadyState.DISCONNECTED}
 				>
 					<SettingsIcon />
-				</Button>
+				</IconButton>
 
 				<Show when={serial.readyState() === SerialReadyState.DISCONNECTED || serial.readyState() === SerialReadyState.CONNECTING}>
 					<Button
 						variant="contained"
 						disabled={serial.readyState() !== SerialReadyState.DISCONNECTED || !serial.transport()}
 						onClick={handleConnect}
+						sx={{ height: 40 }}
 					>
 						<ButtonLoadingText loading={serial.readyState() === SerialReadyState.CONNECTING}>
 							Connect
@@ -166,6 +186,7 @@ export const SerialConnect: Component<SerialConnectProps> = (props) => {
 						color="error"
 						disabled={serial.readyState() !== SerialReadyState.CONNECTED}
 						onClick={handleDisconnect}
+						sx={{ height: 40 }}
 					>
 						<ButtonLoadingText loading={serial.readyState() === SerialReadyState.DISCONNECTING}>
 							Disconnect

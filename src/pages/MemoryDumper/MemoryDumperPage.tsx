@@ -241,7 +241,7 @@ export const MemoryDumperPage: Component = () => {
 	};
 
 	return (
-		<Box mt={1}>
+		<Box>
 			<PageTitle>Memory Dumper</PageTitle>
 			<SerialConnect protocol={protocol} />
 

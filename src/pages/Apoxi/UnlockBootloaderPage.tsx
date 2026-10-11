@@ -69,7 +69,7 @@ export const UnlockBootloaderPage: Component = () => {
 	};
 
 	return (
-		<Box mt={1}>
+		<Box>
 			<PageTitle>Unlock Bootloader</PageTitle>
 
 			<SerialConnect protocol="DWD" />

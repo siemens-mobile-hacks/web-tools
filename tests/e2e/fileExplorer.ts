@@ -148,7 +148,7 @@ export class FileExplorer {
 	}
 
 	fileNameBesideSave(): Promise<string | null> {
-		return this.page.getByRole('button', { name: 'Save fullflash' }).locator('xpath=following-sibling::*[1]').textContent();
+		return this.page.getByRole('button', { name: 'Save fullflash' }).locator('xpath=preceding-sibling::*[1]').textContent();
 	}
 
 	async enter(name: string): Promise<void> {

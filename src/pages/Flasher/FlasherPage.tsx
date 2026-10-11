@@ -60,7 +60,7 @@ export const FlasherPage: Component = () => {
 	const deviceModeLocked = createMemo(() => serial.readyState() !== SerialReadyState.DISCONNECTED);
 
 	return (
-		<Stack sx={{ p: 2, maxWidth: 1100, mx: 'auto' }} spacing={2} alignItems="flex-start">
+		<Stack sx={{ maxWidth: 1100, mx: 'auto' }} spacing={2} alignItems="flex-start">
 			<PageTitle>Flasher/Patcher</PageTitle>
 			<Typography variant="body2" color="text.secondary" pb={2}>
 				A reimplementation of V_KLay.
