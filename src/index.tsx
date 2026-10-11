@@ -1,6 +1,7 @@
 /* @refresh reload */
 import './index.scss';
 import '@fontsource-variable/roboto';
+import '@/utils/consoleRelay';
 import { render } from 'solid-js/web';
 import { Root } from "@/components/Layout/Root.js";
 

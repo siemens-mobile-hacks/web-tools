@@ -1,4 +1,3 @@
-import * as Comlink from 'comlink';
 import { useBeforeLeave, useLocation, useNavigate } from '@solidjs/router';
 import { batch, Component, createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show } from 'solid-js';
 import { format as dateFormat } from 'date-fns/format';
@@ -34,8 +33,6 @@ import DriveFolderUploadIcon from '@suid/icons-material/DriveFolderUpload';
 import ArrowUpwardIcon from '@suid/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@suid/icons-material/ArrowDownward';
 import RefreshIcon from '@suid/icons-material/Refresh';
-import ClearIcon from '@suid/icons-material/Clear';
-import ContentCopyIcon from '@suid/icons-material/ContentCopy';
 import OpenInNewIcon from '@suid/icons-material/OpenInNew';
 import { useSerial } from '@/providers/SerialProvider.js';
 import { SerialReadyState } from '@/workers/endpoints/serial';
@@ -43,7 +40,6 @@ import { PageTitle } from '@/components/Layout/PageTitle';
 import { downloadBlob, formatSize } from '@/utils';
 import { createFilePreviewUrl, isScripted, prepareFilePreview } from '@/utils/filePreview';
 import JSZip from 'jszip';
-import { useTheme } from '@suid/material/styles';
 import { attributeLetters, attributeNames, type DiskInfo, type FileSystem, type FileSystemEntry, type FileSystemProgress } from '@/pages/FileExplorer/FileSystem';
 import { ObexFS } from '@/pages/FileExplorer/ObexFS';
 import type { FullFlashFS } from '@/pages/FileExplorer/FullFlashFS';
@@ -74,17 +70,10 @@ type Listing = {
 	error?: string;
 };
 
-const toPath = (names: string[]): string => "/" + names.join("/");
+type OpenFileProgressTab = { update: (e: FileSystemProgress) => void };
 
 // The order the phones list their disks in, which the root's directories are
 const DISK_ORDER = ['Data', 'Cache', 'Config'];
-
-const diskRank = (entry: FileSystemEntry): number => {
-	const rank = DISK_ORDER.indexOf(entry.name);
-	return rank < 0 ? DISK_ORDER.length : rank;
-};
-
-const isFileExplorer = (pathname: string): boolean => /\/file-explorer\/?$/.test(pathname);
 
 // Enough for the browser to display common phone files inline instead of downloading
 const MIME_TYPES: Record<string, string> = {
@@ -106,19 +95,33 @@ const MIME_TYPES: Record<string, string> = {
 	pdf: 'application/pdf',
 };
 
+function toPath(names: string[]): string {
+	return "/" + names.join("/");
+}
+
+function diskRank(entry: FileSystemEntry): number {
+	const rank = DISK_ORDER.indexOf(entry.name);
+	return rank < 0 ? DISK_ORDER.length : rank;
+}
+
+function isFileExplorer(pathname: string): boolean {
+	return /\/file-explorer\/?$/.test(pathname);
+}
+
 function guessMimeType(fileName: string): string {
 	const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
 	return MIME_TYPES[ext] ?? 'application/octet-stream';
 }
 
-const escapeHtml = (s: string): string =>
-	s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
-
-type OpenFileProgressTab = { update: (e: FileSystemProgress) => void };
+function escapeHtml(value: string): string {
+	return value.replace(/[&<>"']/g, (character) => (
+		{ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]!
+	));
+}
 
 // Paints a progress page into the freshly opened tab so it doesn't sit blank
 // while the file is transferred over the slow serial link
-const initOpenFileTab = (win: Window | null, name: string): OpenFileProgressTab | undefined => {
+function initOpenFileTab(win: Window | null, name: string): OpenFileProgressTab | undefined {
 	if (!win)
 		return undefined;
 	const doc = win.document;
@@ -170,7 +173,7 @@ const initOpenFileTab = (win: Window | null, name: string): OpenFileProgressTab 
 			}
 		}
 	};
-};
+}
 
 export const FileExplorerPage: Component = () => {
 	const serial = useSerial();
@@ -184,86 +187,24 @@ export const FileExplorerPage: Component = () => {
 	const [selected, setSelected] = createSignal<Set<string>>(new Set());
 	const [sortKey, setSortKey] = createSignal<SortKey>('name');
 	const [sortDir, setSortDir] = createSignal<1 | -1>(1);
-	const [logLines, setLogLines] = createSignal<string[]>([]);
 	const [fullflash, setFullflash] = createSignal<FullFlashFS | undefined>(undefined);
 	// Of the file system and the disk it was read for, as a fullflash's partitions are disks of their own
 	const [diskInfo, setDiskInfo] = createSignal<{ fs: FileSystem; disk: string; info: DiskInfo } | undefined>(undefined);
-	const theme = useTheme();
-
-	const [stickToLogBottom, setStickToLogBottom] = createSignal(true);
 
 	let fileInputRef!: HTMLInputElement;
 	let directoryInputRef!: HTMLInputElement;
-	let logPreElement: HTMLPreElement | undefined;
-	let isPointerPressedInsideLog = false;
 
 	// Blob URLs of opened files, revoked when the page is left
 	const openedObjectUrls: string[] = [];
 
-	const MAX_LOG_LINES = 1000;
-	const appendLogLine = (line: string): void => {
-		setLogLines((prev) => {
-			const next = [...prev, line];
-			if (next.length > MAX_LOG_LINES)
-				next.splice(0, next.length - MAX_LOG_LINES);
-			return next;
-		});
-	};
-
-	const copyLogToClipboard = (): void => {
-		const text = logLines().join('\n');
-		void navigator.clipboard?.writeText(text);
-	};
-
-	const scrollLogToBottom = (): void => {
-		if (logPreElement)
-			logPreElement.scrollTop = logPreElement.scrollHeight;
-	};
-
-	const updateLogStickiness = (): void => {
-		if (!logPreElement)
-			return;
-		if (isPointerPressedInsideLog) {
-			setStickToLogBottom(false);
-			return;
-		}
-		const distanceFromBottom = logPreElement.scrollHeight - logPreElement.scrollTop - logPreElement.clientHeight;
-		setStickToLogBottom(distanceFromBottom <= 24);
-	};
-
-	// Auto-scroll only while the log is already at the bottom
-	createEffect(() => {
-		logLines();
-		if (stickToLogBottom())
-			queueMicrotask(scrollLogToBottom);
-	});
-
-	onMount(async () => {
-		// Registered early so the preview worker is ready when a file is opened
+	onMount(() => {
 		void prepareFilePreview();
-		const history = await serial.logs.getLog();
-		if (history.length)
-			setLogLines(history);
-		queueMicrotask(scrollLogToBottom);
-		await serial.logs.setListener(Comlink.proxy(appendLogLine));
 	});
 
 	onCleanup(() => {
-		void serial.logs.setListener(undefined);
 		for (const url of openedObjectUrls)
 			URL.revokeObjectURL(url);
 	});
-
-	// Safety net: a pointerdown inside the log can be released outside it, in that case
-	// pointerup never fires on the element and stickiness would stay disabled forever
-	const onWindowPointerUp = (): void => {
-		if (!isPointerPressedInsideLog)
-			return;
-		isPointerPressedInsideLog = false;
-		updateLogStickiness();
-	};
-	window.addEventListener('pointerup', onWindowPointerUp);
-	onCleanup(() => window.removeEventListener('pointerup', onWindowPointerUp));
 
 	const obexReady = createMemo<boolean>(() => {
 		return serial.readyState() === SerialReadyState.CONNECTED && serial.protocol() === "OBEX";
@@ -947,81 +888,6 @@ export const FileExplorerPage: Component = () => {
 				<Show when={source() == 'fullflash' && fullflash()}>{(opened) =>
 					<FullFlashNotices info={opened().info} />
 				}</Show>
-
-				{/* Status window: logs AT commands and OBEX operations, also while connecting */}
-				<Box hidden={source() != 'phone'} sx={{ position: 'relative' }}>
-					<Show when={logLines().length}>
-						<IconButton
-							size="small"
-							title="Copy to clipboard"
-							sx={{
-								position: 'absolute',
-								top: 0,
-								right: 32,
-								zIndex: 1,
-								bgcolor: theme.palette.mode === 'light' ? theme.palette.grey[100] : theme.palette.grey[900],
-							}}
-							onClick={copyLogToClipboard}
-						>
-							<ContentCopyIcon sx={{ fontSize: 14 }} />
-						</IconButton>
-						<IconButton
-							size="small"
-							title="Clear"
-							sx={{
-								position: 'absolute',
-								top: 0,
-								right: 0,
-								zIndex: 1,
-								bgcolor: theme.palette.mode === 'light' ? theme.palette.grey[100] : theme.palette.grey[900],
-							}}
-							onClick={() => {
-								setLogLines([]);
-								void serial.logs.clear();
-							}}
-						>
-							<ClearIcon sx={{ fontSize: 14 }} />
-						</IconButton>
-					</Show>
-					<Box
-						component="pre"
-						aria-live="polite"
-						ref={(el) => (logPreElement = el as HTMLPreElement)}
-						onScroll={updateLogStickiness}
-						onPointerDown={(e) => {
-							isPointerPressedInsideLog = true;
-							setStickToLogBottom(false);
-							// Capture the pointer, so pointerup is delivered here even when released outside the log
-							e.currentTarget.setPointerCapture?.(e.pointerId);
-						}}
-						onPointerUp={() => {
-							isPointerPressedInsideLog = false;
-							updateLogStickiness();
-						}}
-						onPointerCancel={() => {
-							isPointerPressedInsideLog = false;
-							updateLogStickiness();
-						}}
-						sx={{
-							background: theme.palette.mode === 'light' ? theme.palette.grey[100] : theme.palette.grey[900],
-							color: theme.palette.text.primary,
-							p: 1,
-							borderRadius: 1,
-							height: `calc(3 * 1.4 * 0.75rem + 16px)`,
-							overflow: 'auto',
-							whiteSpace: 'pre-wrap',
-							wordBreak: 'break-all',
-						// keep text readable under the overlapping clear button
-						pr: 4,
-							m: 0,
-							fontSize: '0.75rem',
-							lineHeight: 1.4,
-							fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
-						}}
-					>
-						{logLines().join('\n')}
-					</Box>
-				</Box>
 
 				<Show
 					when={fs()}

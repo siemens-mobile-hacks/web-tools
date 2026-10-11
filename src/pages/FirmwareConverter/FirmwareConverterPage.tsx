@@ -4,7 +4,7 @@ import ArrowForwardIcon from '@suid/icons-material/ArrowForward';
 import { PageTitle } from '@/components/Layout/PageTitle';
 import { FirmwareTabs } from './FirmwareTabs';
 import { FirmwarePanel } from './FirmwarePanel';
-import FirmwareWorker from '@/workers/firmware?worker';
+import { createFirmwareWorker } from '@/workers/endpoints/firmware';
 import type { FirmwareMode, FirmwareRequest, FirmwareResponse, FirmwareSave } from '@/workers/services/FirmwareService';
 
 const FirmwareConverterPage: Component = () => {
@@ -25,7 +25,7 @@ const FirmwareConverterPage: Component = () => {
 			return;
 		setActiveMode(mode);
 		try {
-			worker ??= new FirmwareWorker();
+			worker ??= createFirmwareWorker();
 			const currentWorker = worker;
 			return await new Promise<FirmwareResponse | undefined>((resolve, reject) => {
 				cancelTask = () => resolve(undefined);

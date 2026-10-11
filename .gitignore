@@ -1,3 +1,7 @@
+.playwright-mcp/
+tmp/
+.memory/
+
 # IDE
 .idea
 

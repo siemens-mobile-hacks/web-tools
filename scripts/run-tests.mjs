@@ -12,6 +12,14 @@ const buildDir = path.join(root, ".test-build");
 const testSuites = [
 	{
 		sources: [
+			"src/utils/store/makePersistedSignal.ts",
+			"src/utils/store/makePersistedStore.ts",
+			"src/tests/persisted-store.test.ts",
+		],
+		run: [".test-build/tests/persisted-store.test.js"],
+	},
+	{
+		sources: [
 			"src/pages/Flasher/history.ts",
 			"src/tests/patch-history.test.ts",
 		],

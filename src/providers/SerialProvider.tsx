@@ -10,7 +10,6 @@ import { BfcService } from "@/workers/services/BfcService.js";
 import { CgsnService } from "@/workers/services/CgsnService.js";
 import { DwdService } from "@/workers/services/DwdService.js";
 import { ObexService } from "@/workers/services/ObexService.js";
-import { LogService } from "@/workers/services/LogService.js";
 import { FlasherService } from "@/workers/services/FlasherService.js";
 import { SerialService } from "@/workers/services/SerialService";
 import { useApp } from "@/providers/AppProvider";
@@ -25,7 +24,6 @@ interface SerialContext {
 	dwd: Comlink.Remote<DwdService>;
 	obex: Comlink.Remote<ObexService>;
 	flasher: Comlink.Remote<FlasherService>;
-	logs: Comlink.Remote<LogService>;
 	ports: Accessor<PortInfo[]>;
 	availableTransports: Accessor<SerialTransport[]>;
 	transport: Accessor<SerialTransport | undefined>;
@@ -39,7 +37,7 @@ interface SerialContext {
 	getAdapter(type: string): typeof SerialService<any>;
 	getLastUsedPort(type: string): string | undefined;
 	isPortExists(path: string): boolean;
-	connect(protocol: SerialProtocol, prevPortPath?: string, limitBaudrate?: number, debug?: string, data?: any): Promise<void>;
+	connect(protocol: SerialProtocol, prevPortPath?: string, limitBaudrate?: number, data?: any): Promise<void>;
 	disconnect(): Promise<void>;
 	resetError(): void;
 }
@@ -86,7 +84,7 @@ export const SerialProvider: ParentComponent = (props) => {
 		});
 	};
 
-	const connect = async (protocol: SerialProtocol, prevPortPath?: string, limitBaudrate?: number, debug?: string, data?: any): Promise<void> => {
+	const connect = async (protocol: SerialProtocol, prevPortPath?: string, limitBaudrate?: number, data?: any): Promise<void> => {
 		try {
 			setConnectError(undefined);
 			const selectedTransport = transport();
@@ -96,7 +94,7 @@ export const SerialProvider: ParentComponent = (props) => {
 			} else if (selectedTransport) {
 				selectedPortPath = getAutoSerialPortPath(selectedTransport);
 			}
-			await serialWorker.connect(protocol, selectedPortPath, limitBaudrate, debug, data);
+			await serialWorker.connect(protocol, selectedPortPath, limitBaudrate, data);
 		} catch (e) {
 			setConnectError(e instanceof Error ? e : new Error(String(e)));
 			monitorNewPorts();
@@ -184,7 +182,6 @@ export const SerialProvider: ParentComponent = (props) => {
 			dwd: serialWorker.getService("DWD"),
 			obex: serialWorker.getService("OBEX"),
 			flasher: serialWorker.getService("FLSH"),
-			logs: serialWorker.getService("LOG"),
 			availableTransports,
 			transport,
 			setTransport,

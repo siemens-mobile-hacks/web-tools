@@ -1,7 +1,7 @@
 import { BFC, IoReadWriteProgress } from "@sie-js/serial";
 import { SerialService } from "./SerialService";
 import { openSerialPort } from "@/utils/serial.js";
-import * as Comlink from "comlink";
+import * as Comlink from 'comlink';
 
 export interface PhoneDisplay {
 	width: number;
@@ -60,23 +60,6 @@ export class BfcService extends SerialService<BFC> {
 			this.handle = undefined;
 			await port!.close();
 		}
-	}
-
-	static getDebugFilters() {
-		return [
-			{
-				name: "AT debug",
-				filter: "atc",
-			},
-			{
-				name: "BFC debug",
-				filter: "bfc",
-			},
-			{
-				name: "BFC debug (TRX)",
-				filter: "bfc:trx",
-			}
-		];
 	}
 
 	static getBaudrates() {

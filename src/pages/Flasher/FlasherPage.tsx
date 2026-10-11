@@ -20,7 +20,6 @@ import { SerialProtocol, SerialReadyState, serialWorker } from '@/workers/endpoi
 import { FlasherMemoryArea, FlasherProgress } from '@/workers/services/FlasherService';
 import { PageTitle } from '@/components/Layout/PageTitle';
 import { showToast } from '@/components/App/Toaster';
-import { LogWindow } from '@/components/UI/LogWindow';
 import { Buffer } from 'buffer';
 import { downloadBlob, formatSize, validateHex } from '@/utils.js';
 import { makeDumpFileName, parseVkd, phoneDisplayName, PhoneInfo, VkdFile,
@@ -309,7 +308,7 @@ const PhoneFlasher: Component = () => {
 		setError(undefined);
 		setStatus('Connecting... Please, shortly press the Power button on the phone if asked.');
 		connectCancelled = false;
-		void serial.connect(protocol, undefined, undefined, 'flasher', {
+		void serial.connect(protocol, undefined, undefined, {
 			vkdText: vkdText(),
 			phoneId: phoneId(),
 			baudrate: baudrate(),
@@ -634,10 +633,6 @@ const PhoneFlasher: Component = () => {
 
 	return (
 		<>
-			{/* Protocol log (boots, loader commands, retries) at the top, like in the File Explorer */}
-			<Box sx={{ width: '100%' }}>
-				<LogWindow height={`calc(3 * 1.4 * 0.75rem + 16px)`} emptyMessage="Log output" />
-			</Box>
 			<Stack spacing={2} sx={{ width: '100%' }} direction="row" flexWrap="wrap">
 			<Stack spacing={2} sx={{ flex: '1 1 420px', minWidth: 340 }}>
 				{/* Loader selection */}

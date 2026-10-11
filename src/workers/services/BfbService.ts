@@ -1,4 +1,4 @@
-import * as Comlink from "comlink";
+import * as Comlink from 'comlink';
 import { BFB, BFB_BAUD_RATES, IoReadWriteProgress } from "@sie-js/serial";
 import { openSerialPort } from "@/utils/serial.js";
 import { SerialService } from "./SerialService";
@@ -65,23 +65,6 @@ export class BfbService extends SerialService<BFB> {
 			this.handle = undefined;
 			await port!.close();
 		}
-	}
-
-	static getDebugFilters() {
-		return [
-			{
-				name: "AT debug",
-				filter: "atc",
-			},
-			{
-				name: "BFB debug",
-				filter: "bfb",
-			},
-			{
-				name: "BFB debug (TRX)",
-				filter: "bfb:trx",
-			},
-		];
 	}
 
 	static getBaudrates() {

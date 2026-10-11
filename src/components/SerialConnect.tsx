@@ -7,6 +7,7 @@ import {
 	FormControl,
 	FormControlLabel,
 	FormGroup,
+	FormLabel,
 	InputLabel,
 	MenuItem,
 	Popover,
@@ -26,6 +27,11 @@ import { ButtonLoadingText } from "@/components/UI/ButtonLoadingText";
 import { PopperWithArrow } from "@/components/UI/PopperWithArrow";
 import { getUSBDeviceName } from "@sie-js/serial";
 import { getAutoSerialPortPath } from '@/utils/serial';
+import {
+	SERIALPORT_DEBUG_PATTERN,
+	TRX_DEBUG_PATTERN,
+} from '@/utils/debugChannels';
+import { useDebugSettings } from '@/store/debugSettings';
 
 interface SerialConnectProps {
 	protocol: SerialProtocol;
@@ -36,9 +42,7 @@ export const SerialConnect: Component<SerialConnectProps> = (props) => {
 	const [currentBaudrate, setCurrentBaudrate] = makePersisted(createSignal<number>(0), {
 		name: 'limitMaxBaudrate' + props.protocol
 	});
-	const [serialDebug, setSerialDebug] = makePersisted(createSignal<string[]>([]), {
-		name: 'serialDebugFilter'
-	});
+	const [, debugSettings] = useDebugSettings();
 	const [selectedSerialPort, setSelectedSerialPort] = createSignal<string>('');
 	const [settingsAnchor, setSettingsAnchor] = createSignal<HTMLButtonElement>();
 	const serial = useSerial();
@@ -46,8 +50,7 @@ export const SerialConnect: Component<SerialConnectProps> = (props) => {
 	let popperAnchorRef!: HTMLDivElement;
 
 	const handleConnect = (): void => {
-		const debugFilter = serialDebug().join(',');
-		void serial.connect(props.protocol, currentSerialPort(), currentBaudrate(), debugFilter);
+		void serial.connect(props.protocol, currentSerialPort(), currentBaudrate());
 	};
 
 	const handleDisconnect = (): void => {
@@ -69,17 +72,6 @@ export const SerialConnect: Component<SerialConnectProps> = (props) => {
 			setSelectedSerialPort(port?.startsWith(`${transport}://`) ? port : autoPortPath);
 		}
 	));
-
-	const toggleDebug = (type: string): void => {
-		let debugFilter = [...serialDebug()];
-		const value = debugFilter.includes(type);
-		if (value) {
-			debugFilter = debugFilter.filter((v) => v !== type);
-		} else {
-			debugFilter.push(type);
-		}
-		setSerialDebug(debugFilter);
-	};
 
 	const currentSerialPort = createMemo(() => {
 		if (serial.isPortExists(selectedSerialPort()))
@@ -222,7 +214,9 @@ export const SerialConnect: Component<SerialConnectProps> = (props) => {
 							<InputLabel id="serial-baudrate-selector-label">Baudrate</InputLabel>
 							<Select
 								labelId="serial-baudrate-selector-label"
-								size="small" value={currentBaudrate()} id="serial-baudrate-selector"
+								size="small"
+								value={currentBaudrate()}
+								id="serial-baudrate-selector"
 								label="Baudrate"
 								onChange={(e) => setCurrentBaudrate(Number(e.target.value))}
 							>
@@ -234,21 +228,35 @@ export const SerialConnect: Component<SerialConnectProps> = (props) => {
 							</Select>
 						</FormControl>
 
-						<Box>
-							<For each={serial.getAdapter(props.protocol).getDebugFilters()}>{(item) =>
-								<FormGroup>
-									<FormControlLabel
-										control={
-											<Checkbox
-												onChange={() => toggleDebug(item.filter)}
-												checked={serialDebug().includes(item.filter)}
-											/>
-										}
-										label={item.name}
-									/>
-								</FormGroup>
-							}</For>
-						</Box>
+						<FormControl component="fieldset" variant="standard">
+							<FormLabel component="legend">Debug logging</FormLabel>
+							<FormGroup>
+								<FormControlLabel
+									control={
+										<Checkbox
+											checked={debugSettings.isChannelEnabled(TRX_DEBUG_PATTERN)}
+											onChange={(_, checked) => debugSettings.setChannelEnabled(
+												TRX_DEBUG_PATTERN,
+												checked,
+											)}
+										/>
+									}
+									label="Protocol traffic"
+								/>
+								<FormControlLabel
+									control={
+										<Checkbox
+											checked={debugSettings.isChannelEnabled(SERIALPORT_DEBUG_PATTERN)}
+											onChange={(_, checked) => debugSettings.setChannelEnabled(
+												SERIALPORT_DEBUG_PATTERN,
+												checked,
+											)}
+										/>
+									}
+									label="Serial port internals"
+								/>
+							</FormGroup>
+						</FormControl>
 					</Stack>
 				</Box>
 			</Popover>

@@ -1,42 +1,29 @@
 import "./Header.scss";
-import { Component, createSignal, Match, Show, Switch } from "solid-js";
+import { Component, Match, Show, Switch } from "solid-js";
 import { AppBar, IconButton, Stack, Toolbar, Typography, useMediaQuery } from '@suid/material';
 import MenuIcon from '@suid/icons-material/Menu';
 import LightModeIcon from '@suid/icons-material/LightMode';
 import BedtimeIcon from '@suid/icons-material/Bedtime';
 import BrightnessMediumIcon from '@suid/icons-material/BrightnessMedium';
 import MemoryIcon from '@suid/icons-material/Memory';
+import TerminalIcon from '@suid/icons-material/Terminal';
 import { useTheme } from '@suid/material/styles';
 import { useApp } from "@/providers/AppProvider";
 
 type ThemeMode = 'light' | 'dark' | 'system';
 
 export interface AppHeaderProps {
-	effectiveTheme: ThemeMode;
+	logOpen: boolean;
 	preferredTheme: ThemeMode;
-	onThemeChanged: (theme: ThemeMode) => void;
+	onLogToggle: () => void;
+	onThemeToggle: () => void;
 	onDrawerOpen: () => void;
 }
 
 export const AppHeader: Component<AppHeaderProps> = (props) => {
 	const theme = useTheme();
 	const isWideScreen = useMediaQuery(theme.breakpoints.up('md'));
-	const [clicks, setClicks] = createSignal<number>(0);
 	const app = useApp();
-
-	const changeTheme = () => {
-		if (clicks() < 2) {
-			if (props.effectiveTheme === 'dark') {
-				props.onThemeChanged('light');
-			} else if (props.effectiveTheme === 'light') {
-				props.onThemeChanged('dark');
-			}
-			setClicks(clicks() + 1);
-		} else {
-			props.onThemeChanged('system');
-			setClicks(0);
-		}
-	};
 
 	// A connection pulses, an opened fullflash is a flash chip's contents
 	const statusIcon = () => app.statusKind() == 'file' ?
@@ -90,19 +77,38 @@ export const AppHeader: Component<AppHeaderProps> = (props) => {
 					</Stack>
 				</Show>
 
-				<IconButton edge="end" color="inherit" onClick={changeTheme}>
-					<Switch>
-						<Match when={props.preferredTheme === 'light'}>
-							<LightModeIcon />
-						</Match>
-						<Match when={props.preferredTheme === 'dark'}>
-							<BedtimeIcon />
-						</Match>
-						<Match when={props.preferredTheme === 'system'}>
-							<BrightnessMediumIcon />
-						</Match>
-					</Switch>
+				<IconButton
+					color="inherit"
+					edge={isWideScreen() ? undefined : 'end'}
+					aria-label={props.logOpen ? 'Close log' : 'Open log'}
+					aria-pressed={props.logOpen}
+					title={props.logOpen ? 'Close log' : 'Open log'}
+					onClick={props.onLogToggle}
+				>
+					<TerminalIcon />
 				</IconButton>
+
+				<Show when={isWideScreen()}>
+					<IconButton
+						edge="end"
+						color="inherit"
+						aria-label="Change theme"
+						title="Change theme"
+						onClick={props.onThemeToggle}
+					>
+						<Switch>
+							<Match when={props.preferredTheme === 'light'}>
+								<LightModeIcon />
+							</Match>
+							<Match when={props.preferredTheme === 'dark'}>
+								<BedtimeIcon />
+							</Match>
+							<Match when={props.preferredTheme === 'system'}>
+								<BrightnessMediumIcon />
+							</Match>
+						</Switch>
+					</IconButton>
+				</Show>
 			</Toolbar>
 		</AppBar>
 	);

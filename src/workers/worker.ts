@@ -1,5 +1,5 @@
-import "@/workers/logCapture";
-import * as Comlink from "comlink";
+import '@/workers/runtime';
+import * as Comlink from 'comlink';
 import { services } from "@/workers/services";
 import { initComlinkDataTransfers } from "@/utils/comlink";
 

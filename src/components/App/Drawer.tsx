@@ -1,107 +1,42 @@
-import { Component, createEffect, createMemo, createSignal, For, JSX, ParentComponent, Show } from "solid-js";
-import { A, useMatch } from "@solidjs/router";
+import { Component, createMemo, For, Match, Show, Switch } from "solid-js";
 import { Box, Drawer, List, ListItemButton, ListItemIcon, ListItemText, Toolbar, useMediaQuery } from '@suid/material';
 import ScreenshotIcon from '@suid/icons-material/Screenshot';
 import SdCardIcon from '@suid/icons-material/SdCard';
 import MailIcon from '@suid/icons-material/Mail';
 import MemoryIcon from "@suid/icons-material/Memory";
-import ExpandMoreIcon from '@suid/icons-material/ExpandMore';
-import ExpandLessIcon from '@suid/icons-material/ExpandLess';
 import PhonelinkLockIcon from '@suid/icons-material/PhonelinkLock';
 import FolderOpenIcon from '@suid/icons-material/FolderOpen';
 import VideocamIcon from '@suid/icons-material/Videocam';
-import FlashOnIcon from '@suid/icons-material/FlashOn';
 import SyncAltIcon from '@suid/icons-material/SyncAlt';
+import LightModeIcon from '@suid/icons-material/LightMode';
+import BedtimeIcon from '@suid/icons-material/Bedtime';
+import BrightnessMediumIcon from '@suid/icons-material/BrightnessMedium';
 import ApoxiIcon from '@/assets/apoxi.svg';
 import SgoldIcon from '@/assets/sgold.svg';
 import EgoldIcon from '@/assets/egold.svg';
 import { useTheme } from '@suid/material/styles';
-import { matchURL } from '@/utils.js';
-import { Collapse } from '@/components/UI/Collapse';
-
-export const DRAWER_WIDTH = 240;
-
-export interface AppDrawerLinkProps {
-	href: string;
-}
-
-export const AppDrawerLink: ParentComponent<AppDrawerLinkProps> = (props) => {
-	const match = useMatch(() => props.href);
-	return (
-		<ListItemButton component={A} href={props.href} selected={Boolean(match())}>
-			{props.children}
-		</ListItemButton>
-	);
-};
+import { DrawerLink, type DrawerLinkItem } from '@/components/App/DrawerLink';
+import { ResizeHandle } from '@/components/App/ResizeHandle';
 
 export interface AppDrawerProps {
 	open: boolean;
+	preferredTheme: 'light' | 'dark' | 'system';
+	width: number;
 	onClose: () => void;
+	onThemeToggle: () => void;
+	onWidthChange: (width: number) => void;
 }
 
-type DrawerLinkProps = {
-	icon: JSX.Element;
-	title: JSX.Element;
-	url?: string;
-	depth?: number;
-	sublinks?: DrawerLinkProps[];
-};
-
-export const DrawerLink: Component<DrawerLinkProps> = (props) => {
-	const isSelected = () => props.url != null && matchURL(props.url);
-	const isNestedSelected = createMemo(() => {
-		if (props.sublinks) {
-			for (const sublink of props.sublinks) {
-				if (sublink.url && matchURL(sublink.url))
-					return true;
-			}
-		}
-		return false;
-	});
-	const [isOpen, setIsOpen] = createSignal(isNestedSelected());
-	const depth = () => props.depth ?? 1;
-
-	createEffect(() => {
-		// Update on navigation
-		if (isNestedSelected())
-			setIsOpen(true);
-	});
-
-	return (
-		<Show when={props.sublinks && props.sublinks.length > 0} fallback={
-			<ListItemButton component={A} href={props.url ?? ""} selected={isSelected()} sx={{ pl: depth() * 2 }}>
-				<ListItemIcon sx={{ minWidth: "2.5em" }}>
-					{props.icon}
-				</ListItemIcon>
-				<ListItemText primary={props.title} />
-			</ListItemButton>
-		}>
-			<ListItemButton onClick={() => setIsOpen((prev) => !prev)} sx={{ pl: depth() * 2 }}>
-				<ListItemIcon sx={{ minWidth: "2.5em" }}>
-					{props.icon}
-				</ListItemIcon>
-				<ListItemText primary={props.title} />
-				<Show when={props.sublinks && props.sublinks.length > 0}>
-					{isOpen() ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-				</Show>
-			</ListItemButton>
-			<Collapse open={isOpen()}>
-				<List component="div" disablePadding>
-					<For each={props.sublinks}>{(sublink) =>
-						<DrawerLink {...sublink} depth={depth() + 1} />
-					}</For>
-				</List>
-			</Collapse>
-		</Show>
-	);
-};
+export const DEFAULT_DRAWER_WIDTH = 240;
+export const MIN_DRAWER_WIDTH = 160;
+export const MAX_DRAWER_WIDTH = 480;
 
 export const AppDrawer: Component<AppDrawerProps> = (props) => {
 	const theme = useTheme();
 	const isWideScreen = useMediaQuery(theme.breakpoints.up('md'));
 	const drawerVariant = createMemo(() => isWideScreen() ? 'permanent' : 'temporary');
 
-	const links: DrawerLinkProps[] = [
+	const links: DrawerLinkItem[] = [
 		{
 			icon: <SgoldIcon width="1.5em" height="1.5em" />,
 			title: "SGOLD Tools",
@@ -182,14 +117,65 @@ export const AppDrawer: Component<AppDrawerProps> = (props) => {
 			open={props.open || isWideScreen()}
 			onClose={props.onClose}
 			variant={drawerVariant()}
-			sx={{ width: DRAWER_WIDTH, flexShrink: 0, [`& .MuiDrawer-paper`]: { width: DRAWER_WIDTH, boxSizing: 'border-box' } }}
+			sx={{
+				gridArea: isWideScreen() ? 'drawer' : undefined,
+				width: isWideScreen() ? props.width : DEFAULT_DRAWER_WIDTH,
+				minWidth: isWideScreen() ? props.width : undefined,
+				maxWidth: '100vw',
+				height: isWideScreen() ? '100%' : undefined,
+				flexShrink: 0,
+				[`& .MuiDrawer-paper`]: {
+					position: isWideScreen() ? 'relative' : undefined,
+					width: isWideScreen() ? props.width : DEFAULT_DRAWER_WIDTH,
+					maxWidth: '100vw',
+					height: isWideScreen() ? '100%' : undefined,
+					boxSizing: 'border-box',
+					overflow: 'visible',
+				},
+			}}
 		>
 			<Toolbar variant="dense" />
-			<Box sx={{ overflow: 'auto' }}>
+			<Box sx={{ flex: '1 1 0', minHeight: 0, overflow: 'auto' }}>
 				<List>
-					<For each={links}>{(link) => <DrawerLink {...link} />}</For>
+					<For each={links}>{(link) => <DrawerLink item={link} />}</For>
 				</List>
 			</Box>
+			<Show when={!isWideScreen()}>
+				<List
+					disablePadding
+					sx={{ mt: 'auto', borderTop: 1, borderColor: 'divider' }}
+				>
+					<ListItemButton dense onClick={props.onThemeToggle}>
+						<ListItemIcon sx={{ minWidth: '2.5em' }}>
+							<Switch>
+								<Match when={props.preferredTheme === 'light'}>
+									<LightModeIcon />
+								</Match>
+								<Match when={props.preferredTheme === 'dark'}>
+									<BedtimeIcon />
+								</Match>
+								<Match when={props.preferredTheme === 'system'}>
+									<BrightnessMediumIcon />
+								</Match>
+							</Switch>
+						</ListItemIcon>
+						<ListItemText
+							primary={`Theme: ${props.preferredTheme}`}
+							sx={{ textTransform: 'capitalize' }}
+						/>
+					</ListItemButton>
+				</List>
+			</Show>
+			<Show when={isWideScreen()}>
+				<ResizeHandle
+					edge="right"
+					label="Resize navigation sidebar"
+					min={MIN_DRAWER_WIDTH}
+					max={MAX_DRAWER_WIDTH}
+					value={props.width}
+					onChange={props.onWidthChange}
+				/>
+			</Show>
 		</Drawer>
 	);
 };

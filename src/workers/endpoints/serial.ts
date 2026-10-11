@@ -6,17 +6,9 @@ import { CgsnService } from "@/workers/services/CgsnService";
 import { SerialService } from "../services/SerialService";
 import { DwdService } from "../services/DwdService";
 import { ObexService } from "../services/ObexService";
-import { LogService } from "../services/LogService";
 import { FlasherService } from "@/workers/services/FlasherService";
 import { commonWorker } from "@/workers/endpoints/common";
 import { BfbService } from "@/workers/services/BfbService";
-
-export enum SerialReadyState {
-	DISCONNECTED,
-	CONNECTED,
-	CONNECTING,
-	DISCONNECTING
-}
 
 export type SerialProtocol = 'none' | 'BFB' | 'BFC' | 'CGSN' | 'DWD' | 'OBEX' | 'FLSH';
 
@@ -34,8 +26,15 @@ type SerialWorkerServices = {
 	DWD: Comlink.Remote<DwdService>;
 	OBEX: Comlink.Remote<ObexService>;
 	FLSH: Comlink.Remote<FlasherService>;
-	LOG: Comlink.Remote<LogService>;
 };
+
+export enum SerialReadyState {
+	DISCONNECTED,
+	CONNECTED,
+	CONNECTING,
+	DISCONNECTING
+}
+
 const SERVICES: SerialWorkerServices = {
 	BFB: await commonWorker.getService('BFB'),
 	BFC: await commonWorker.getService('BFC'),
@@ -43,7 +42,6 @@ const SERVICES: SerialWorkerServices = {
 	DWD: await commonWorker.getService('DWD'),
 	OBEX: await commonWorker.getService('OBEX'),
 	FLSH: await commonWorker.getService('FLSH'),
-	LOG: await commonWorker.getService('LOG'),
 };
 
 export class Serial extends EventEmitter<SerialWorkerEvents> {
@@ -53,13 +51,13 @@ export class Serial extends EventEmitter<SerialWorkerEvents> {
 	private lastPortPath?: string;
 
 	protected get service(): Comlink.Remote<SerialService> {
-		// LOG is not a connectable protocol service, it lives in SERVICES only for getService()
-		if (this.protocol == 'none')
-			throw new Error(`Can't get service for protocol ${this.protocol}.`);
-		return SERVICES[this.protocol as 'BFB' | 'BFC' | 'CGSN' | 'DWD' | 'OBEX' | 'FLSH'] as unknown as Comlink.Remote<SerialService>;
+		const protocol = this.protocol;
+		if (protocol === 'none')
+			throw new Error(`Can't get service for protocol ${protocol}.`);
+		return SERVICES[protocol];
 	}
 
-	async connect(protocol: SerialProtocol, prevPortPath?: string, limitBaudrate?: number, debug?: string, data?: any): Promise<void> {
+	async connect(protocol: SerialProtocol, prevPortPath?: string, limitBaudrate?: number, data?: any): Promise<void> {
 		if (this.readyState == SerialReadyState.CONNECTING || this.readyState == SerialReadyState.CONNECTED)
 			throw new Error(`Can't connect, already connected to ${this.protocol}.`);
 
@@ -69,8 +67,6 @@ export class Serial extends EventEmitter<SerialWorkerEvents> {
 			if (!prevPortPath)
 				throw new Error('No serial transport is available.');
 			const portPath = await resolveSerialPortPath(prevPortPath);
-			if (debug)
-				await this.service.setDebug(debug);
 			await this.service.connect(portPath, limitBaudrate, data);
 			this.setLastPortPath(portPath);
 			this.setDevice(await this.service.getDeviceName() ?? "Unknown device");
@@ -103,10 +99,6 @@ export class Serial extends EventEmitter<SerialWorkerEvents> {
 
 	getLastPortPath() {
 		return this.lastPortPath;
-	}
-
-	async setDebug(filter: string): Promise<void> {
-		await this.service.setDebug(filter);
 	}
 
 	protected setLastPortPath(path: string): void {

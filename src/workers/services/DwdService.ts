@@ -2,7 +2,7 @@ import { DWD, IoReadWriteProgress } from "@sie-js/serial";
 import { SerialService } from "./SerialService";
 import { openSerialPort } from "@/utils/serial.js";
 import { isApoxiBootUnlocked, unlockApoxiBootloader } from "@sie-js/apoxi-tool";
-import * as Comlink from "comlink";
+import * as Comlink from 'comlink';
 
 export class DwdService extends SerialService<DWD> {
 	async connect(portPath: string): Promise<void> {
@@ -51,23 +51,6 @@ export class DwdService extends SerialService<DWD> {
 			this.handle = undefined;
 			await port!.close();
 		}
-	}
-
-	static getDebugFilters() {
-		return [
-			{
-				name: "AT debug",
-				filter: "atc",
-			},
-			{
-				name: "DWD debug",
-				filter: "dwd",
-			},
-			{
-				name: "DWD debug (TRX)",
-				filter: "dwd:trx",
-			}
-		];
 	}
 
 	static getBaudrates() {

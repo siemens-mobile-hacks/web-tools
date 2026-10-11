@@ -1,4 +1,4 @@
-import * as Comlink from "comlink";
+import * as Comlink from 'comlink';
 import { OBEX, type ObexProgress } from "@sie-js/serial";
 import { SerialService } from "./SerialService";
 import { openSerialPort } from "@/utils/serial.js";
@@ -62,27 +62,6 @@ export class ObexService extends SerialService<OBEX> {
 			this.handle = undefined;
 			await port.close();
 		}
-	}
-
-	static getDebugFilters() {
-		return [
-			{
-				name: "AT debug",
-				filter: "atc",
-			},
-			{
-				name: "BFC debug",
-				filter: "bfc",
-			},
-			{
-				name: "OBEX debug",
-				filter: "obex",
-			},
-			{
-				name: "OBEX debug (TRX)",
-				filter: "obex:trx",
-			}
-		];
 	}
 
 	static getBaudrates() {

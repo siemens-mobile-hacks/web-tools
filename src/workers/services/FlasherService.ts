@@ -1,6 +1,6 @@
 import { SerialService } from "./SerialService";
 import { openSerialPort } from "@/utils/serial.js";
-import * as Comlink from "comlink";
+import * as Comlink from 'comlink';
 import { Buffer } from "buffer";
 import { AsyncSerialPortTransport } from "@sie-js/flasher/web";
 import { PhoneDevice, PhoneInfo, parseVkd } from "@sie-js/flasher";
@@ -159,15 +159,6 @@ export class FlasherService extends SerialService<PhoneDevice> {
 		if (!this.isConnected)
 			return undefined;
 		return this.handle.getUniqueName();
-	}
-
-	static getDebugFilters() {
-		return [
-			{
-				name: "Flasher debug",
-				filter: "flasher",
-			},
-		];
 	}
 
 	static getBaudrates() {

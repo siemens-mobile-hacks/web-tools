@@ -1,3 +1,4 @@
+import '@/workers/runtime';
 import {
 	convertFirmware,
 	unpackFirmware,

@@ -97,15 +97,8 @@ const obexService = {
 	async move() {},
 };
 
-const logService = {
-	async getLog() { return []; },
-	async setListener() {},
-	async clear() {},
-};
-
 const SERVICES: Record<string, unknown> = {
 	OBEX: obexService,
-	LOG: logService,
 };
 
 type Events = {
@@ -139,8 +132,6 @@ class MockSerial extends EventEmitter<Events> {
 	getService<T>(type: string): T {
 		return SERVICES[type] as T;
 	}
-
-	async setDebug() {}
 }
 
 export const serialWorker = new MockSerial();

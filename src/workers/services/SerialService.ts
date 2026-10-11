@@ -1,10 +1,3 @@
-import debug from "debug";
-
-type SerialServiceDebugFilter = {
-	name: string;
-	filter: string;
-};
-
 type SerialServiceBaudrate = {
 	name: string;
 	value: number;
@@ -28,10 +21,6 @@ export abstract class SerialService<T = any> {
 		this.#handle = value;
 	}
 
-	setDebug(filter: string): void {
-		debug.enable(filter);
-	}
-
 	abort(): void {
 		if (this.#abortController)
 			this.#abortController.abort();
@@ -46,10 +35,6 @@ export abstract class SerialService<T = any> {
 	abstract disconnect(): Promise<void>;
 	abstract protocol(): string;
 	abstract getDeviceName(): Promise<string | undefined>;
-
-	static getDebugFilters(): SerialServiceDebugFilter[] {
-		return [];
-	}
 
 	static getBaudrates(): SerialServiceBaudrate[] {
 		return [];

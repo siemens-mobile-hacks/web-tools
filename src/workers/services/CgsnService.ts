@@ -1,7 +1,7 @@
 import { AtCommandResponse, CGSN, IoReadWriteProgress } from "@sie-js/serial";
 import { SerialService } from "./SerialService";
 import { openSerialPort } from "@/utils/serial.js";
-import * as Comlink from "comlink";
+import * as Comlink from 'comlink';
 
 export interface MemoryRegion {
 	name: string;
@@ -181,23 +181,6 @@ export class CgsnService extends SerialService<CGSN> {
 			this.handle = undefined;
 			await port!.close();
 		}
-	}
-
-	static getDebugFilters() {
-		return [
-			{
-				name: "AT debug",
-				filter: "atc",
-			},
-			{
-				name: "CGSN debug",
-				filter: "cgsn",
-			},
-			{
-				name: "CGSN debug (TRX)",
-				filter: "cgsn:trx",
-			}
-		];
 	}
 
 	static getBaudrates() {

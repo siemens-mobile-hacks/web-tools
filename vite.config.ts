@@ -110,7 +110,7 @@ export default defineConfig({
 		// is linked from the sibling sieflasher checkout, that resolution
 		// cannot walk up to this project's node_modules, so resolve the
 		// package from the root instead.
-		dedupe: ['vite-plugin-node-polyfills'],
+		dedupe: ['debug', 'vite-plugin-node-polyfills'],
 	},
 	build: {
 		target: 'esnext'
