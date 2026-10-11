@@ -1,8 +1,8 @@
 allowBuilds:
   '@parcel/watcher': true
   '@serialport/bindings-cpp': true
-  '@sie-js/node-serialport-bindings-cpp': true
   '@sie-js/flasher@https://codeload.github.com/siemens-mobile-hacks/sieflasher/tar.gz/1049243461991ec5a4839051a985fa08307d992e#path:core': true
+  '@sie-js/node-serialport-bindings-cpp': true
   esbuild: true
 minimumReleaseAgeExclude:
   - '@sie-js/*'

@@ -1,9 +1,6 @@
-import { SerialPortStream } from "@serialport/stream";
-import { AsyncSerialPort } from "@sie-js/serial";
-import { WebSerialBinding } from "serialport-bindings-webserial";
-import type { WebSerialBindingInterface } from "serialport-bindings-webserial";
-import { WEBUSB_SERIAL_FILTERS, WebUSBBinding } from "serialport-bindings-webusb";
-import type { WebUSBBindingInterface } from "serialport-bindings-webusb";
+import { AsyncSerialPort } from '@sie-js/serial';
+import { WebSerialBinding } from 'serialport-bindings-webserial';
+import { WEBUSB_SERIAL_FILTERS, WebUSBBinding } from 'serialport-bindings-webusb';
 
 export type SerialTransport = 'webserial' | 'webusb';
 
@@ -69,28 +66,22 @@ export async function resolveSerialPortPath(path: string): Promise<string> {
 export async function openSerialPort(path: string): Promise<AsyncSerialPort> {
 	let port: AsyncSerialPort;
 	if (path.startsWith('webusb://')) {
-		port = new AsyncSerialPort(
-			new SerialPortStream<WebUSBBindingInterface>({
-				binding: WebUSBBinding,
-				path,
-				baudRate: 115200,
-				highWaterMark: 512 * 1024,
-				autoOpen: false,
-			})
-		);
+		port = new AsyncSerialPort({
+			binding: WebUSBBinding,
+			path,
+			baudRate: 115200,
+			highWaterMark: 512 * 1024,
+		});
 	} else if (path.startsWith('webserial://')) {
-		port = new AsyncSerialPort(
-			new SerialPortStream<WebSerialBindingInterface>({
-				binding: WebSerialBinding,
-				path,
-				baudRate: 115200,
-				highWaterMark: 512 * 1024,
-				webSerialOpenOptions: {
-					bufferSize: 16 * 1024
-				},
-				autoOpen: false
-			})
-		);
+		port = new AsyncSerialPort({
+			binding: WebSerialBinding,
+			path,
+			baudRate: 115200,
+			highWaterMark: 512 * 1024,
+			webSerialOpenOptions: {
+				bufferSize: 16 * 1024,
+			},
+		});
 	} else {
 		throw new Error(`Unsupported serial port path: ${path}`);
 	}
