@@ -5,9 +5,6 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
-  serialport-bindings-webusb@0.1.3:
-    hash: b6395c4e691787c82e5f77fb81cfe89300c4d43cae2dbae322d550f0978377c2
-    path: patches/serialport-bindings-webusb@0.1.3.patch
   vite-plugin-node-polyfills@0.25.0:
     hash: f5813e27c1eee831d7866b6c46ee80343cfb28a0f9a1e400b5eb066e6dd145d9
     path: patches/vite-plugin-node-polyfills@0.25.0.patch
@@ -92,8 +89,8 @@ importers:
         specifier: ^0.5.10
         version: 0.5.10
       serialport-bindings-webusb:
-        specifier: ^0.1.3
-        version: 0.1.3(patch_hash=b6395c4e691787c82e5f77fb81cfe89300c4d43cae2dbae322d550f0978377c2)(@serialport/bindings-interface@1.2.2)
+        specifier: ^0.1.5
+        version: 0.1.5(@serialport/bindings-interface@1.2.2)
       siemens-sms-parser:
         specifier: ^0.3.5
         version: 0.3.5
@@ -2036,8 +2033,8 @@ packages:
   serialport-bindings-webserial@0.5.10:
     resolution: {integrity: sha512-OEO6bnL0DUFYSMAuNDrd5FkZYYN9WiY35Wg/4UYLgAgFb94k0kgyHNQbT1V87acq7DH+I+dzn1obQOju2Z8j7Q==}
 
-  serialport-bindings-webusb@0.1.3:
-    resolution: {integrity: sha512-S043WHS52I2FXbV9DBnRcwp3XMGcTSmNgNzDlvL5uF171RKTAhiL48GFJu3PaIWBU5rQk+Udid7RjzGFDmsojg==}
+  serialport-bindings-webusb@0.1.5:
+    resolution: {integrity: sha512-tkjz4R59e/oeYoU7OsZ/IWyP/4NCKdAhEwiXiAz16f4W98dKAKFOMJeLt9xlGJ+upT/37vJuJz427lQhpfW9sQ==}
     engines: {node: '>=22.12.0'}
     peerDependencies:
       '@serialport/bindings-interface': ^1.2.2
@@ -4328,7 +4325,7 @@ snapshots:
 
   serialport-bindings-webserial@0.5.10: {}
 
-  serialport-bindings-webusb@0.1.3(patch_hash=b6395c4e691787c82e5f77fb81cfe89300c4d43cae2dbae322d550f0978377c2)(@serialport/bindings-interface@1.2.2):
+  serialport-bindings-webusb@0.1.5(@serialport/bindings-interface@1.2.2):
     dependencies:
       '@serialport/bindings-interface': 1.2.2
       '@types/w3c-web-usb': 1.0.14

@@ -2,7 +2,7 @@ import { SerialPortStream } from "@serialport/stream";
 import { AsyncSerialPort } from "@sie-js/serial";
 import { WebSerialBinding } from "serialport-bindings-webserial";
 import type { WebSerialBindingInterface } from "serialport-bindings-webserial";
-import { SUPPORTED_USB_FILTERS, WebUSBBinding } from "serialport-bindings-webusb";
+import { WEBUSB_SERIAL_FILTERS, WebUSBBinding } from "serialport-bindings-webusb";
 import type { WebUSBBindingInterface } from "serialport-bindings-webusb";
 
 export type SerialTransport = 'webserial' | 'webusb';
@@ -54,7 +54,7 @@ export async function resolveSerialPortPath(path: string): Promise<string> {
 		}
 
 		const selectedDevice = await navigator.usb.requestDevice({
-			filters: [...SUPPORTED_USB_FILTERS],
+			filters: [...WEBUSB_SERIAL_FILTERS],
 		});
 		const port = (await WebUSBBinding.list()).find((item) => item.nativeDevice === selectedDevice);
 		if (port)
