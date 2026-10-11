@@ -40,11 +40,10 @@ export const SerialConnect: Component<SerialConnectProps> = (props) => {
 		name: 'serialDebugFilter'
 	});
 	const [selectedSerialPort, setSelectedSerialPort] = createSignal<string>('');
-	const [showSettings, setShowSettings] = createSignal<boolean>(false);
+	const [settingsAnchor, setSettingsAnchor] = createSignal<HTMLButtonElement>();
 	const serial = useSerial();
 
 	let popperAnchorRef!: HTMLDivElement;
-	let settingsAnchorRef!: HTMLButtonElement;
 
 	const handleConnect = (): void => {
 		const debugFilter = serialDebug().join(',');
@@ -148,11 +147,10 @@ export const SerialConnect: Component<SerialConnectProps> = (props) => {
 				</PopperWithArrow>
 
 				<Button
-					ref={settingsAnchorRef}
 					sx={{ minWidth: 0, padding: '6px' }}
 					variant="outlined"
 					title="Settings"
-					onClick={() => setShowSettings(true)}
+					onClick={(event) => setSettingsAnchor(event.currentTarget)}
 					disabled={serial.readyState() !== SerialReadyState.DISCONNECTED}
 				>
 					<SettingsIcon />
@@ -185,9 +183,9 @@ export const SerialConnect: Component<SerialConnectProps> = (props) => {
 			</Show>
 
 			<Popover
-				open={showSettings()}
-				anchorEl={settingsAnchorRef}
-				onClose={() => setShowSettings(false)}
+				open={!!settingsAnchor()}
+				anchorEl={settingsAnchor()}
+				onClose={() => setSettingsAnchor(undefined)}
 				anchorOrigin={{
 					vertical: 'bottom',
 					horizontal: 'left',
