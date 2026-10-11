@@ -127,6 +127,9 @@ export const FirmwarePanel: Component<FirmwarePanelProps> = (props) => {
 				<Typography variant="body2" mt={0.5}>
 					{config().fileTypes}
 				</Typography>
+				<Typography variant="body2" mt={0.5}>
+					Conversion happens in the browser, files never leave your PC.
+				</Typography>
 			</Alert>
 			<Stack direction="row" alignItems="center" flexWrap="wrap" gap={1} mt={1}>
 				<input

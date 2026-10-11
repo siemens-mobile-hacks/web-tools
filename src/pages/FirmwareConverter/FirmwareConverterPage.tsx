@@ -1,5 +1,5 @@
 import { type Component, createSignal, onCleanup } from 'solid-js';
-import { Box, Stack, Typography } from '@suid/material';
+import { Box, Stack } from '@suid/material';
 import ArrowForwardIcon from '@suid/icons-material/ArrowForward';
 import { PageTitle } from '@/components/Layout/PageTitle';
 import { FirmwareTabs } from './FirmwareTabs';
@@ -49,9 +49,6 @@ const FirmwareConverterPage: Component = () => {
 	return (
 		<Box>
 			<PageTitle>Firmware Converter</PageTitle>
-			<Typography variant="body2" color="text.secondary" mb={1}>
-				Conversion happens in the browser, files never leave your PC.
-			</Typography>
 			<FirmwareTabs
 				id="firmware"
 				label="Firmware tools"
