@@ -8,4 +8,4 @@ minimumReleaseAgeExclude:
   - '@sie-js/*'
   - virtua@0.51.1
 patchedDependencies:
-  vite-plugin-node-polyfills@0.25.0: patches/vite-plugin-node-polyfills@0.25.0.patch
+  vite-plugin-node-polyfills@0.28.0: patches/vite-plugin-node-polyfills@0.28.0.patch

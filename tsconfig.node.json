@@ -1,11 +1,22 @@
 {
 	"compilerOptions": {
 		"composite": true,
-		"skipLibCheck": true,
+		"target": "ESNext",
 		"module": "ESNext",
 		"moduleResolution": "bundler",
-		"allowSyntheticDefaultImports": true,
-		"forceConsistentCasingInFileNames": true
+		"types": [
+			"node"
+		],
+		"isolatedModules": true,
+		"verbatimModuleSyntax": true,
+		"moduleDetection": "force",
+		"noUncheckedSideEffectImports": true,
+		"strict": true,
+		"noUncheckedIndexedAccess": true,
+		"exactOptionalPropertyTypes": true,
+		"skipLibCheck": true
 	},
-	"include": ["vite.config.ts", "lingui.config.ts"]
+	"include": [
+		"vite.config.ts"
+	]
 }

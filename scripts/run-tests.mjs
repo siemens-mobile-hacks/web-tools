@@ -45,8 +45,8 @@ rmSync(buildDir, { recursive: true, force: true });
 mkdirSync(buildDir);
 
 for (const suite of testSuites) {
-	execSync(`pnpm exec tsc ${suite.sources.join(" ")} --outDir ${buildDir} ` +
-		"--module esnext --target esnext --moduleResolution bundler --skipLibCheck --esModuleInterop --strict",
+	execSync(`pnpm exec tsc --ignoreConfig ${suite.sources.join(" ")} --outDir ${buildDir} ` +
+		"--module esnext --target esnext --moduleResolution bundler --skipLibCheck --esModuleInterop --strict --types node",
 		{ stdio: "inherit", cwd: root });
 }
 

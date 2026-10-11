@@ -1,43 +1,41 @@
 {
 	"compilerOptions": {
-		"forceConsistentCasingInFileNames": true,
-		"allowSyntheticDefaultImports": true,
-		"esModuleInterop": true,
-		"isolatedModules": true,
-		"jsx": "preserve",
-		"jsxImportSource": "solid-js",
+		"target": "ESNext",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
 		"lib": [
 			"ESNext",
 			"DOM",
 			"DOM.Iterable"
 		],
-		"module": "ESNext",
-		"moduleResolution": "bundler",
-		"noEmit": true,
-		"noFallthroughCasesInSwitch": true,
-		"noUnusedLocals": false,
-		"noUnusedParameters": false,
-		"baseUrl": ".",
+		"types": [
+			"vite-plugin-solid-svg/types-component-solid",
+			"vite/client",
+			"@types/w3c-web-serial",
+			"@types/w3c-web-usb"
+		],
+		"jsx": "preserve",
+		"jsxImportSource": "solid-js",
 		"paths": {
 			"@/*": [
 				"./src/*"
 			]
 		},
 		"resolveJsonModule": true,
-		"skipLibCheck": true,
+		"noEmit": true,
+		"isolatedModules": true,
+		"moduleDetection": "force",
+		"noUncheckedSideEffectImports": true,
 		"strict": true,
-		"target": "ESNext",
-		"types": [
-			"vite-plugin-solid-svg/types-component-solid",
-			"vite/client",
-			"@types/w3c-web-serial",
-			"@types/w3c-web-usb"
-		]
+		"noFallthroughCasesInSwitch": true,
+		"skipLibCheck": true
 	},
 	"include": [
 		"src"
 	],
-	"references": [{
-		"path": "./tsconfig.node.json"
-	}]
+	"references": [
+		{
+			"path": "./tsconfig.node.json"
+		}
+	]
 }

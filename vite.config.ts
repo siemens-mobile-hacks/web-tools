@@ -1,9 +1,8 @@
-import { defineConfig, Plugin } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import solidPlugin from 'vite-plugin-solid';
 import suidPlugin from "@suid/vite-plugin";
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import solidSvg from 'vite-plugin-solid-svg'
-import tsconfigPaths from 'vite-tsconfig-paths';
 import path from 'node:path';
 import fs from 'node:fs';
 
@@ -55,12 +54,11 @@ function postBuildPlugin(): Plugin {
 export default defineConfig({
 	worker: {
 		format: 'es',
-		plugins: () => [ tsconfigPaths(), nodePolyfills() ]
+		plugins: () => [nodePolyfills()]
 	},
 	plugins: [
 		suidPlugin(),
 		solidPlugin(),
-		tsconfigPaths(),
 		nodePolyfills(),
 		postBuildPlugin(),
 		solidSvg({
@@ -103,6 +101,7 @@ export default defineConfig({
 		},
 	},
 	resolve: {
+		tsconfigPaths: true,
 		// vite-plugin-node-polyfills injects imports of its shims
 		// (vite-plugin-node-polyfills/shims/*) into every module that
 		// references the Buffer/process/global identifiers, and rollup

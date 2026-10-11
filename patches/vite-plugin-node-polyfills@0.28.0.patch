@@ -1,7 +1,7 @@
 diff --git a/shims/process/dist/index.cjs b/shims/process/dist/index.cjs
 --- a/shims/process/dist/index.cjs
 +++ b/shims/process/dist/index.cjs
-@@ -147,7 +147,7 @@ process.nextTick = function (fun) {
+@@ -150,7 +150,7 @@ process.nextTick = function (fun) {
      }
      queue.push(new Item(fun, args));
      if (queue.length === 1 && !draining) {
@@ -13,7 +13,7 @@ diff --git a/shims/process/dist/index.cjs b/shims/process/dist/index.cjs
 diff --git a/shims/process/dist/index.js b/shims/process/dist/index.js
 --- a/shims/process/dist/index.js
 +++ b/shims/process/dist/index.js
-@@ -147,7 +147,7 @@ process.nextTick = function (fun) {
+@@ -146,7 +146,7 @@ process.nextTick = function (fun) {
      }
      queue.push(new Item(fun, args));
      if (queue.length === 1 && !draining) {
