@@ -54,7 +54,18 @@ function postBuildPlugin(): Plugin {
 export default defineConfig({
 	worker: {
 		format: 'es',
-		plugins: () => [nodePolyfills()]
+		plugins: () => [nodePolyfills()],
+		// With rolldown, vite-plugin-node-polyfills injects its globals through
+		// build.rolldownOptions, which the worker bundle ignores.
+		rolldownOptions: {
+			transform: {
+				inject: {
+					Buffer: 'vite-plugin-node-polyfills/shims/buffer',
+					global: 'vite-plugin-node-polyfills/shims/global',
+					process: 'vite-plugin-node-polyfills/shims/process',
+				},
+			},
+		},
 	},
 	plugins: [
 		suidPlugin(),
